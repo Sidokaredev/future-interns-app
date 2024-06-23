@@ -1,0 +1,1 @@
+/* Define types or interfaces */
