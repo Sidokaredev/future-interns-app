@@ -6,13 +6,13 @@ type Events = {
 
 const _KMEmitter = mitt<Events>();
 
-const promise = () => new Promise((resolve, reject) => {
+const promise = () => new Promise((resolve) => {
   setTimeout(() => {
     resolve(alert('logging success'))
   }, 5000)
 })
 
-_KMEmitter.on('onDataUpdated', (activity: string) => {
+_KMEmitter.on('onDataUpdated', () => {
   promise();
 })
 

@@ -2,6 +2,12 @@ import { Link as RouterLink } from "react-router-dom";
 import { Box, Link, Stack, Typography } from "@mui/material";
 
 export default function FooterItems() {
+  const footerItemStyles = {
+    transition: 'margin-top 0.3s ease',
+    textDecoration: 'none',
+    color: '#c2c2c2',
+    '&:hover': { color: '#85fff7', marginTop: '-0.3rem' }
+  }
   return (
     <Box
       display={'flex'}
@@ -29,22 +35,22 @@ export default function FooterItems() {
       <Stack direction={'row'}
         spacing={5}
       >
-        <Link component={RouterLink} to={'/'} sx={{ textDecoration: 'none', color: '#c2c2c2', '&:hover': { color: '#85fff7' } }}>
+        <Link component={RouterLink} to={'/'} sx={footerItemStyles}>
           <Typography variant="subtitle2">
             How it works
           </Typography>
         </Link>
-        <Link component={RouterLink} to={'/'} sx={{ textDecoration: 'none', color: '#c2c2c2', '&:hover': { color: '#85fff7' } }}>
+        <Link component={RouterLink} to={'/'} sx={footerItemStyles}>
           <Typography variant="subtitle2">
             Create Vacancies
           </Typography>
         </Link>
-        <Link component={RouterLink} to={'/'} sx={{ textDecoration: 'none', color: '#c2c2c2', '&:hover': { color: '#85fff7' } }}>
+        <Link component={RouterLink} to={'/'} sx={footerItemStyles}>
           <Typography variant="subtitle2">
             About Us
           </Typography>
         </Link>
-        <Link component={RouterLink} to={'/'} sx={{ textDecoration: 'none', color: '#c2c2c2', '&:hover': { color: '#85fff7' } }}>
+        <Link component={RouterLink} to={'/'} sx={footerItemStyles}>
           <Typography variant="subtitle2">
             Contact Us
           </Typography>

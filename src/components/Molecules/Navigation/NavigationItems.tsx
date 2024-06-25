@@ -11,9 +11,11 @@ export default function NavigationItems({ sxProps } : { sxProps?: any }) {
   const NavigationMenuItem: any = styled(MenuItem)({
     color: '#045a55',
     "&:hover": {
-      backgroundColor: '#c2fffb82',
     },
   })
+  const menuItemStyles = {
+    transition: 'padding-left 0.3s ease', '&:hover': { fontWeight: 'bold', paddingLeft: '0.3rem' }
+  }
   /* States */
   const [anchorEl, setAnchorEl] = useState<HTMLElement | null>(null)
   const menuOpen = Boolean(anchorEl)
@@ -80,20 +82,18 @@ export default function NavigationItems({ sxProps } : { sxProps?: any }) {
             style: {
               minWidth: '10rem',
               marginTop: '1.2rem',
-              boxShadow: 'none',
-              border: '1px solid #06816d'
             },
           },
         }}
       >
         <NavigationMenuItem component={RouterLink} to="/">
-          <Typography variant="subtitle2">Guides</Typography>
+          <Typography variant="subtitle2" sx={menuItemStyles}>Guides</Typography>
         </NavigationMenuItem>
         <NavigationMenuItem component={RouterLink} to="/">
-          <Typography variant="subtitle2">FAQs</Typography>
+          <Typography variant="subtitle2" sx={menuItemStyles}>FAQs</Typography>
         </NavigationMenuItem>
         <NavigationMenuItem component={RouterLink} to="/">
-          <Typography variant="subtitle2">Contact</Typography>
+          <Typography variant="subtitle2" sx={menuItemStyles}>Contact</Typography>
         </NavigationMenuItem>
       </Menu>
     </Box>

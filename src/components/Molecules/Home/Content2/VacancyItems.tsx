@@ -1,5 +1,5 @@
 import { ArrowOutward, BookmarkBorder, Place } from "@mui/icons-material";
-import { Avatar, Card, CardContent, CardHeader, Chip, colors, Grid, IconButton, Stack, Typography } from "@mui/material";
+import { Avatar, Card, CardContent, CardHeader, Chip, Grid, IconButton, Stack, Typography } from "@mui/material";
 import { Link as RouterLink } from "react-router-dom";
 
 export default function VacancyItems() {
