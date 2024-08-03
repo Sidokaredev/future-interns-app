@@ -1,8 +1,8 @@
 import { Container, Stack, Typography } from "@mui/material";
-import TextContent from "../Molecules/Home/Content1/TextContent";
-import SearchContent from "../Molecules/Home/Content1/SearchContent";
+import TextContent from "../../Molecules/Home/Section1/TextContent";
+import SearchContent from "../../Molecules/Home/Section1/SearchContent";
 
-export default function HomeContent1() {
+export default function HomeSection1() {
   return (
     <Container
       disableGutters

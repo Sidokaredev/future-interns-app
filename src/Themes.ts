@@ -30,6 +30,23 @@ const FutureInternsTheme = createTheme({
           WebkitBoxOrient: "vertical",
         }
       }
+    },
+    MuiUseMediaQuery: {
+      defaultProps: {
+        noSsr: true
+      }
+    },
+    MuiOutlinedInput: {
+      styleOverrides: {
+        notchedOutline: {
+          borderColor: '#cde6e2',
+        },
+      }
+    },
+    MuiInputBase: {
+      styleOverrides: {
+        
+      }
     }
   }
 })

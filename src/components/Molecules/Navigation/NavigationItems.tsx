@@ -43,7 +43,7 @@ export default function NavigationItems({ sxProps } : { sxProps?: any }) {
         </Button>
         <Button
           component={RouterLink}
-          to="/vacancies">
+          to="/vacancy">
           <Typography variant="body1"
             fontWeight={'bold'}
             letterSpacing={'0.04rem'}

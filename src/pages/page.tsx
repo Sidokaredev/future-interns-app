@@ -1,10 +1,11 @@
 // import React from "react";
 import { useLoaderData } from "react-router-dom"
-import NavigationHeader from "../components/Organisms/NavigationHeader";
-import { Box, Container } from "@mui/material";
-import Footer from "../components/Organisms/Footer";
-import HomeContent1 from "../components/Organisms/HomeContent1";
-import HomeContent2 from "../components/Organisms/HomeContent2";
+import NavigationHeader from "../components/Organisms/NavigationHeader"
+import { Box, useMediaQuery, useTheme } from "@mui/material"
+import Footer from "../components/Organisms/Footer"
+import HomeSection1 from "../components/Organisms/Home/Section1"
+import HomeSection2 from "../components/Organisms/Home/Section2"
+import ScreenWidthError from "../components/Molecules/Errors/ScreenWidth/ScreenWitdthError"
 
 // const fetchUsers = async () => {
 //   const request = await fetch('https://jsonplaceholder.typicode.com/comments', {
@@ -50,36 +51,44 @@ import HomeContent2 from "../components/Organisms/HomeContent2";
 export default function Homepage() {
   const users = useLoaderData() as any[]
   console.info("users \t:", users)
-  // const prevent = useMediaQuery(`(min-width: 768px)`)
+
+  const theme = useTheme()
+  const IsDesktopScreen = useMediaQuery(theme.breakpoints.up('lg'))
+  // const IsDesktopScreen = false
   return (
-    <Container
-      disableGutters
-      maxWidth='xl'
-      >
-        {/* {!prevent && <h1 className="">PLEASE USE DESKTOP INSTEAD</h1>} */}
-        <NavigationHeader />
-        {/* Section 1 */}
+    <>
+      {/* check user MediaScreen width (1200px required) */}
+      {IsDesktopScreen ? (
         <Box
-          sx={{
-            backgroundImage: `url('/backgrounds/Final-AnimatedShape-1.svg')`,
-            height: '695px',
-            backgroundSize: 'cover',
-            display: 'flex',
-            alignItems: 'center',
-          }}
-        >
-          <HomeContent1 />
+          >
+            {/* {!prevent && <h1 className="">PLEASE USE DESKTOP INSTEAD</h1>} */}
+            <NavigationHeader />
+            {/* Section 1 */}
+            <Box
+              sx={{
+                backgroundImage: `url('/backgrounds/Final-AnimatedShape-1.svg')`,
+                height: '695px',
+                backgroundSize: 'cover',
+                display: 'flex',
+                alignItems: 'center',
+              }}
+            >
+              <HomeSection1 />
+            </Box>
+            {/* Section 2 */}
+            <Box
+              sx={{
+                // height: '695px'
+              }}
+            >
+              <HomeSection2 />
+            </Box>
+            {/* Footer */}
+            <Footer />
         </Box>
-        {/* Section 2 */}
-        <Box
-          sx={{
-            // height: '695px'
-          }}
-        >
-          <HomeContent2 />
-        </Box>
-        {/* Footer */}
-        <Footer />
-    </Container>
+      ) : (
+        <ScreenWidthError />
+      )}
+    </>
   )
 }

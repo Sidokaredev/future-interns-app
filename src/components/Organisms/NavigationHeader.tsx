@@ -61,7 +61,7 @@ export default function NavigationHeader() {
         zIndex: 999,
         paddingY: '0.8rem',
         transition: 'background-color 0.5s ease-in-out',
-          ...sx.navigation,
+        ...sx.navigation,
       }}
     >
       <Container

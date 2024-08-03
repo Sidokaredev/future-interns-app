@@ -1,7 +1,27 @@
-export default function Loading() {
+import { Avatar, Box, CircularProgress, Typography } from "@mui/material";
+
+export default function BaseLoading() {
   return (
-    <div>
-      Still Fetching Data...
-    </div>
+    <>
+      <Box
+        width={'100%'}
+        height={'100vh'}
+        display={'flex'}
+        flexDirection={'column'}
+        justifyContent={'center'}
+        alignItems={'center'}
+      >
+        <Avatar
+          alt="Sidokaredev Logo"
+          src="/logos/sidokaredev-basic.png"
+          sx={{
+            width: '3em',
+            height: '3em',
+          }}
+        />
+        <Typography variant="caption" color={'primary'} marginY={'2em'}>Sidokaredev</Typography>
+        <CircularProgress color={'primary'} />
+      </Box>
+    </>
   )
 }

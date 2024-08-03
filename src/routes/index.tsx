@@ -1,10 +1,12 @@
+import React, { Suspense } from 'react'
 /* Route */
-import { createBrowserRouter } from 'react-router-dom';
-import type { RouteObject } from "react-router-dom";
+import { createBrowserRouter } from 'react-router-dom'
+import type { RouteObject } from "react-router-dom"
 
 /* Grouped Route */
-import ACCOUNTS_ROUTE from "./Accounts";
-import React, { Suspense } from 'react';
+import ACCOUNTS_ROUTE from "./Accounts"
+import VacancyRoute from './Vacancy'
+import BaseLoading from '../pages/loading'
 
 /* Get Preserved Components Soon */
 
@@ -12,22 +14,22 @@ import React, { Suspense } from 'react';
 const Homepage: any = import.meta.glob("../pages/page.tsx")
 const HomeRoute: RouteObject = Object.keys(Homepage).reduce((prev, key) => {
   // const HomeComponent = Homepage[key];
-  const HomeComponent = React.lazy(Homepage[key]);
+  const HomeComponent = React.lazy(Homepage[key])
   return {
     ...prev,
     id: "homepage",
     path: "/",
-    loader: async () => {
-      const data = await fetch('https://jsonplaceholder.typicode.com/users', {
-        method: 'GET',
-        headers: {
-          "Content-Type": "application/json"
-        }
-      });
-      return data;
-    },
+    // loader: async () => {
+    //   const data = await fetch('https://jsonplaceholder.typicode.com/users', {
+    //     method: 'GET',
+    //     headers: {
+    //       "Content-Type": "application/json"
+    //     }
+    //   });
+    //   return data;
+    // },
     element: (
-      <Suspense fallback={<>Loading bosss...</>}>
+      <Suspense fallback={<BaseLoading />}>
         <HomeComponent />
       </Suspense>
     )
@@ -36,7 +38,8 @@ const HomeRoute: RouteObject = Object.keys(Homepage).reduce((prev, key) => {
 
 const _APPROUTERS = createBrowserRouter([
   HomeRoute,
-  ...ACCOUNTS_ROUTE
+  ...ACCOUNTS_ROUTE,
+  ...VacancyRoute
 ])
 
 export default _APPROUTERS;

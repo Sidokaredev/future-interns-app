@@ -1,8 +1,8 @@
 import { Container } from "@mui/material";
-import TextContent from "../Molecules/Home/Content2/TextContent";
-import VacancyItems from "../Molecules/Home/Content2/VacancyItems";
+import TextContent from "../../Molecules/Home/Section2/TextContent";
+import VacancyItems from "../../Molecules/Home/Section2/VacancyItems";
 
-export default function HomeContent2() {
+export default function HomeSection2() {
   return (
     <Container
       disableGutters

@@ -17,7 +17,7 @@ export default function FooterCopyright() {
         </Typography>
         <Typography variant="caption">
           Website designed and developed by
-          <Link href="https://github.com" sx={{ textDecoration: 'none', fontWeight: 'bold' }}> Sidokaredev</Link>
+          <Link href="https://github.com/Sidokaredev" sx={{ textDecoration: 'none', fontWeight: 'bold' }}> Sidokaredev</Link>
         </Typography>
       </Stack>
       {/* Social Media Link */}
@@ -25,7 +25,7 @@ export default function FooterCopyright() {
         spacing={1}
       >
         {/* GitHub */}
-        <IconButton component={RouterLink} to="https://github.com" target="_blank">
+        <IconButton component={RouterLink} to="https://github.com/Sidokaredev" target="_blank">
           <GitHub fontSize="small" sx={{ color: 'black' }} />
         </IconButton>
         {/* LinkedIn */}
