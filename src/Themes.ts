@@ -47,6 +47,13 @@ const FutureInternsTheme = createTheme({
       styleOverrides: {
         
       }
+    },
+    MuiListItemIcon: {
+      styleOverrides: {
+        root: {
+          minWidth: "0"
+        }
+      }
     }
   }
 })

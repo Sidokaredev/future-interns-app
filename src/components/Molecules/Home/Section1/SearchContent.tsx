@@ -1,11 +1,14 @@
-import { Autocomplete, AutocompleteRenderInputParams, Box, Button, InputBase, InputLabel, TextField } from "@mui/material";
+import { Autocomplete, AutocompleteRenderInputParams, Box, Button, InputBase, InputLabel, TextField, useMediaQuery } from "@mui/material";
 import { Place, WorkOutline } from "@mui/icons-material";
 import React from "react";
 import { useSearchParams } from "react-router-dom";
 
 export default function SearchContent() {
+  /* React Router */
   const [searchParams, setSearchParams] = useSearchParams()
   console.info("searchParams: " + searchParams)
+  /* Responsive Breakpoints */
+  const isMobile = useMediaQuery('(max-width:900px)')
   return (
     <Box
       sx={{
@@ -13,6 +16,9 @@ export default function SearchContent() {
         paddingY: '1rem',
         paddingX: '1rem',
         marginY: '2rem',
+        marginX: {
+          xs: '0.5em'
+        },
         borderRadius: '0.3rem'
       }}
     >
@@ -21,12 +27,21 @@ export default function SearchContent() {
         const keyword = (event.currentTarget.elements.namedItem('query') as HTMLInputElement).value
         setSearchParams({ query: keyword })
       }} autoComplete="off">
-        <Box display={'flex'}>
+        <Box display={'flex'}
+          flexDirection={{
+            xs: 'column',
+            sm: 'row'
+          }}
+        >
           {/* Search Keywords */}
           <Box
             display={'flex'}
             flexGrow={1}
             alignItems={'center'}
+            marginBottom={{
+              xs: '1em',
+              sm: '0em'
+            }}
           >
             <InputLabel htmlFor="search-by-keywords"
               sx={{
@@ -51,6 +66,10 @@ export default function SearchContent() {
             display={'flex'}
             flexGrow={2}
             alignItems={'center'}
+            marginBottom={{
+              xs: '1em',
+              sm: '0em'
+            }}
           >
             <InputLabel htmlFor="select-location"
               sx={{
@@ -79,7 +98,10 @@ export default function SearchContent() {
           {/* Submit button */}
           <Box
             flexGrow={1}
-            marginLeft={2}
+            marginLeft={{
+              xs: 0,
+              md: 2
+            }}
           >
             <Button type="submit" fullWidth size="large" variant="contained">Search</Button>
           </Box>

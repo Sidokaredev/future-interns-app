@@ -34,9 +34,9 @@ export default function VacancyItems() {
     vacancyTitle: { textDecoration: 'none', color: '#3c3c3c', '&:hover': { color: '#06816d' } }
   }
   return (
-    <Grid container spacing={3} marginY={'2rem'}>
+    <Grid container spacing={3} marginY={'2rem'} paddingX={{ xs: '1.5em', lg: '0em' }}>
       <Grid item sx={itemStyles.griditem}
-        lg={4}>
+        xs={12} md={6} lg={4}>
         <Card sx={itemStyles.card}>
           <CardHeader
             avatar={
@@ -97,7 +97,7 @@ export default function VacancyItems() {
         </Card>
       </Grid>
       <Grid item sx={itemStyles.griditem}
-        lg={4}>
+        xs={12} md={6} lg={4}>
         <Card sx={itemStyles.card}>
           <CardHeader
             avatar={
@@ -158,7 +158,7 @@ export default function VacancyItems() {
         </Card>
       </Grid>
       <Grid item sx={itemStyles.griditem}
-        lg={4}>
+        xs={12} md={6} lg={4}>
         <Card sx={itemStyles.card}>
           <CardHeader
             avatar={
@@ -219,7 +219,7 @@ export default function VacancyItems() {
         </Card>
       </Grid>
       <Grid item sx={itemStyles.griditem}
-        lg={4}>
+        xs={12} md={6} lg={4}>
         <Card sx={itemStyles.card}>
           <CardHeader
             avatar={
@@ -280,7 +280,7 @@ export default function VacancyItems() {
         </Card>
       </Grid>
       <Grid item sx={itemStyles.griditem}
-        lg={4}>
+        xs={12} md={6} lg={4}>
         <Card sx={itemStyles.card}>
           <CardHeader
             avatar={

@@ -7,6 +7,8 @@ export default function FooterCopyright() {
     <Box
       sx={{
         display: 'flex',
+        flexDirection: { xs: 'column-reverse', sm: 'row' },
+        gap: '1em 0em',
         justifyContent: 'space-between',
         color: '#c1c1c1'
       }}>

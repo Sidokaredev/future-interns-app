@@ -1,16 +1,17 @@
-import { Box, Stack, Typography } from "@mui/material";
+import { Box, Stack, Typography, useMediaQuery } from "@mui/material"
 
 export default function TextContent() {
+  const isMobile = useMediaQuery('(max-width:900px)')
   return (
     <Stack
       sx={{ textAlign: 'center', color: '#ffffff' }}>
-      <Typography variant="h3"
+      <Typography variant={isMobile ? 'h4' : 'h3'}
         sx={{
           fontWeight: 'bolder'
         }}>
         Got Talent ?
       </Typography>
-      <Typography variant="h3"
+      <Typography variant={isMobile ? 'h4' : 'h3'}
         sx={{
           fontWeight: 'bolder'
         }}>
@@ -20,6 +21,7 @@ export default function TextContent() {
         display={'flex'}
         justifyContent={'center'}
         marginTop={'1rem'}
+        padding={{ xs: '0.5em', lg: 'none' }}
       >
         <Typography variant="subtitle1" maxWidth={'35rem'} sx={{ color: '#d9d9d9' }}>
           Find Jobs, Employment & Career Opportunities. Some of the companies we've helped recruit excellent applicants over the years.

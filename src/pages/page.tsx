@@ -58,37 +58,37 @@ export default function Homepage() {
   return (
     <>
       {/* check user MediaScreen width (1200px required) */}
-      {IsDesktopScreen ? (
-        <Box
+      <Box
+        >
+          {/* {!prevent && <h1 className="">PLEASE USE DESKTOP INSTEAD</h1>} */}
+          <NavigationHeader />
+          {/* Section 1 */}
+          <Box
+            sx={{
+              backgroundImage: `url('/backgrounds/Final-AnimatedShape-1.svg')`,
+              height: '695px',
+              backgroundSize: 'cover',
+              display: 'flex',
+              alignItems: 'center',
+            }}
           >
-            {/* {!prevent && <h1 className="">PLEASE USE DESKTOP INSTEAD</h1>} */}
-            <NavigationHeader />
-            {/* Section 1 */}
-            <Box
-              sx={{
-                backgroundImage: `url('/backgrounds/Final-AnimatedShape-1.svg')`,
-                height: '695px',
-                backgroundSize: 'cover',
-                display: 'flex',
-                alignItems: 'center',
-              }}
-            >
-              <HomeSection1 />
-            </Box>
-            {/* Section 2 */}
-            <Box
-              sx={{
-                // height: '695px'
-              }}
-            >
-              <HomeSection2 />
-            </Box>
-            {/* Footer */}
-            <Footer />
-        </Box>
+            <HomeSection1 />
+          </Box>
+          {/* Section 2 */}
+          <Box
+            sx={{
+              // height: '695px'
+            }}
+          >
+            <HomeSection2 />
+          </Box>
+          {/* Footer */}
+          <Footer />
+      </Box>
+      {/* {IsDesktopScreen ? (
       ) : (
         <ScreenWidthError />
-      )}
+      )} */}
     </>
   )
 }

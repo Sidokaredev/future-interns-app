@@ -1,4 +1,4 @@
-import { Box, Button, Stack } from "@mui/material";
+import { Box, Button, Collapse, Stack } from "@mui/material";
 import SearchByCompany from "../../../Molecules/Vacancy/Section2/FilteringVacancy/Company";
 import SearchByCategory from "../../../Molecules/Vacancy/Section2/FilteringVacancy/Category";
 import SearchByType from "../../../Molecules/Vacancy/Section2/FilteringVacancy/Type";
@@ -6,8 +6,13 @@ import SearchByLocation from "../../../Molecules/Vacancy/Section2/FilteringVacan
 import SearchBySalary from "../../../Molecules/Vacancy/Section2/FilteringVacancy/Salary";
 
 import "../vacancy.css"
+import React, { SetStateAction, useState } from "react";
 
-export default function FilteringVacancy() {
+export default function FilteringVacancy({
+  setFilteringDrawerOpen
+} : {
+  setFilteringDrawerOpen?: React.Dispatch<SetStateAction<boolean>>
+}) {
   return (
     <>
       <Box
@@ -18,7 +23,7 @@ export default function FilteringVacancy() {
           // overflow: 'scroll',
           // height: '80vh',
 
-          border: '1px solid #9bcdc5',
+          border: '1px solid #e6f2f0',
           borderRadius: '0.4em',
           padding: '1em',
         }}
@@ -40,11 +45,27 @@ export default function FilteringVacancy() {
             variant="text"
             fullWidth
             sx={{
-              marginY: '0.5em'
+              // marginY: '0.5em'
             }}
           >
               Reset Filter
           </Button>
+          {/* Close Button on Mobile */}
+          {setFilteringDrawerOpen && (
+            <Button
+              variant="text"
+              fullWidth
+              sx={{
+                marginY: '0.5em',
+                color: 'red'
+              }}
+              onClick={() => {
+                setFilteringDrawerOpen(false)
+              }}
+            >
+              Cancel
+            </Button>
+          )}
         </Box>
       </Box>
     </>

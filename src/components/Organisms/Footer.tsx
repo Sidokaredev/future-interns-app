@@ -7,6 +7,7 @@ export default function Footer() {
     <Box
       bgcolor={'#003C43'}
       paddingY={'2rem'}
+      paddingX={{ xs: '1em', md: '2em' }}
     >
       <Container
         disableGutters

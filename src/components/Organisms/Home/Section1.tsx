@@ -10,11 +10,11 @@ export default function HomeSection1() {
     >
       <TextContent />
       <SearchContent />
-      <Stack direction={'row'} spacing={2} justifyContent={'center'} color={'#d9d9d9'}>
-        <Typography variant="body1" fontWeight={'bold'}>
+      <Stack direction={{ xs: 'column', md: 'row' }} spacing={2} justifyContent={'center'} color={'#d9d9d9'}>
+        <Typography variant="body1" textAlign={'center'} fontWeight={'bold'}>
           Popular Searches:
         </Typography>
-        <Typography variant="body1">
+        <Typography variant="body1" textAlign={'center'} paddingX={{ xs: 0.3, md: 0 }}>
           Designer, Developer, Web, IOS, PHP Senior Engineer
         </Typography>
       </Stack>

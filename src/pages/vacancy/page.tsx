@@ -1,9 +1,15 @@
-import { Box, Container, Grid, Typography } from "@mui/material"
+import { Box, Collapse, Container, Grid, Pagination, ToggleButton, Typography, useMediaQuery } from "@mui/material"
 import NavigationHeader from "../../components/Organisms/NavigationHeader"
 import FilteringVacancy from "../../components/Organisms/Vacancy/Section2/FilteringVacancy"
 import ListVacancy from "../../components/Organisms/Vacancy/Section2/ListVacancy"
+import { FilterList } from "@mui/icons-material"
+import SearchByCompany from "../../components/Molecules/Vacancy/Section2/FilteringVacancy/Company"
+import MobileFilteringVacancy from "../../components/Organisms/Vacancy/Section2/MobileFilteringVacancy"
+import Footer from "../../components/Organisms/Footer"
 
 export default function VacancyPage() {
+  /* Responsive Breakpoints */
+  const mediaSize = useMediaQuery('(max-width:900px)')
   return (
     <>
       <Box
@@ -43,7 +49,10 @@ export default function VacancyPage() {
         <Box
           component={'div'}
           sx={{
-            paddingY: '4em'
+            paddingY: {
+              xs: '2em',
+              lg: '4em'
+            },
           }}
         >
           {/* Content 2 Component */}
@@ -51,30 +60,53 @@ export default function VacancyPage() {
             disableGutters
             maxWidth="lg"
           >
+            {/* Mobile Filtering Panel */}
+            <Collapse
+              in={mediaSize ? true : false}
+              /* Sticky Maker */
+              sx={{
+                position: 'sticky',
+                top: '4.5em',
+                zIndex: 99,
+                backgroundColor: 'white',
+                boxShadow: 'rgba(0, 0, 0, 0.1) 0px 4px 6px -1px, rgba(0, 0, 0, 0.06) 0px 2px 4px -1px'
+              }}
+            >
+              <MobileFilteringVacancy />
+            </Collapse>
             <Grid container
               columnGap={3}
-              // border={'1px solid black'}
             >
-              <Grid item xs={3.8}
-                // border={'1px solid black'}
+              <Grid item xs={12} md={4.2} lg={3.8}
               >
                 {/* Filtering Panel */}
-                <FilteringVacancy />
+                <Collapse
+                  in={mediaSize ? false : true}
+                >
+                  <FilteringVacancy />
+                </Collapse>
               </Grid>
-              <Grid item xs={7.9}
-                // border={'1px solid black'}
-                // sx={{
-                //   height: '200vh'
-                // }}
+              <Grid item xs={12} md={7.4} lg={7.9}
+                paddingX={{
+                  xs: '0.5em',
+                  lg: '0em'
+                }}
               >
+                {/* LIST OF VACANCIES */}
                 <ListVacancy />
-                {/* <Box border={'1px solid black'}>
-                  List Vacancy Panel
-                </Box> */}
+                {/* PAGINATION LIST */}
+                <Pagination color="primary" count={13}
+                  sx={{
+                    float: 'right',
+                    marginY: '2em'
+                  }}
+                />
               </Grid>
             </Grid>
           </Container>
         </Box>
+        {/* Footer */}
+        <Footer />
       </Box>
     </>
   )
