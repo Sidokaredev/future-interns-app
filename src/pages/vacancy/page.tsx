@@ -1,9 +1,7 @@
-import { Box, Collapse, Container, Grid, Pagination, ToggleButton, Typography, useMediaQuery } from "@mui/material"
+import { Box, Collapse, Container, Grid, Pagination, Typography, useMediaQuery } from "@mui/material"
 import NavigationHeader from "../../components/Organisms/NavigationHeader"
 import FilteringVacancy from "../../components/Organisms/Vacancy/Section2/FilteringVacancy"
 import ListVacancy from "../../components/Organisms/Vacancy/Section2/ListVacancy"
-import { FilterList } from "@mui/icons-material"
-import SearchByCompany from "../../components/Molecules/Vacancy/Section2/FilteringVacancy/Company"
 import MobileFilteringVacancy from "../../components/Organisms/Vacancy/Section2/MobileFilteringVacancy"
 import Footer from "../../components/Organisms/Footer"
 

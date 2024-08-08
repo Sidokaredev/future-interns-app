@@ -1,5 +1,5 @@
 import { Box, Button, Checkbox, FormControlLabel, Link, Stack, TextField, Typography } from "@mui/material";
-import React, { useState } from "react";
+import React from "react";
 import { FormFlow } from "../../../../pages/accounts/auth/page";
 
 type AuthForm = {
@@ -15,8 +15,8 @@ export default function AuthForm({
   setFormFlowState: React.Dispatch<React.SetStateAction<FormFlow>>
 }) {
   /* Form State */
-  const initialAuthForm: AuthForm = { email: '', password: '' }
-  const [authFormState, setAuthFormState] = useState<AuthForm>(initialAuthForm)
+  // const initialAuthForm: AuthForm = { email: '', password: '' }
+  // const [authFormState, setAuthFormState] = useState<AuthForm>(initialAuthForm)
   return (
     <>
       <Box

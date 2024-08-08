@@ -1,4 +1,4 @@
-import { Box, Button, Collapse, Stack } from "@mui/material";
+import { Box, Button, Stack } from "@mui/material";
 import SearchByCompany from "../../../Molecules/Vacancy/Section2/FilteringVacancy/Company";
 import SearchByCategory from "../../../Molecules/Vacancy/Section2/FilteringVacancy/Category";
 import SearchByType from "../../../Molecules/Vacancy/Section2/FilteringVacancy/Type";
@@ -6,7 +6,7 @@ import SearchByLocation from "../../../Molecules/Vacancy/Section2/FilteringVacan
 import SearchBySalary from "../../../Molecules/Vacancy/Section2/FilteringVacancy/Salary";
 
 import "../vacancy.css"
-import React, { SetStateAction, useState } from "react";
+import React, { SetStateAction } from "react";
 
 export default function FilteringVacancy({
   setFilteringDrawerOpen

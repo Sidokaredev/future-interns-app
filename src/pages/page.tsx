@@ -1,11 +1,11 @@
 // import React from "react";
 import { useLoaderData } from "react-router-dom"
 import NavigationHeader from "../components/Organisms/NavigationHeader"
-import { Box, useMediaQuery, useTheme } from "@mui/material"
+import { Box } from "@mui/material"
 import Footer from "../components/Organisms/Footer"
 import HomeSection1 from "../components/Organisms/Home/Section1"
 import HomeSection2 from "../components/Organisms/Home/Section2"
-import ScreenWidthError from "../components/Molecules/Errors/ScreenWidth/ScreenWitdthError"
+// import ScreenWidthError from "../components/Molecules/Errors/ScreenWidth/ScreenWitdthError"
 
 // const fetchUsers = async () => {
 //   const request = await fetch('https://jsonplaceholder.typicode.com/comments', {
@@ -52,8 +52,8 @@ export default function Homepage() {
   const users = useLoaderData() as any[]
   console.info("users \t:", users)
 
-  const theme = useTheme()
-  const IsDesktopScreen = useMediaQuery(theme.breakpoints.up('lg'))
+  // const theme = useTheme()
+  // const IsDesktopScreen = useMediaQuery(theme.breakpoints.up('lg'))
   // const IsDesktopScreen = false
   return (
     <>

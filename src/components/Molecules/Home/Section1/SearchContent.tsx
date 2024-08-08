@@ -1,14 +1,14 @@
-import { Autocomplete, AutocompleteRenderInputParams, Box, Button, InputBase, InputLabel, TextField, useMediaQuery } from "@mui/material";
-import { Place, WorkOutline } from "@mui/icons-material";
-import React from "react";
-import { useSearchParams } from "react-router-dom";
+import { Autocomplete, AutocompleteRenderInputParams, Box, Button, InputBase, InputLabel, TextField } from "@mui/material";
+import { Place, WorkOutline } from "@mui/icons-material"
+import React from "react"
+import { useSearchParams } from "react-router-dom"
 
 export default function SearchContent() {
   /* React Router */
   const [searchParams, setSearchParams] = useSearchParams()
   console.info("searchParams: " + searchParams)
   /* Responsive Breakpoints */
-  const isMobile = useMediaQuery('(max-width:900px)')
+  // const isMobile = useMediaQuery('(max-width:900px)')
   return (
     <Box
       sx={{

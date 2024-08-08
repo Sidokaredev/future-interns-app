@@ -45,7 +45,6 @@ const FutureInternsTheme = createTheme({
     },
     MuiInputBase: {
       styleOverrides: {
-        
       }
     },
     MuiListItemIcon: {
