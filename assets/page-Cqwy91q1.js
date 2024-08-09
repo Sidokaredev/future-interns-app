@@ -1,0 +1,1 @@
+import{j as s,L as t}from"./index-DTQp_edF.js";function n(){return s.jsxs(s.Fragment,{children:["This is SignUp Page",s.jsx("br",{}),s.jsx(t,{to:"/accounts/auth",children:"Go to Login instead"}),s.jsx("br",{}),s.jsx(t,{to:"/",style:{color:"red"},children:"Homepage"})]})}export{n as default};
