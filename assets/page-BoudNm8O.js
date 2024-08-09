@@ -1,0 +1,1 @@
+import{q as a,j as t}from"./index-R7-qjl47.js";function s(){const{email:e}=a();return t.jsxs(t.Fragment,{children:["Email Identity Page by Dynamic Route",t.jsx("span",{style:{fontWeight:"bolder"},children:e})]})}export{s as default};
