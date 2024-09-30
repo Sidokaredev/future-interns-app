@@ -1,111 +1,150 @@
-import { Box, Collapse, Container, Grid, Pagination, Typography, useMediaQuery } from "@mui/material"
-import NavigationHeader from "../../components/Organisms/NavigationHeader"
-import FilteringVacancy from "../../components/Organisms/Vacancy/Section2/FilteringVacancy"
-import ListVacancy from "../../components/Organisms/Vacancy/Section2/ListVacancy"
-import MobileFilteringVacancy from "../../components/Organisms/Vacancy/Section2/MobileFilteringVacancy"
-import Footer from "../../components/Organisms/Footer"
+import {
+  Box,
+  Button,
+  Collapse,
+  Container,
+  Drawer,
+  Grid,
+  IconButton,
+  Pagination,
+  Typography,
+  useMediaQuery,
+} from "@mui/material";
+import BaseLayout from "../../components/Templates/BaseLayout";
+import VacancyItemList from "../../components/Molecules/Data.Display/VacancyItemList";
+import VacancyFilters from "../../components/Molecules/Forms/VacancyFilters";
+import { CloseRounded, SortRounded } from "@mui/icons-material";
+import { useState } from "react";
 
 export default function VacancyPage() {
-  /* Responsive Breakpoints */
-  const mediaSize = useMediaQuery('(max-width:900px)')
+  /* breakpoints */
+  const mediaSize = useMediaQuery("(max-width:900px)");
+  /* state */
+  const [openDrawer, setOpenDrawer] = useState<boolean>(false);
   return (
-    <>
+    <BaseLayout>
+      {/* Section 1 */}
       <Box
-        component={'div'}
-        style={{
-          width: '100%',
-          height: '5em',
+        component={"div"}
+        sx={{
+          backgroundImage:
+            "url(/future-interns-app/backgrounds/Vacancy-Background.svg)", // may be required (../../../public)
+          backgroundSize: "cover",
+          height: "295px",
+          display: "flex",
+          alignItems: "center",
         }}
       >
-        {/* Navigation */}
-        <NavigationHeader />
-        {/* Content 1 */}
-        <Box
-          component={'div'}
+        <Container
+          disableGutters
+          maxWidth="xl"
           sx={{
-            backgroundImage: 'url(/backgrounds/Vacancy-Background.svg)', // may be required (../../../public)
-            backgroundSize: 'cover',
-            height: '295px',
-            display: 'flex',
-            alignItems: 'center'
+            paddingTop: "3em",
           }}
         >
-          {/* Content 1 Component */}
-          <Container
-            disableGutters
-            maxWidth="xl"
+          <Typography align="center" variant="h5" color={"white"}>
+            Job Vacancy
+          </Typography>
+        </Container>
+      </Box>
+      {/* Section 2 */}
+      <Box
+        component={"div"}
+        sx={{
+          paddingY: {
+            lg: "4em",
+          },
+        }}
+      >
+        <Container disableGutters maxWidth="lg">
+          {/* Mobile Filtering Panel */}
+          <Collapse
+            in={mediaSize ? true : false}
             sx={{
-              paddingTop: '3em'
+              backgroundColor: "white",
             }}
           >
-            <Typography align="center" variant="h5" color={"white"}>
-                Job Vacancy
-            </Typography>
-          </Container>
-        </Box>
-        {/* Content 2 */}
-        <Box
-          component={'div'}
-          sx={{
-            paddingY: {
-              xs: '2em',
-              lg: '4em'
-            },
-          }}
-        >
-          {/* Content 2 Component */}
-          <Container
-            disableGutters
-            maxWidth="lg"
-          >
-            {/* Mobile Filtering Panel */}
-            <Collapse
-              in={mediaSize ? true : false}
-              /* Sticky Maker */
+            <Box
+              component={"div"}
               sx={{
-                position: 'sticky',
-                top: '4.5em',
-                zIndex: 99,
-                backgroundColor: 'white',
-                boxShadow: 'rgba(0, 0, 0, 0.1) 0px 4px 6px -1px, rgba(0, 0, 0, 0.06) 0px 2px 4px -1px'
+                display: "flex",
+                alignItems: "center",
+                gap: "0em 0.5em",
+                paddingY: "0.5em",
+                paddingX: "0.5em",
               }}
             >
-              <MobileFilteringVacancy />
-            </Collapse>
-            <Grid container
-              columnGap={3}
+              <Button
+                variant="text"
+                sx={{ paddingX: "0.5em", minWidth: 0 }}
+                onClick={() => setOpenDrawer(true)}
+              >
+                <SortRounded />
+              </Button>
+              <Typography
+                variant="subtitle2"
+                sx={{ fontWeight: "bold", color: "#06816d" }}
+              >
+                Filters
+              </Typography>
+            </Box>
+            <Drawer
+              open={openDrawer}
+              onClose={() => setOpenDrawer(false)}
+              anchor="bottom"
             >
-              <Grid item xs={12} md={4.2} lg={3.8}
-              >
-                {/* Filtering Panel */}
-                <Collapse
-                  in={mediaSize ? false : true}
+              <VacancyFilters />
+              <Box component={"div"} sx={{ textAlign: "center" }}>
+                <IconButton
+                  color="error"
+                  onClick={() => setOpenDrawer(false)}
+                  sx={{ minWidth: 0 }}
                 >
-                  <FilteringVacancy />
-                </Collapse>
-              </Grid>
-              <Grid item xs={12} md={7.4} lg={7.9}
-                paddingX={{
-                  xs: '0.5em',
-                  lg: '0em'
-                }}
+                  <CloseRounded />
+                </IconButton>
+              </Box>
+            </Drawer>
+            {/* <MobileFilteringVacancy /> */}
+          </Collapse>
+          <Grid container columnGap={3}>
+            <Grid item xs={12} md={4.2} lg={3.8}>
+              {/* Filtering Panel */}
+              <Collapse
+                in={mediaSize ? false : true}
+                sx={{ position: "sticky", top: "4.5em" }}
               >
-                {/* LIST OF VACANCIES */}
-                <ListVacancy />
-                {/* PAGINATION LIST */}
-                <Pagination color="primary" count={13}
-                  sx={{
-                    float: 'right',
-                    marginY: '2em'
-                  }}
-                />
-              </Grid>
+                <VacancyFilters />
+              </Collapse>
             </Grid>
-          </Container>
-        </Box>
-        {/* Footer */}
-        <Footer />
+            <Grid
+              item
+              xs={12}
+              md={7.4}
+              lg={7.9}
+              paddingX={{
+                xs: "0.5em",
+                lg: "0em",
+              }}
+            >
+              {/* LIST OF VACANCIES */}
+              <Box component={"div"}>
+                {[0, 1, 2, 3, 4].map((_, index) => (
+                  <VacancyItemList key={index} />
+                ))}
+              </Box>
+              {/* PAGINATION LIST */}
+              <Pagination
+                color="primary"
+                count={13}
+                sx={{
+                  float: "right",
+                  marginY: "2em",
+                }}
+              />
+            </Grid>
+          </Grid>
+        </Container>
       </Box>
-    </>
-  )
+    </BaseLayout>
+  );
 }

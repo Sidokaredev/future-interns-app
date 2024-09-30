@@ -13,7 +13,7 @@ export default function BaseLoading() {
       >
         <Avatar
           alt="Sidokaredev Logo"
-          src="/logos/sidokaredev-basic.png"
+          src="/future-interns-app/logos/sidokaredev-basic.png"
           sx={{
             width: '3em',
             height: '3em',

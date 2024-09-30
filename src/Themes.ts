@@ -7,6 +7,10 @@ const FutureInternsTheme = createTheme({
       main: '#06816d',
       contrastText: '#c2fffb'
     },
+    secondary: {
+      main: "#9e9e9e",
+      contrastText: "#757575"
+    }
   },
   components: {
     MuiButton: {
