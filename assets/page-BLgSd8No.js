@@ -1,1 +1,0 @@
-import{j as r,B as o,M as t}from"./index-kA4EOzHZ.js";import{B as i}from"./BaseLayout-D84VwJl5.js";import"./Footer-BaiZKffH.js";import"./Button-D3RN2eyJ.js";import"./MenuItem-BOyhe63W.js";import"./Menu-BNiaPR3Y.js";import"./Collapse-A5u1GtGD.js";function u(){return r.jsx(i,{children:r.jsx(o,{sx:{height:"100vh",backgroundColor:t[900]},children:"THIS"})})}export{u as default};
