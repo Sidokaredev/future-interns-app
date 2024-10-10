@@ -15,18 +15,23 @@ import {
   Divider,
   IconButton,
   Stack,
+  SxProps,
   Tooltip,
   Typography,
 } from "@mui/material";
 import { grey } from "@mui/material/colors";
 import SocialCard from "../Cards/SocialCard";
 
-export default function PersonalDetail() {
+export default function PersonalDetail({
+  containerStyle,
+}: {
+  containerStyle?: SxProps;
+}) {
   return (
     <Box
       component={"div"}
       id="personal-detail"
-      sx={{ position: "sticky", top: "3.5em" }}
+      sx={{ position: "sticky", top: "3.5em", ...containerStyle }}
     >
       <Typography
         variant="subtitle1"

@@ -9,6 +9,7 @@ import VacancyRoute from "./vacancy.route";
 import BaseLoading from "../pages/loading";
 import candidatesRoute from "./candidates.route";
 import DraftsRoutes from "./drafts.route";
+import employersRoute from "./employer.route";
 
 /* Get Preserved Components Soon */
 
@@ -44,6 +45,7 @@ const _APPROUTERS = createBrowserRouter(
     ...ACCOUNTS_ROUTE,
     ...VacancyRoute,
     ...candidatesRoute,
+    ...employersRoute,
     /* Just to test a component */
     ...DraftsRoutes,
   ],

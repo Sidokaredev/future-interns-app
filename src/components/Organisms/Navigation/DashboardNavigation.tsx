@@ -22,12 +22,16 @@ import {
   ListItemIcon,
   ListItemText,
 } from "@mui/material";
-import { useState } from "react";
+import { ReactElement, useState } from "react";
 import SimpleEmphasis from "../../Molecules/Texts/SimpleEmphasis";
 import { grey, lightBlue } from "@mui/material/colors";
 import { Link as ReactRouterLink } from "react-router-dom";
 
-export default function DashboardNavigation() {
+export default function DashboardNavigation({
+  menuItems,
+}: {
+  menuItems?: { icon: ReactElement; name: string; path: string }[];
+}) {
   /* state */
   const [anchorElement, setAnchorElement] = useState<{
     profileMenu: HTMLElement | null;

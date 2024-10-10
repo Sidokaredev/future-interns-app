@@ -5,6 +5,7 @@ import {
   IconButton,
   Snackbar,
   SnackbarCloseReason,
+  SxProps,
   Tooltip,
   Typography,
 } from "@mui/material";
@@ -15,6 +16,7 @@ import React, { useEffect, useState } from "react";
 export default function CopyText({
   textToCopy,
   options,
+  sxProps,
 }: {
   textToCopy: string;
   options?: {
@@ -22,6 +24,7 @@ export default function CopyText({
     useTextButton?: boolean;
     fontSize?: "x-small" | "small" | "medium";
   };
+  sxProps?: SxProps;
 }) {
   /* State */
   const [copied, setCopied] = useState<boolean>(false);
@@ -71,6 +74,7 @@ export default function CopyText({
         border: options?.noBorder ? undefined : "1px solid " + grey[300],
         borderRadius: "0.3em",
         backgroundColor: grey[100],
+        ...sxProps,
       }}
     >
       <Box
