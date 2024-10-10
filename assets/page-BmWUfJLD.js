@@ -1,1 +1,0 @@
-import{o as a,j as t}from"./index-CM_jOiDs.js";function s(){const{email:e}=a();return t.jsxs(t.Fragment,{children:["Email Identity Page by Dynamic Route",t.jsx("span",{style:{fontWeight:"bolder"},children:e})]})}export{s as default};
