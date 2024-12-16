@@ -17,7 +17,7 @@ import {
   useMediaQuery,
   useScrollTrigger,
 } from "@mui/material";
-import { Link as ReactRouterLink } from "react-router-dom";
+import { Link as ReactRouterLink, useLocation } from "react-router-dom";
 import {
   ArrowDropDown,
   ContactsRounded,
@@ -36,6 +36,7 @@ import {
   WorkRounded,
 } from "@mui/icons-material";
 import { grey } from "@mui/material/colors";
+import { SesssionChecker } from "../../../pages/global-helpers";
 
 type onScrollSxProps = {
   navigation: SxProps;
@@ -44,6 +45,8 @@ type onScrollSxProps = {
 };
 
 export default function BaseNavigation() {
+  /* react-router */
+  const location = useLocation();
   /* breakpoints */
   const mediumSize = useMediaQuery("(max-width: 900px)");
   /* state */
@@ -80,8 +83,25 @@ export default function BaseNavigation() {
   ) => {
     setAnchorEl((prev) => ({ ...prev, mediumMenuNavigation: e.currentTarget }));
   };
+  /* helpers */
+  const currentPathDeterminer = (path: string): SxProps => {
+    if (location.pathname === "/" && path === "home") {
+      return {
+        backgroundColor: "#e6f2f0",
+        borderRight: "0.2em solid #06816d",
+        ":hover": { backgroundColor: "#e6f2f0" },
+      };
+    } else if (location.pathname.includes(path) && path !== "home") {
+      return {
+        backgroundColor: "#e6f2f0",
+        borderRight: "0.2em solid #06816d",
+        ":hover": { backgroundColor: "#e6f2f0" },
+      };
+    }
+    return { ":hover": { backgroundColor: "#e6f2f0" } };
+  };
   /* data display */
-  const isAuthenticated = false;
+  const isAuthenticated = SesssionChecker('auth');
   /* side effect */
   useEffect(() => {
     if (trigger) {
@@ -245,10 +265,7 @@ export default function BaseNavigation() {
               <MenuItem
                 component={ReactRouterLink}
                 to="/"
-                sx={{
-                  backgroundColor: "#e6f2f0",
-                  ":hover": { backgroundColor: "#e6f2f0" },
-                }}
+                sx={currentPathDeterminer("home")}
               >
                 <ListItemIcon>
                   <Home fontSize="small" sx={{ color: "#045a55" }} />
@@ -257,7 +274,11 @@ export default function BaseNavigation() {
                   <Typography variant="subtitle2">Home</Typography>
                 </ListItemText>
               </MenuItem>
-              <MenuItem component={ReactRouterLink} to="/vacancy">
+              <MenuItem
+                component={ReactRouterLink}
+                to="/vacancy"
+                sx={currentPathDeterminer("vacancy")}
+              >
                 <ListItemIcon>
                   <WorkRounded fontSize="small" sx={{ color: "#045a55" }} />
                 </ListItemIcon>
@@ -265,7 +286,10 @@ export default function BaseNavigation() {
                   <Typography variant="subtitle2">Vacancy</Typography>
                 </ListItemText>
               </MenuItem>
-              <MenuItem onClick={() => setMediumListOpen((prev) => !prev)}>
+              <MenuItem
+                onClick={() => setMediumListOpen((prev) => !prev)}
+                sx={currentPathDeterminer("support")}
+              >
                 <ListItemIcon>
                   <SupportAgentRounded
                     fontSize="small"
@@ -313,7 +337,6 @@ export default function BaseNavigation() {
                   </ListItemText>
                 </MenuItem>
               </Collapse>
-              <Divider />
               {isAuthenticated && (
                 <MenuItem>
                   <ListItemIcon>

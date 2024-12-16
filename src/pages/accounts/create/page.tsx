@@ -15,34 +15,68 @@ import SimpleEmphasis from "../../../components/Molecules/Texts/SimpleEmphasis";
 import React, { useState } from "react";
 import { ArrowBackIos, Visibility, VisibilityOff } from "@mui/icons-material";
 import { grey } from "@mui/material/colors";
+import BaseAlert from "../../../components/Molecules/Feedback/BaseAlert";
+// constants
+import { DEFAULT_CREATE_CANDIDATE_ACCOUNT } from "../constants";
+// types
+import { CreateCandidateAccount } from "../types";
+// global helpers
+import { InputOnChange, SetSession } from "../../global-helpers";
+import { schema_CreateCandidateAccount } from "../../../services/validator/zod.schema";
+import Validator from "../../../services/validator";
+import RequestAPI from "../../../services/api/request";
 
 export default function SignUp() {
+  /* hooks */
+  const navigate = useNavigate();
   /* state */
   const [step, setStep] = useState<number>(1);
   const [showPassword, setShowPassword] = useState<boolean>(false);
-  const [formValue, setFormValue] = useState<{
-    fullname: string;
-    email: string;
-    password: string;
-    confirmPassword: string;
-  }>({
-    fullname: "",
-    email: "",
-    password: "",
-    confirmPassword: "",
-  });
-  /* event handler */
-  const inputOnChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    setFormValue((prev) => ({
-      ...prev,
-      [event.target.name]: event.target.value,
-    }));
+  const [formValue, setFormValue] = useState<CreateCandidateAccount>(DEFAULT_CREATE_CANDIDATE_ACCOUNT);
+  const [errMessage, setErrorMessage] = useState<Record<string, string[]>>({})
+  const [alert, setAlert] = useState<{ show: boolean, message: string }>({ show: false, message: "" })
+  const [loading, setLoading] = useState<boolean>(false)
+  /* onSubmit */
+  const onSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setLoading(true)
+    let validate = Validator.UseSchema(schema_CreateCandidateAccount)
+      .SafeValidate<CreateCandidateAccount, Record<string, string[]>>(formValue, setErrorMessage);
+    if (!validate) {
+      setAlert({ show: true, message: "please follow the form rules, bitch" })
+      return setLoading(false)
+    }
+    const [data, fail] = await RequestAPI.JSONRequest<Record<string, string>>({
+      fullname: formValue.fullname,
+      email: formValue.email,
+      password: formValue.password
+    })
+      .Send<any>(
+        "/api/v1/accounts/create",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json"
+          }
+        })
+    if (fail != undefined) {
+      setAlert({ show: true, message: fail.message })
+      return setLoading(false)
+    }
+
+    SetSession('auth', data.access_token)
+    return navigate("/candidates/profile-overview")
   };
-  /* hooks */
-  const navigate = useNavigate();
   return (
     <AuthLayout>
+      {/* ALERT HERE */}
+      <BaseAlert
+        show={alert.show}
+        message={alert.message}
+        setShow={setAlert}
+      />
       <Grid container spacing={1}>
+        {/* CREATE LEFT CONTENT */}
         <Grid item xs={12} md={6}>
           <Link component={RouterLink} to={"/"}>
             <Box
@@ -67,128 +101,145 @@ export default function SignUp() {
             <SimpleEmphasis text={"everything"} />
           </Typography>
         </Grid>
+        {/* CREATE RIGHT CONTENT */}
         <Grid item xs={12} md={6}>
           <Box component={"div"} sx={{ marginTop: "3em" }}>
-            <form>
-              {step === 1 && (
-                <Box component={"div"}>
-                  <TextField
-                    variant="outlined"
-                    name="fullname"
-                    label="Full Name"
-                    placeholder="Your full name"
+            <form onSubmit={onSubmit}>
+              {/* FORM STEP 1 */}
+              <Box
+                component={"div"}
+                sx={{
+                  display: step === 1 ? "block" : "none",
+                }}
+              >
+                <TextField
+                  variant="outlined"
+                  name="fullname"
+                  label="Full Name"
+                  placeholder="Your full name"
+                  fullWidth
+                  autoComplete="off"
+                  sx={{
+                    marginBottom: "1em",
+                  }}
+                  value={formValue.fullname}
+                  onChange={InputOnChange<CreateCandidateAccount>(setFormValue)}
+                  error={"fullname" in errMessage ? true : false}
+                  helperText={"fullname" in errMessage ? errMessage["fullname"] : ""}
+                />
+                <TextField
+                  variant="outlined"
+                  name="email"
+                  label="Email Address"
+                  placeholder="Your email address"
+                  fullWidth
+                  autoComplete="off"
+                  sx={{
+                    marginBottom: "1em",
+                  }}
+                  value={formValue.email}
+                  onChange={InputOnChange<CreateCandidateAccount>(setFormValue)}
+                  error={"email" in errMessage ? true : false}
+                  helperText={"email" in errMessage ? errMessage["email"] : ""}
+                />
+                <Box
+                  component={"div"}
+                  className="form-button-container"
+                  sx={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    gap: "1em",
+                    marginTop: "1em",
+                  }}
+                >
+                  <Button
+                    variant="text"
+                    startIcon={<ArrowBackIos sx={{ color: grey[600] }} />}
                     fullWidth
-                    autoComplete="off"
-                    sx={{
-                      marginBottom: "1em",
-                    }}
-                    value={formValue.fullname}
-                    onChange={inputOnChange}
-                  />
-                  <TextField
-                    variant="outlined"
-                    name="email"
-                    label="Email Address"
-                    placeholder="Your email address"
-                    fullWidth
-                    autoComplete="off"
-                    sx={{
-                      marginBottom: "1em",
-                    }}
-                    value={formValue.email}
-                    onChange={inputOnChange}
-                  />
-                  <Box
-                    component={"div"}
-                    className="form-button-container"
-                    sx={{
-                      display: "flex",
-                      justifyContent: "space-between",
-                      gap: "1em",
-                      marginTop: "1em",
-                    }}
+                    onClick={() => navigate("/accounts/auth")}
+                    sx={{ color: grey[600] }}
                   >
-                    <Button
-                      variant="text"
-                      startIcon={<ArrowBackIos sx={{ color: grey[600] }} />}
-                      fullWidth
-                      onClick={() => navigate("/accounts/auth")}
-                      sx={{ color: grey[600] }}
-                    >
-                      Back
-                    </Button>
-                    <Button
-                      variant="contained"
-                      fullWidth
-                      onClick={() => setStep(2)}
-                    >
-                      Next
-                    </Button>
-                  </Box>
-                </Box>
-              )}
-              {step === 2 && (
-                <Box component={"div"}>
-                  <TextField
-                    type={showPassword ? "text" : "password"}
-                    variant="outlined"
-                    name="password"
-                    label="Password"
-                    placeholder="Input a strong password"
+                    Back
+                  </Button>
+                  <Button
+                    variant="contained"
                     fullWidth
-                    InputProps={{
-                      endAdornment: (
-                        <InputAdornment position="end">
-                          <IconButton
-                            onClick={() => setShowPassword((prev) => !prev)}
-                          >
-                            {showPassword ? <Visibility /> : <VisibilityOff />}
-                          </IconButton>
-                        </InputAdornment>
-                      ),
-                    }}
-                    sx={{
-                      marginBottom: "1em",
-                    }}
-                    value={formValue.password}
-                    onChange={inputOnChange}
-                  />
-                  <TextField
-                    type={"password"}
-                    variant="outlined"
-                    name="confirmPassword"
-                    label="Confirm Password"
-                    placeholder="Confirm your password"
-                    fullWidth
-                    sx={{
-                      marginBottom: "1em",
-                    }}
-                    value={formValue.confirmPassword}
-                    onChange={inputOnChange}
-                  />
-                  <Box
-                    component={"div"}
-                    className="form-button-container"
-                    sx={{
-                      display: "flex",
-                      justifyContent: "space-between",
-                      marginTop: "1em",
-                    }}
+                    onClick={() => setStep(2)}
                   >
-                    <Button
-                      variant="text"
-                      startIcon={<ArrowBackIos color="primary" />}
-                      fullWidth
-                      onClick={() => setStep(1)}
-                    >
-                      Back
-                    </Button>
-                    <Button type="submit" variant="contained" fullWidth>
-                      Submit
-                    </Button>
-                  </Box>
+                    Next
+                  </Button>
                 </Box>
-              )}
+              </Box>
+              {/* FORM STEP 2 */}
+              <Box
+                component={"div"}
+                sx={{
+                  display: step === 2 ? "block" : "none",
+                }}
+              >
+                <TextField
+                  type={showPassword ? "text" : "password"}
+                  variant="outlined"
+                  name="password"
+                  label="Password"
+                  placeholder="Input a strong password"
+                  fullWidth
+                  InputProps={{
+                    endAdornment: (
+                      <InputAdornment position="end">
+                        <IconButton
+                          onClick={() => setShowPassword((prev) => !prev)}
+                        >
+                          {showPassword ? <Visibility /> : <VisibilityOff />}
+                        </IconButton>
+                      </InputAdornment>
+                    ),
+                  }}
+                  sx={{
+                    marginBottom: "1em",
+                  }}
+                  value={formValue.password}
+                  onChange={InputOnChange<CreateCandidateAccount>(setFormValue)}
+                  error={"password" in errMessage ? true : false}
+                  helperText={"password" in errMessage ? errMessage["password"] : ""}
+                />
+                <TextField
+                  type={"password"}
+                  variant="outlined"
+                  name="confirmPassword"
+                  label="Confirm Password"
+                  placeholder="Confirm your password"
+                  fullWidth
+                  sx={{
+                    marginBottom: "1em",
+                  }}
+                  value={formValue.confirmPassword}
+                  onChange={InputOnChange<CreateCandidateAccount>(setFormValue)}
+                  error={"confirmPassword" in errMessage ? true : false}
+                  helperText={"confirmPassword" in errMessage ? errMessage["confirmPassword"] : ""}
+                />
+                <Box
+                  component={"div"}
+                  className="form-button-container"
+                  sx={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    marginTop: "1em",
+                  }}
+                >
+                  <Button
+                    variant="text"
+                    startIcon={<ArrowBackIos color="primary" />}
+                    fullWidth
+                    onClick={() => setStep(1)}
+                  >
+                    Back
+                  </Button>
+                  <Button type="submit" variant="contained" disabled={loading} fullWidth>
+                    Submit
+                  </Button>
+                </Box>
+              </Box>
             </form>
           </Box>
         </Grid>

@@ -1,6 +1,7 @@
 import {
   BrowseGallery,
   Dashboard,
+  GroupWorkRounded,
   MenuRounded,
   NotificationsNone,
   PublishedWithChanges,
@@ -22,15 +23,15 @@ import {
   ListItemIcon,
   ListItemText,
 } from "@mui/material";
-import { ReactElement, useState } from "react";
+import { useState } from "react";
 import SimpleEmphasis from "../../Molecules/Texts/SimpleEmphasis";
 import { grey, lightBlue } from "@mui/material/colors";
 import { Link as ReactRouterLink } from "react-router-dom";
 
 export default function DashboardNavigation({
-  menuItems,
+  isFor,
 }: {
-  menuItems?: { icon: ReactElement; name: string; path: string }[];
+  isFor: "candidate" | "employer";
 }) {
   /* state */
   const [anchorElement, setAnchorElement] = useState<{
@@ -54,6 +55,41 @@ export default function DashboardNavigation({
       navigationMenu: event.currentTarget,
     }));
   };
+  /* static data */
+  const menuItemsCandidate = [
+    {
+      icon: <Dashboard fontSize="small" sx={{ color: "#045a55" }} />,
+      path: "/candidates/profile-overview",
+      label: <Typography variant="subtitle2">Profile Overview</Typography>,
+      divider: "Applications",
+    },
+    {
+      icon: <BrowseGallery fontSize="small" sx={{ color: "#045a55" }} />,
+      path: "/candidates/application-status",
+      label: <Typography variant="subtitle2">Application Status</Typography>,
+      divider: "none",
+    },
+    {
+      icon: <PublishedWithChanges fontSize="small" sx={{ color: "#045a55" }} />,
+      path: "/candidates/application-offers",
+      label: <Typography variant="subtitle2">Application Offers</Typography>,
+      divider: "none",
+    },
+  ];
+  const menuItemsEmployer = [
+    {
+      icon: <Dashboard fontSize="small" sx={{ color: "#045a55" }} />,
+      path: "/employers/profile-overview",
+      label: <Typography variant="subtitle2">Profile Overview</Typography>,
+      divider: "Vacancies",
+    },
+    {
+      icon: <GroupWorkRounded fontSize="small" sx={{ color: "#045a55" }} />,
+      path: "/employers/vacancies",
+      label: <Typography variant="subtitle2">Manage Vacancies</Typography>,
+      divider: "none",
+    },
+  ];
   return (
     <AppBar
       sx={{
@@ -101,18 +137,78 @@ export default function DashboardNavigation({
                 marginTop: "0.5em",
               }}
             >
-              <MenuItem
-                component={ReactRouterLink}
-                to={"/candidates/profile-overview"}
-              >
-                <ListItemIcon>
-                  <Dashboard fontSize="small" sx={{ color: "#045a55" }} />
-                </ListItemIcon>
-                <ListItemText>
-                  <Typography variant="subtitle2">Profile Overview</Typography>
-                </ListItemText>
-              </MenuItem>
-              <Divider sx={{ marginY: "0.5em" }} />
+              {isFor === "candidate"
+                ? menuItemsCandidate.map((item, index) => {
+                  return (
+                    <Box
+                      key={index}
+                    >
+                      <MenuItem
+                        // key={index}
+                        component={ReactRouterLink}
+                        to={item.path}
+                      >
+                        <ListItemIcon>{item.icon}</ListItemIcon>
+                        <ListItemText>
+                          <Typography variant="subtitle2">
+                            {item.label}
+                          </Typography>
+                        </ListItemText>
+                      </MenuItem>
+                      {item.divider !== "none" && (
+                        <>
+                          <Divider sx={{ marginY: "0.5em" }} />
+                          <Typography
+                            variant="caption"
+                            sx={{
+                              paddingLeft: "1.5em",
+                              color: grey[600],
+                              fontStyle: "italic",
+                            }}
+                          >
+                            {item.divider}
+                          </Typography>
+                        </>
+                      )}
+                    </Box>
+                  );
+                })
+                : menuItemsEmployer.map((item, index) => {
+                  return (
+                    <Box
+                      key={index}
+                    >
+                      <MenuItem
+                        // key={index}
+                        component={ReactRouterLink}
+                        to={item.path}
+                      >
+                        <ListItemIcon>{item.icon}</ListItemIcon>
+                        <ListItemText>
+                          <Typography variant="subtitle2">
+                            {item.label}
+                          </Typography>
+                        </ListItemText>
+                      </MenuItem>
+                      {item.divider !== "none" && (
+                        <>
+                          <Divider sx={{ marginY: "0.5em" }} />
+                          <Typography
+                            variant="caption"
+                            sx={{
+                              paddingLeft: "1.5em",
+                              color: grey[600],
+                              fontStyle: "italic",
+                            }}
+                          >
+                            {item.divider}
+                          </Typography>
+                        </>
+                      )}
+                    </Box>
+                  );
+                })}
+              {/* <Divider sx={{ marginY: "0.5em" }} />
               <Typography
                 variant="caption"
                 sx={{
@@ -151,7 +247,7 @@ export default function DashboardNavigation({
                     Application Offers
                   </Typography>
                 </ListItemText>
-              </MenuItem>
+              </MenuItem> */}
             </Menu>
             <Typography
               component={"span"}

@@ -4,6 +4,8 @@ import { Box } from "@mui/material";
 import HomeSection1 from "../components/Organisms/Home/Section1";
 import HomeSection2 from "../components/Organisms/Home/Section2";
 import BaseLayout from "../components/Templates/BaseLayout";
+import { useEffect } from "react";
+import { GetSession } from "./global-helpers";
 
 // const fetchUsers = async () => {
 //   const request = await fetch("https://jsonplaceholder.typicode.com/comments", {
@@ -101,9 +103,10 @@ export default function Homepage() {
       {/* Section 1 */}
       <Box
         sx={{
-          backgroundImage: `url('/future-interns-app/backgrounds/Final-AnimatedShape-1.svg')`,
-          height: "695px",
+          backgroundImage:
+            "url(/future-interns-app/backgrounds/Final-AnimatedShape-1.svg) !important",
           backgroundSize: "cover",
+          height: "695px",
           display: "flex",
           alignItems: "center",
         }}

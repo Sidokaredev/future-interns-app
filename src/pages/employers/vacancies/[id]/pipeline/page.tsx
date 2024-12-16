@@ -1,6 +1,7 @@
 import {
   Avatar,
   Box,
+  Breadcrumbs,
   Button,
   Chip,
   Collapse,
@@ -26,6 +27,7 @@ import {
   Tooltip,
   Typography,
   useMediaQuery,
+  Link,
 } from "@mui/material";
 import DashboardLayout from "../../../../../components/Templates/DashboardLayout";
 import { amber, blue, green, grey, purple } from "@mui/material/colors";
@@ -40,6 +42,7 @@ import {
   DonutLargeRounded,
   EventRounded,
   GitHub,
+  HomeRounded,
   InsertDriveFileOutlined,
   InsertDriveFileRounded,
   InsertLinkOutlined,
@@ -47,6 +50,7 @@ import {
   LinkedIn,
   LinkRounded,
   MoreVert,
+  PublishRounded,
   ScheduleRounded,
   SearchRounded,
   Visibility,
@@ -59,7 +63,12 @@ import PersonalDetail from "../../../../../components/Molecules/Data.Display/Per
 import CopyText from "../../../../../components/Molecules/Texts/CopyText";
 import AttachFileCard from "../../../../../components/Molecules/Cards/AttachFileCard";
 import SimpleEmphasis from "../../../../../components/Molecules/Texts/SimpleEmphasis";
-import { Link } from "react-router-dom";
+import {
+  Link as ReactRouterLink,
+  useLocation,
+  useParams,
+} from "react-router-dom";
+import BreadcrumbsCreator from "../../../helpers";
 
 type CandidateProps = {
   name: string;
@@ -77,7 +86,17 @@ type InterviewsProps = {
   status: string;
 };
 
+type OfferingsProps = {
+  name: string;
+  email: string;
+  end: string;
+  status: string;
+};
+
 export default function EmployerVacanciesPipeline() {
+  /* react-router */
+  const location = useLocation();
+  const params = useParams();
   /* breakpoints */
   const smallScreen = useMediaQuery("(max-width: 900px)");
   const xsmallScreen = useMediaQuery("(max-width: 600px)");
@@ -122,6 +141,16 @@ export default function EmployerVacanciesPipeline() {
         return {
           color: amber[700],
           backgroundColor: amber[50],
+        };
+      case "Waiting":
+        return {
+          color: amber[700],
+          backgroundColor: amber[50],
+        };
+      case "Accepted":
+        return {
+          color: green[700],
+          backgroundColor: green[50],
         };
       default:
         return {
@@ -171,6 +200,7 @@ export default function EmployerVacanciesPipeline() {
       label: "Option",
     },
   ];
+  const responsiveColumns = smallScreen ? columnsSmall : columns;
   const rows: CandidateProps[] = [
     {
       name: "Fatkhur Rozak",
@@ -255,9 +285,108 @@ export default function EmployerVacanciesPipeline() {
       status: "Re-scheduled",
     },
   ];
-  const responsiveColumns = smallScreen ? columnsSmall : columns;
+  const columnsOfferings = [
+    {
+      valueProp: "#",
+      label: "#",
+    },
+    {
+      valueProp: "name",
+      label: "Name",
+    },
+    {
+      valueProp: "end",
+      label: "Offer ends on",
+    },
+    {
+      valueProp: "status",
+      label: "Offer Status",
+    },
+    {
+      valueProp: "option",
+      label: "Option",
+    },
+  ];
+  const columnsOfferingsSmall = [
+    {
+      valueProp: "name",
+      label: "Name",
+    },
+    {
+      valueProp: "offer",
+      label: "Offer",
+    },
+    {
+      valueProp: "option",
+      label: "Option",
+    },
+  ];
+  const responsiveColumnsOfferings = smallScreen
+    ? columnsOfferingsSmall
+    : columnsOfferings;
+  const rowsOfferings: OfferingsProps[] = [
+    {
+      name: "Dinda Amalia Julyandri",
+      email: "dindaaamalia@gmail.com",
+      end: new Date(Date.now()).toDateString(),
+      status: "Waiting",
+    },
+    {
+      name: "Asmiranti Teman Dinda",
+      email: "as.sitemandinda@gmail.com",
+      end: new Date(Date.now()).toDateString(),
+      status: "Accepted",
+    },
+  ];
+  console.info(
+    "Breadcrumbs \t:",
+    BreadcrumbsCreator(params as Record<string, string>, location.pathname)
+  );
+  console.info(location.pathname);
   return (
-    <DashboardLayout>
+    <DashboardLayout isFor="employer">
+      {/* Breadcrumbs */}
+      <Breadcrumbs aria-label="breadcrumb" sx={{ marginBottom: "1em" }}>
+        {BreadcrumbsCreator(
+          params as Record<string, string>,
+          location.pathname
+        ).map((data, index) => (
+          <Link
+            key={index}
+            component={ReactRouterLink}
+            to={data.pathname}
+            underline="hover"
+            color="inherit"
+            sx={{
+              display: "flex",
+              alignItems: "center",
+              color:
+                data.pathname === location.pathname ? "#51a799" : undefined,
+            }}
+          >
+            {data.label === "Vacancies" ? (
+              <HomeRounded
+                sx={{
+                  mr: 0.5,
+                  color:
+                    data.pathname === location.pathname ? "#51a799" : undefined,
+                }}
+                fontSize="inherit"
+              />
+            ) : (
+              <Typography
+                variant="subtitle2"
+                sx={{
+                  fontWeight:
+                    data.pathname === location.pathname ? 550 : undefined,
+                }}
+              >
+                {data.label}
+              </Typography>
+            )}
+          </Link>
+        ))}
+      </Breadcrumbs>
       <Box component={"div"} sx={{}}>
         <Box
           component={"div"}
@@ -276,7 +405,7 @@ export default function EmployerVacanciesPipeline() {
             variant="h6"
             sx={{
               fontWeight: 550,
-              fontSize: { xs: "medium", md: "normal" },
+              fontSize: { xs: "medium", md: "large" },
               color: grey[800],
             }}
           >
@@ -285,7 +414,7 @@ export default function EmployerVacanciesPipeline() {
           <TextField
             type="text"
             name="search" // search for candidate
-            placeholder="Search candidate name ..."
+            placeholder="Search ..."
             autoComplete="off"
             size="small"
             InputProps={{
@@ -466,7 +595,8 @@ export default function EmployerVacanciesPipeline() {
               </Typography>
             </Box>
           </Box>
-          <Box
+          {/* Letter of Acceptance */}
+          {/* <Box
             component={"div"}
             sx={{
               display: "flex",
@@ -490,7 +620,7 @@ export default function EmployerVacanciesPipeline() {
             >
               LoA
             </Typography>
-          </Box>
+          </Box> */}
         </Stack>
         <Menu
           open={Boolean(anchorEl["screening"])}
@@ -633,6 +763,88 @@ export default function EmployerVacanciesPipeline() {
             </ListItemIcon>
             <ListItemText
               primary={"Interview History"}
+              sx={{
+                ".MuiListItemText-primary": {
+                  fontSize: "small",
+                  fontWeight: 550,
+                  color: grey[600],
+                },
+              }}
+            />
+          </MenuItem>
+          <MenuItem>
+            <ListItemIcon>
+              <VisibilityRounded fontSize="small" />
+            </ListItemIcon>
+            <ListItemText
+              primary={"View Detail"}
+              sx={{
+                ".MuiListItemText-primary": {
+                  fontSize: "small",
+                  fontWeight: 550,
+                  color: grey[600],
+                },
+              }}
+            />
+          </MenuItem>
+        </Menu>
+        <Menu
+          open={Boolean(anchorEl["offerings"])}
+          anchorEl={anchorEl["offerings"]}
+          onClose={() =>
+            setAnchorEl((prev) => ({ ...prev, ["offerings"]: null }))
+          }
+          anchorOrigin={{ horizontal: "right", vertical: "bottom" }}
+          transformOrigin={{ horizontal: "right", vertical: "top" }}
+          slotProps={{
+            paper: {
+              sx: {
+                minWidth: {
+                  xs: "auto",
+                  md: "10em",
+                },
+                padding: 0,
+                border: "1px solid " + grey[400],
+                boxShadow: "none",
+              },
+            },
+          }}
+          MenuListProps={{
+            dense: true,
+          }}
+          sx={{
+            ".MuiMenuItem-root:hover": {
+              backgroundColor: grey[100],
+              ".MuiListItemIcon-root": {
+                color: "#06816d",
+              },
+              ".MuiListItemText-primary": {
+                color: "#06816d",
+              },
+            },
+          }}
+        >
+          <MenuItem>
+            <ListItemIcon>
+              <PublishRounded fontSize="small" />
+            </ListItemIcon>
+            <ListItemText
+              primary={"Issue LoA"}
+              sx={{
+                ".MuiListItemText-primary": {
+                  fontSize: "small",
+                  fontWeight: 550,
+                  color: grey[600],
+                },
+              }}
+            />
+          </MenuItem>
+          <MenuItem>
+            <ListItemIcon>
+              <EventRounded fontSize="small" />
+            </ListItemIcon>
+            <ListItemText
+              primary={"Change End Date"}
               sx={{
                 ".MuiListItemText-primary": {
                   fontSize: "small",
@@ -1363,6 +1575,7 @@ export default function EmployerVacanciesPipeline() {
                                   {data.location.name}
                                 </Typography>
                                 <Link
+                                  component={ReactRouterLink}
                                   to={data.location.url}
                                   style={{ textDecoration: "none" }}
                                 >
@@ -1423,9 +1636,11 @@ export default function EmployerVacanciesPipeline() {
                             return (
                               <TableCell key={index}>
                                 <Typography component={"p"} variant="caption">
-                                  {data.date} at {data.location.name}
+                                  <SimpleEmphasis text={data.date} /> at{" "}
+                                  {data.location.name}
                                 </Typography>
                                 <Link
+                                  component={ReactRouterLink}
                                   to={data.location.url}
                                   target="_blank"
                                   style={{
@@ -1447,13 +1662,21 @@ export default function EmployerVacanciesPipeline() {
                                     Link here
                                   </Typography>
                                 </Link>
+                                <Divider
+                                  orientation="horizontal"
+                                  sx={{ marginY: "0.5em" }}
+                                />
                                 <Box
                                   component={"div"}
                                   sx={{
-                                    marginY: "0.5em",
-                                    textAlign: "center",
+                                    display: "flex",
+                                    alignItems: "center",
+                                    justifyContent: "space-between",
                                   }}
                                 >
+                                  <Typography variant="caption">
+                                    Status
+                                  </Typography>
                                   <Chip
                                     label={data.status}
                                     size="small"
@@ -1514,7 +1737,7 @@ export default function EmployerVacanciesPipeline() {
               <Table>
                 <TableHead>
                   <TableRow>
-                    {responsiveColumns.map((column, index) => (
+                    {responsiveColumnsOfferings.map((column, index) => (
                       <TableCell key={index}>
                         <Typography
                           variant="subtitle2"
@@ -1536,9 +1759,9 @@ export default function EmployerVacanciesPipeline() {
                     },
                   }}
                 >
-                  {rows.map((data: CandidateProps, dataIndex) => (
+                  {rowsOfferings.map((data: OfferingsProps, dataIndex) => (
                     <TableRow key={dataIndex}>
-                      {responsiveColumns.map((column, index) => {
+                      {responsiveColumnsOfferings.map((column, index) => {
                         switch (column.valueProp) {
                           case "#":
                             return (
@@ -1546,7 +1769,7 @@ export default function EmployerVacanciesPipeline() {
                             );
                           case "name":
                             return (
-                              <TableCell key={index} size="small" sx={{}}>
+                              <TableCell key={index}>
                                 <Box
                                   component={"div"}
                                   sx={{
@@ -1589,67 +1812,19 @@ export default function EmployerVacanciesPipeline() {
                                 </Box>
                               </TableCell>
                             );
-                          case "socials":
+                          case "status":
                             return (
                               <TableCell key={index}>
-                                <Stack
-                                  direction={"row"}
-                                  sx={{ flexWrap: "wrap", maxWidth: "10em" }}
-                                >
-                                  {data.socials.map((social, socialIndex) => {
-                                    switch (social.name) {
-                                      case "github":
-                                        return (
-                                          <IconButton
-                                            key={socialIndex}
-                                            size="small"
-                                            onClick={() =>
-                                              console.info(
-                                                "navigate to \t:",
-                                                social.src
-                                              )
-                                            }
-                                          >
-                                            <GitHub />
-                                          </IconButton>
-                                        );
-                                      case "linkedin":
-                                        return (
-                                          <IconButton
-                                            key={socialIndex}
-                                            size="small"
-                                          >
-                                            <LinkedIn />
-                                          </IconButton>
-                                        );
-                                      case "instagram":
-                                        return (
-                                          <IconButton
-                                            key={socialIndex}
-                                            size="small"
-                                          >
-                                            <Instagram />
-                                          </IconButton>
-                                        );
-                                      case "x":
-                                        return (
-                                          <IconButton
-                                            key={socialIndex}
-                                            size="small"
-                                          >
-                                            <X />
-                                          </IconButton>
-                                        );
-                                      default:
-                                        return;
-                                    }
-                                  })}
-                                </Stack>
+                                <Chip
+                                  label={data.status}
+                                  size="small"
+                                  sx={chipColorDeterminer(data.status)}
+                                />
                               </TableCell>
                             );
                           case "option":
                             return (
-                              <TableCell key={index} size="small" sx={{}}>
+                              <TableCell key={index}>
                                 <Box
                                   component={"div"}
                                   sx={{
@@ -1657,18 +1832,6 @@ export default function EmployerVacanciesPipeline() {
                                     justifyContent: "space-between",
                                   }}
                                 >
-                                  {!smallScreen && (
-                                    <Button
-                                      variant="text"
-                                      size="small"
-                                      startIcon={
-                                        <Visibility fontSize="small" />
-                                      }
-                                      onClick={() => setOpenDialog(true)}
-                                    >
-                                      View
-                                    </Button>
-                                  )}
                                   <IconButton
                                     size="small"
                                     onClick={(
@@ -1685,13 +1848,45 @@ export default function EmployerVacanciesPipeline() {
                                 </Box>
                               </TableCell>
                             );
+                          case "offer":
+                            return (
+                              <TableCell key={index}>
+                                <Typography variant="subtitle2">
+                                  Ends on <SimpleEmphasis text={data.end} />
+                                </Typography>
+                                <Divider
+                                  orientation="horizontal"
+                                  sx={{ marginY: "0.5em" }}
+                                />
+                                <Box
+                                  component={"div"}
+                                  sx={{
+                                    display: "flex",
+                                    alignItems: "center",
+                                    justifyContent: "space-between",
+                                  }}
+                                >
+                                  <Typography variant="caption">
+                                    Status
+                                  </Typography>
+                                  <Chip
+                                    label={data.status}
+                                    size="small"
+                                    sx={chipColorDeterminer(data.status)}
+                                  />
+                                </Box>
+                              </TableCell>
+                            );
                           default:
                             return (
-                              <TableCell key={index} size="small" sx={{}}>
-                                <Typography variant="subtitle2">
+                              <TableCell key={index}>
+                                <Typography
+                                  variant="subtitle2"
+                                  sx={{ color: grey[600] }}
+                                >
                                   {
                                     data[
-                                      column.valueProp as keyof CandidateProps
+                                      column.valueProp as keyof OfferingsProps
                                     ] as React.ReactNode
                                   }
                                 </Typography>

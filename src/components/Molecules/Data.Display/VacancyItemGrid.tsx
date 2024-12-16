@@ -65,7 +65,10 @@ export default function VacancyItemGrid() {
         <CardHeader
           avatar={
             <Stack spacing={1}>
-              <Avatar src="/logos/google-png.png" alt="Company Logo" />
+              <Avatar
+                src="/future-interns-app/logos/google-png.png"
+                alt="Company Logo"
+              />
               <Typography
                 variant="body1"
                 fontWeight={"bold"}

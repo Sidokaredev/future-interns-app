@@ -1,11 +1,14 @@
-import { Box } from "@mui/material";
+import { Box, TextField } from "@mui/material";
 import BaseLayout from "../../components/Templates/BaseLayout";
 import { green } from "@mui/material/colors";
 
 export default function Drafts() {
+  const stringValue = "- line 1\n - line 2"
   return (
-    <BaseLayout>
-      <Box sx={{ height: "100vh", backgroundColor: green["900"] }}>THIS</Box>
-    </BaseLayout>
+    <TextField
+      value={stringValue}
+      rows={4}
+      multiline
+    />
   );
 }

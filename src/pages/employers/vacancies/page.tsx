@@ -1,6 +1,7 @@
 import {
   Avatar,
   Box,
+  Breadcrumbs,
   Button,
   Chip,
   Container,
@@ -10,6 +11,7 @@ import {
   Grid,
   IconButton,
   InputAdornment,
+  Link,
   ListItem,
   ListItemIcon,
   ListItemText,
@@ -32,6 +34,8 @@ import {
   CloseRounded,
   DeleteRounded,
   FoundationRounded,
+  GroupWorkRounded,
+  HomeRounded,
   LinearScaleRounded,
   LocationOnRounded,
   MeetingRoomRounded,
@@ -42,16 +46,24 @@ import {
   SortRounded,
   UpdateRounded,
   Visibility,
+  WorkRounded,
   WorkspacePremiumRounded,
 } from "@mui/icons-material";
 import SimpleEmphasis from "../../../components/Molecules/Texts/SimpleEmphasis";
 import React, { useState } from "react";
-import { useLocation, useNavigate } from "react-router-dom";
+import {
+  useLocation,
+  useNavigate,
+  useParams,
+  Link as ReactRouterLink,
+} from "react-router-dom";
+import BreadcrumbsCreator from "../helpers";
 
 export default function EmployerVacancies() {
   /* react-router */
   const navigate = useNavigate();
   const URLLocation = useLocation();
+  const URLParams = useParams();
   /* breakpoint */
   const xsmall = useMediaQuery("(max-width: 600px)");
   const small = useMediaQuery("(max-width: 900px)");
@@ -64,8 +76,42 @@ export default function EmployerVacancies() {
   const optionsOnClick = (event: React.MouseEvent<HTMLButtonElement>) => {
     setAnchorEl(event.currentTarget);
   };
+  console.info(
+    "Breadcrumbs \t:",
+    BreadcrumbsCreator(
+      URLParams as Record<string, string>,
+      URLLocation.pathname
+    )
+  );
+  console.info("current \t:", URLLocation.pathname);
+  /* helpers */
   return (
-    <DashboardLayout>
+    <DashboardLayout isFor="employer">
+      {/* Breadcrumbs */}
+      <Breadcrumbs aria-label="breadcrumb" sx={{ marginBottom: "1em" }}>
+        {BreadcrumbsCreator(
+          URLParams as Record<string, string>,
+          URLLocation.pathname
+        ).map((data, index) => (
+          <Link
+            key={index}
+            component={ReactRouterLink}
+            to={data.pathname}
+            underline="hover"
+            color="inherit"
+            aria-current={
+              data.pathname === URLLocation.pathname ? "page" : undefined
+            }
+            sx={{ display: "flex", alignItems: "center" }}
+          >
+            {data.label === "Vacancies" ? (
+              <HomeRounded sx={{ mr: 0.5 }} fontSize="inherit" />
+            ) : (
+              data.label
+            )}
+          </Link>
+        ))}
+      </Breadcrumbs>
       {/* Search Panel */}
       <Box
         component={"div"}
@@ -147,6 +193,7 @@ export default function EmployerVacancies() {
               sx={{
                 border: "1px solid " + grey[400],
                 borderRadius: "0.3em",
+                marginBottom: "0.5em",
               }}
             >
               <Box

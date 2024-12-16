@@ -28,7 +28,7 @@ import SocialCard from "../../../components/Molecules/Cards/SocialCard";
 
 export default function EmployerProfileOverview() {
   return (
-    <DashboardLayout>
+    <DashboardLayout isFor="employer">
       <Grid container spacing={2}>
         <Grid item xs={12} md={12}>
           <Box
@@ -120,7 +120,7 @@ export default function EmployerProfileOverview() {
                       variant="caption"
                       sx={{
                         fontWeight: {
-                          xs: "lighter",
+                          xs: 550,
                           md: 550,
                         },
                         fontSize: {
@@ -157,7 +157,7 @@ export default function EmployerProfileOverview() {
                       variant="caption"
                       sx={{
                         fontWeight: {
-                          xs: "lighter",
+                          xs: 550,
                           md: 550,
                         },
                         fontSize: {

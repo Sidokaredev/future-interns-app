@@ -11,23 +11,83 @@ import {
   TextField,
   Typography,
 } from "@mui/material";
-import { Link as RouterLink, useNavigate } from "react-router-dom";
+import { Link as RouterLink, useLocation, useNavigate } from "react-router-dom";
 import React, { useState } from "react";
 import FutureInternLogo from "/Future Interns Logo.svg";
 import AuthLayout from "../../../components/Templates/AuthLayout";
 import SimpleEmphasis from "../../../components/Molecules/Texts/SimpleEmphasis";
 import HelpIcon from "@mui/icons-material/Help";
+import { Authentication, AuthJSON } from "../types";
+import { DEAFULT_AUTHENTICATION } from "../constants";
+import { InputOnChange, SetSession } from "../../global-helpers";
+import Validator from "../../../services/validator";
+import { schema_Authentication } from "../../../services/validator/zod.schema";
+import BaseAlert from "../../../components/Molecules/Feedback/BaseAlert";
+import RequestAPI from "../../../services/api/request";
 
 export default function Auth() {
+  /* react-router hooks */
+  const navigate = useNavigate();
+  const location = useLocation()
   /* state */
   const [anchorEl, setAnchorEl] = useState<HTMLElement | null>(null);
   const openMenu = Boolean(anchorEl);
   const [showPassword, setShowPassword] = useState<boolean>(false);
+  const [formValue, setFormValue] = useState<Authentication>(DEAFULT_AUTHENTICATION);
+  const [errMessage, setErrorMessage] = useState<{ [key: string]: string[] }>({})
+  const [alert, setAlert] = useState<{ show: boolean, message: string }>({ show: false, message: "" })
+  const [loading, setLoading] = useState<boolean>(false)
+  /* onSubmit */
+  const formOnSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setLoading(true)
+    const validate = Validator.UseSchema(schema_Authentication)
+      .SafeValidate<Authentication, { [key: string]: string[] }>(formValue, setErrorMessage)
+    if (!validate) {
+      setAlert({ show: true, message: 'please follow the form rules, kids' })
+      return setLoading(false)
+    }
 
-  const navigate = useNavigate();
+    const [data, fail] = await RequestAPI.JSONRequest(formValue)
+      .Send<AuthJSON>("/api/v1/accounts/auth",
+        {
+          method: 'POST',
+          headers: {
+            "Content-Type": "application/json"
+          }
+        })
+    if (fail) {
+      setAlert({ show: true, message: fail.message })
+      return setLoading(false);
+    }
+    if (data) {
+      SetSession('auth', data.access_token)
+      const redirectUrl = new URLSearchParams(location.search).get('redirect')
+      switch (data.role.type) {
+        case 'candidate':
+          if (redirectUrl) {
+            return navigate(redirectUrl)
+          }
+          return navigate("/candidates/profile-overview")
+        case 'employer':
+          if (redirectUrl) {
+            return navigate(redirectUrl)
+          }
+          return navigate("/employers/profile-overview")
+      }
+    }
+
+    return setAlert({ show: true, message: 'data and fail is undefined' })
+  };
   return (
     <AuthLayout>
+      <BaseAlert
+        show={alert.show}
+        message={alert.message}
+        setShow={setAlert}
+      />
       <Grid container spacing={1}>
+        {/* AUTH LEFT CONTENT */}
         <Grid item xs={12} md={6}>
           <Link component={RouterLink} to={"/"}>
             <Box
@@ -111,8 +171,8 @@ export default function Auth() {
             </Box>
           </Box>
         </Grid>
+        {/* AUTH RIGHT CONTENT */}
         <Grid item xs={12} md={6}>
-          {/* field form */}
           <Box
             component={"div"}
             sx={{
@@ -122,7 +182,8 @@ export default function Auth() {
               },
             }}
           >
-            <form>
+            {/* FORM */}
+            <form onSubmit={formOnSubmit}>
               <TextField
                 variant="outlined"
                 type="email"
@@ -134,6 +195,10 @@ export default function Auth() {
                 sx={{
                   marginBottom: "1em",
                 }}
+                value={formValue.email}
+                onChange={InputOnChange<Authentication>(setFormValue)}
+                error={errMessage["email"] ? true : false}
+                helperText={errMessage["email"] ?? ""}
               />
               <TextField
                 variant="outlined"
@@ -143,6 +208,10 @@ export default function Auth() {
                 placeholder="Your valid password"
                 autoComplete="off"
                 fullWidth
+                value={formValue.password}
+                onChange={InputOnChange<Authentication>(setFormValue)}
+                error={errMessage["password"] ? true : false}
+                helperText={errMessage["password"] ?? ""}
               />
               <FormControlLabel
                 control={<Checkbox size="small" />}
@@ -167,13 +236,14 @@ export default function Auth() {
                 }}
               >
                 <Button
+                  type="button"
                   variant="outlined"
                   fullWidth
                   onClick={() => navigate("/accounts/create")}
                 >
                   Create Instead
                 </Button>
-                <Button variant="contained" fullWidth>
+                <Button type="submit" variant="contained" disabled={loading} fullWidth>
                   Submit
                 </Button>
               </Box>

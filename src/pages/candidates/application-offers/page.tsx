@@ -20,7 +20,7 @@ import {
 
 export default function CandidateApplicationsOffers() {
   return (
-    <DashboardLayout>
+    <DashboardLayout isFor="candidate">
       <Box
         component={"div"}
         sx={{

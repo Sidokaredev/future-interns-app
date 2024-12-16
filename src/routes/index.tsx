@@ -4,8 +4,8 @@ import { createBrowserRouter } from "react-router-dom";
 import type { RouteObject } from "react-router-dom";
 
 /* Grouped Route */
-import ACCOUNTS_ROUTE from "./accounts.route";
-import VacancyRoute from "./vacancy.route";
+import accountsRoutes from "./accounts.route";
+import vacancyRoute from "./vacancy.route";
 import BaseLoading from "../pages/loading";
 import candidatesRoute from "./candidates.route";
 import DraftsRoutes from "./drafts.route";
@@ -42,8 +42,8 @@ const HomeRoute: RouteObject = Object.keys(Homepage).reduce((prev, key) => {
 const _APPROUTERS = createBrowserRouter(
   [
     HomeRoute,
-    ...ACCOUNTS_ROUTE,
-    ...VacancyRoute,
+    ...accountsRoutes,
+    ...vacancyRoute,
     ...candidatesRoute,
     ...employersRoute,
     /* Just to test a component */

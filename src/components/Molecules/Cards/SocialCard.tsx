@@ -1,11 +1,12 @@
-import { GitHub, Instagram, LinkedIn } from "@mui/icons-material";
+import { AddRounded, EditRounded } from "@mui/icons-material";
 import { Box, IconButton, Typography } from "@mui/material";
 import { grey } from "@mui/material/colors";
-import React from "react";
 
 export type SocialCardProps = {
-  social: "instagram" | "github" | "linkedin";
-  linkAddress: string;
+  id: number;
+  name: string;
+  url: string;
+  icon_image_path: string
 };
 
 export default function SocialCard({
@@ -13,12 +14,6 @@ export default function SocialCard({
 }: {
   socialItems: SocialCardProps[];
 }) {
-  /* Icon Assets */
-  const socialIcon: Record<string, React.ReactNode> = {
-    instagram: <Instagram sx={{ color: "#e1306c" }} />,
-    github: <GitHub sx={{ color: "black" }} />,
-    linkedin: <LinkedIn sx={{ color: "#0a66c2" }} />,
-  };
   return (
     <Box
       component={"div"}
@@ -26,16 +21,36 @@ export default function SocialCard({
         marginY: "1em",
       }}
     >
-      <Typography
-        variant="subtitle1"
+      <Box component={"div"}
         sx={{
-          fontWeight: 550,
-          color: grey[600],
-          textAlign: "center",
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "start",
         }}
       >
-        Social
-      </Typography>
+        <Typography
+          variant="subtitle1"
+          sx={{
+            fontWeight: 550,
+            color: grey[600],
+            textAlign: "center",
+          }}
+        >
+          Social
+        </Typography>
+        <Box component={"div"}
+          sx={{
+            display: "flex",
+          }}
+        >
+          <IconButton size="small">
+            <AddRounded fontSize="small" />
+          </IconButton>
+          <IconButton size="small">
+            <EditRounded fontSize="small" />
+          </IconButton>
+        </Box>
+      </Box>
       <Box
         component={"div"}
         sx={{
@@ -52,9 +67,17 @@ export default function SocialCard({
               borderRadius: "0.3em",
               border: `0.1em solid ${grey[400]}`,
             }}
-            onClick={() => window.open(item.linkAddress, "_blank")}
+            onClick={() => window.open(item.url, "_blank")}
           >
-            {socialIcon[item.social]}
+            <Box component={"img"}
+              src={`http://localhost:3000${item.icon_image_path}`}
+              width={25}
+              height={25}
+              sx={{
+                backgroundSize: "cover",
+                objectFit: "scale-down"
+              }}
+            />
           </IconButton>
         ))}
       </Box>

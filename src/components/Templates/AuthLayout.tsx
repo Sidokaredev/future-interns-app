@@ -24,6 +24,7 @@ export default function AuthLayout({
         <Box
           component={"div"}
           sx={{
+            position: "relative",
             borderRadius: "0.3em",
             backgroundColor: "white",
             boxShadow:

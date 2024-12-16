@@ -15,5 +15,4 @@ const employersRoute: RouteObject[] = CreateDynamicRoute({
   loadingComponent: employersLoading,
 });
 
-console.info("Route \t:", employersRoute);
 export default employersRoute;

@@ -1,19 +1,18 @@
 import { Box, Container, Toolbar } from "@mui/material";
-import React, { ReactElement } from "react";
+import React from "react";
 import DashboardNavigation from "../Organisms/Navigation/DashboardNavigation";
 import Footer from "../Organisms/Footer";
-import { grey } from "@mui/material/colors";
 
 export default function DashboardLayout({
-  menuItems,
+  isFor,
   children,
 }: {
-  menuItems?: { icon: ReactElement; name: string; path: string }[];
+  isFor: "candidate" | "employer";
   children: React.ReactNode;
 }) {
   return (
     <Box component={"div"}>
-      <DashboardNavigation />
+      <DashboardNavigation isFor={isFor} />
       {/* App Bar Spacer */}
       <Toolbar variant="dense" />
       {/* Main Content */}

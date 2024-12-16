@@ -55,7 +55,7 @@ export default function ApplicationStatus() {
   const large = useMediaQuery("(min-width: 1200px)");
   const small = useMediaQuery("(max-width: 900px)");
   return (
-    <DashboardLayout>
+    <DashboardLayout isFor="candidate">
       <Grid container spacing={2}>
         <Grid item xs={100} lg={8}>
           <Typography
@@ -870,12 +870,13 @@ export default function ApplicationStatus() {
                   overflowY: "scroll",
                   borderRadius: "0.5em",
                   "&::-webkit-scrollbar": {
-                    width: "0.5em",
+                    width: "0em",
+                    // width: "0.5em",
                   },
-                  "&::-webkit-scrollbar-thumb": {
-                    backgroundColor: grey[400],
-                    borderRadius: "0.15em",
-                  },
+                  // "&::-webkit-scrollbar-thumb": {
+                  //   backgroundColor: grey[400],
+                  //   borderRadius: "0.15em",
+                  // },
                 }}
               >
                 {[1, 2, 3, 4, 5].map((_, index) => (
