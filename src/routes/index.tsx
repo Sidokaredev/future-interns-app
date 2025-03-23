@@ -8,8 +8,9 @@ import accountsRoutes from "./accounts.route";
 import vacancyRoute from "./vacancy.route";
 import BaseLoading from "../pages/loading";
 import candidatesRoute from "./candidates.route";
-import DraftsRoutes from "./drafts.route";
 import employersRoute from "./employer.route";
+import administratorRoute from "./administrator.route";
+import { Box } from "@mui/material";
 
 /* Get Preserved Components Soon */
 
@@ -46,8 +47,16 @@ const _APPROUTERS = createBrowserRouter(
     ...vacancyRoute,
     ...candidatesRoute,
     ...employersRoute,
+    ...administratorRoute,
     /* Just to test a component */
-    ...DraftsRoutes,
+    {
+      path: "*",
+      element: (
+        <Box>
+          Unmatched Route Path
+        </Box>
+      )
+    }
   ],
   { basename: "/future-interns-app/" }
 );

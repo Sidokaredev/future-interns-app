@@ -3,29 +3,28 @@ import DashboardLayout from "../../../components/Templates/DashboardLayout";
 import CandidateProfile from "../../../components/Molecules/Data.Display/CandidateProfile";
 import PersonalDetail from "../../../components/Molecules/Data.Display/PersonalDetail";
 import { useEffect, useState } from "react";
-import { CandidateProfile as CandidateProfileType } from "../types";
 import RequestAPI from "../../../services/api/request";
 import BaseAlert from "../../../components/Molecules/Feedback/BaseAlert";
 import { GetSession } from "../../global-helpers";
 import { grey } from "@mui/material/colors";
 import SimpleEmphasis from "../../../components/Molecules/Texts/SimpleEmphasis";
-import CandidateProfileForm from "../../../components/Organisms/candidates/profile-overview/CandidateProfileForm";
-import EducationSkillForm from "../../../components/Organisms/candidates/profile-overview/EducationSkillForm";
-import ExperienceSocialForm from "../../../components/Organisms/candidates/profile-overview/ExperienceSocialForm";
+import RegistrationStep1 from "../../../components/Organisms/candidates/steps/RegistrationStep1";
+import RegistrationStep2 from "../../../components/Organisms/candidates/steps/RegistrationStep2";
+import RegistrationStep3 from "../../../components/Organisms/candidates/steps/RegistrationStep3";
 
 export default function CandidateDashboard() {
   /* state */
-  const [candidateProfile, setCandidateProfile] = useState<CandidateProfileType | null>(null)
   const [currentStep, setCurrentStep] = useState<number | undefined>(undefined)
   const [alert, setAlert] = useState<{ show: boolean, message: string }>({ show: false, message: "" })
+  const [checking, setChecking] = useState<boolean>(false);
   const [dataAction, setDataAction] = useState<boolean>(false) // just for re-fecthing data
   /* breakpoint */
   const xsBreakpoint = useMediaQuery('(max-width: 600px)')
   /* constant */
   const formComponents: Record<number, JSX.Element> = {
-    1: <CandidateProfileForm setCurrentStep={setCurrentStep} setAlert={setAlert} />,
-    2: <EducationSkillForm setCurrentStep={setCurrentStep} setAlert={setAlert} />,
-    3: <ExperienceSocialForm setCurrentStep={setCurrentStep} setAlert={setAlert} setDataAction={setDataAction} />
+    1: <RegistrationStep1 setCurrentStep={setCurrentStep} setAlert={setAlert} />,
+    2: <RegistrationStep2 setCurrentStep={setCurrentStep} setAlert={setAlert} />,
+    3: <RegistrationStep3 setCurrentStep={setCurrentStep} setAlert={setAlert} setDataAction={setDataAction} />
   }
   const candidateStep: string[] = [
     "Candidate Profile",
@@ -35,6 +34,7 @@ export default function CandidateDashboard() {
   useEffect(() => {
     const token = GetSession("auth");
     (async () => {
+      setChecking(true)
       const [data_profileCheck, fail_profileCheck] = await RequestAPI.Send<Record<string, boolean>>("/api/v1/candidates/check", {
         method: "GET",
         headers: {
@@ -42,10 +42,11 @@ export default function CandidateDashboard() {
         }
       })
       if (fail_profileCheck) {
+        setChecking(false)
         return setAlert({ show: true, message: fail_profileCheck.message })
       }
       if (data_profileCheck) {
-        console.log("profile status \t:", data_profileCheck)
+        setChecking(false)
         if (!data_profileCheck["candidate"]) {
           return setCurrentStep(1)
         } else if (!data_profileCheck["educations"]) {
@@ -63,9 +64,17 @@ export default function CandidateDashboard() {
         message={alert.message}
         setShow={setAlert}
       />
-      {/* if there any step, then show stepper form canddate */}
-      {currentStep && (
+      {/* Loading Wrapper -> Checking candidate profile completion */}
+      {checking ? (
+        <Typography component={"p"} variant="subtitle2" sx={{
+          fontWeight: 500,
+          color: grey[600]
+        }}>
+          Checking profile completion ...
+        </Typography>
+      ) : currentStep ? (
         <Box component={"div"}>
+          {/* When the user doesnt complete one of required profile data */}
           <Box component={"div"}
             sx={{
               marginBottom: '1em',
@@ -109,7 +118,7 @@ export default function CandidateDashboard() {
               <Typography variant="subtitle1" sx={{ color: grey[700] }}>{currentStep && candidateStep[currentStep]}</Typography>
             </Box>
           ) : (
-            <Stepper activeStep={currentStep} sx={{}}>
+            <Stepper activeStep={(currentStep - 1)} sx={{}}>
               {candidateStep.map((stepName, index) => (
                 <Step key={index}>
                   <StepLabel sx={{
@@ -131,8 +140,7 @@ export default function CandidateDashboard() {
             {formComponents[currentStep]}
           </Box>
         </Box>
-      )}
-      {!currentStep && (
+      ) : (
         <Grid container spacing={2}>
           <Grid item lg={8} sm={12}>
             {/* candidate profile data component */}

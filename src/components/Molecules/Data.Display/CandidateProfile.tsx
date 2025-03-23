@@ -1,16 +1,6 @@
-import { AddRounded, EditRounded } from "@mui/icons-material";
 import {
-  Avatar,
-  Box,
-  Chip,
-  Divider,
-  IconButton,
   Stack,
-  Typography,
 } from "@mui/material";
-import { grey } from "@mui/material/colors";
-import SimpleEmphasis from "../Texts/SimpleEmphasis";
-import { CandidateProfile as CandidateProfileType } from "../../../pages/candidates/types";
 import { useState } from "react";
 import ProfileData from "../../Organisms/candidates/profile-overview/ProfileData";
 import EducationsData from "../../Organisms/candidates/profile-overview/EducationData";

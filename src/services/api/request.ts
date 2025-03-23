@@ -1,3 +1,5 @@
+import { HOST } from "../../pages/administrators/performance/[id]/constants"
+
 type FailRequest = {
   success: boolean
   error: string
@@ -5,16 +7,16 @@ type FailRequest = {
 }
 
 export default class RequestAPI {
-  private static host: string = 'http://localhost'
+  private static host: string = HOST.main
   private static port: number = 3000
   private static request_body: FormData | string | undefined
   constructor() {
 
   }
 
-  private static async DelayRequest(ms: number): Promise<void> {
-    return new Promise((resolve) => setTimeout(resolve, ms))
-  }
+  // private static async DelayRequest(ms: number): Promise<void> {
+  //   return new Promise((resolve) => setTimeout(resolve, ms))
+  // }
 
   static FormDataRequest<T>(body: T) {
     this.request_body = new FormData()
@@ -34,7 +36,7 @@ export default class RequestAPI {
   static async Send<T>(path: string, requestInit?: RequestInit): Promise<[T?, FailRequest?]> {
     const endpoint: string = this.host + ":" + this.port + path
     try {
-      await this.DelayRequest(1000)
+      // await this.DelayRequest(1000);
       let init: RequestInit
       if (this.request_body != undefined) {
         init = {

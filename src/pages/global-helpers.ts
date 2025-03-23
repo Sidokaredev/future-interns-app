@@ -5,7 +5,8 @@
 import React, { ChangeEvent, SyntheticEvent } from "react";
 import Cookies from "js-cookie";
 import { Dayjs } from "dayjs";
-import { SelectChangeEvent, SnackbarCloseReason } from "@mui/material";
+import { SelectChangeEvent, SnackbarCloseReason, SxProps } from "@mui/material";
+import { amber, blue, green, grey, purple, red } from "@mui/material/colors";
 /* Event Handler */
 export function InputOnChange<FormType>(
   formSetState: React.Dispatch<React.SetStateAction<FormType>>
@@ -57,11 +58,11 @@ export function InputOnChangeV2<FormType extends object>(
   }
 }
 export function InputOnChangeArray<FormType>(
-  index: number | string,
+  // index: number | string,
   setFormState: React.Dispatch<React.SetStateAction<FormType>>,
-  nestAttr: string = "",
+  // nestAttr: string = "",
 ) {
-  return (event: ChangeEvent<HTMLInputElement>) => {
+  return (_: ChangeEvent<HTMLInputElement>) => {
     setFormState((prev: FormType) => {
       return {
         ...prev
@@ -336,15 +337,19 @@ export function AutoCompleteOnChange<FormType, ValueType>(
       return
     }
 
+    let assignValue: any = value
+    if (keyValue) {
+      assignValue = value[keyValue as keyof ValueType]
+    }
     setFormState(prev => ({
       ...prev,
-      [fieldName]: value
+      [fieldName]: assignValue
     }))
   }
 }
 
 export const onCloseSnackbar = (setAlert: React.Dispatch<React.SetStateAction<{ show: boolean, message: string }>>) => (
-  event: React.SyntheticEvent | Event,
+  _: React.SyntheticEvent | Event,
   reason?: SnackbarCloseReason,
 ) => {
   if (reason === 'clickaway') {
@@ -355,7 +360,7 @@ export const onCloseSnackbar = (setAlert: React.Dispatch<React.SetStateAction<{ 
 };
 
 /* Cookie Management Helper */
-export function SetSession(type: 'auth' | 'some', value: string): void {
+export function SetSession(type: 'auth' | 'type', value: string): void {
   const sessionEncoded = Cookies.withConverter({
     write: (value) => {
       const encoder = new TextEncoder()
@@ -363,6 +368,10 @@ export function SetSession(type: 'auth' | 'some', value: string): void {
     }
   })
   sessionEncoded.set(type, value, { expires: new Date(Date.now() + 1 * 60 * 60 * 1000) })
+}
+
+export function DeleteSession(type: "auth" | "some") {
+  Cookies.remove(type)
 }
 
 export function GetSession(type: 'auth' | 'some'): string {
@@ -379,3 +388,73 @@ export function GetSession(type: 'auth' | 'some'): string {
 export function SesssionChecker(type: 'auth' | 'some'): boolean {
   return Boolean(GetSession(type))
 }
+
+/* STYLER HELPERS */
+export const interviewResultColor = (result: string): SxProps => {
+  switch (result) {
+    case "Hire":
+      return {
+        color: green[700]
+      }
+    case "Reject":
+      return {
+        color: red[700]
+      }
+    case "Next Interview":
+      return {
+        color: blue[700]
+      }
+    case "Pending":
+      return {
+        color: amber[700]
+      }
+    default:
+      return {
+        color: grey[700]
+      }
+  };
+};
+export const chipColorDeterminer = (status: string): SxProps => {
+  switch (status) {
+    case "Scheduled":
+      return {
+        color: purple[700],
+        backgroundColor: purple[50],
+      };
+    case "Re-scheduled":
+      return {
+        color: amber[700],
+        backgroundColor: amber[50],
+      };
+    case "Waiting":
+      return {
+        color: amber[700],
+        backgroundColor: amber[50],
+      };
+    case "Pending Acceptance":
+      return {
+        color: amber[700],
+        backgroundColor: amber[50],
+      };
+    case "Offer Accepted":
+      return {
+        color: green[700],
+        backgroundColor: green[50],
+      };
+    case "Offer Declined":
+      return {
+        color: red[700],
+        backgroundColor: red[50],
+      };
+    case "Accepted":
+      return {
+        color: green[700],
+        backgroundColor: green[50],
+      };
+    default:
+      return {
+        color: green[700],
+        backgroundColor: green[50],
+      };
+  }
+};

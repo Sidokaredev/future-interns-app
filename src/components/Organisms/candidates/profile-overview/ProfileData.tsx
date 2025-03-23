@@ -3,10 +3,11 @@ import { Avatar, Box, Dialog, IconButton, Snackbar, Typography } from "@mui/mate
 import { FormEvent, useEffect, useState } from "react";
 import { CandidateFormSchema, CandidateFormType, CandidateProfileDataType, UserDataType } from "../../../../pages/candidates/types";
 import { DEFAULT_CANDIDATE_FORM } from "../../../../pages/candidates/constants";
-import CandidateFormDraft from "./CandidateFormDraft";
+import CandidateForm from "./CandidateForm";
 import { grey } from "@mui/material/colors";
 import { GetSession, onCloseSnackbar } from "../../../../pages/global-helpers";
 import RequestAPI from "../../../../services/api/request";
+import { HOST } from "../../../../pages/administrators/performance/[id]/constants";
 
 export default function ProfileData({
   openDialog,
@@ -131,7 +132,7 @@ export default function ProfileData({
       <Box component={"div"} sx={{ marginY: "0.5em" }}>
         <Box
           component={"img"}
-          src={`http://localhost:3000${profileData?.background_profile_image_path}?t=${new Date(Date.now()).getTime()}`}
+          src={`${HOST.main}${profileData?.background_profile_image_path}?t=${new Date(Date.now()).getTime()}`}
           sx={{
             width: "100%",
             height: { xs: "10em", md: "15em" },
@@ -151,7 +152,7 @@ export default function ProfileData({
         >
           <Avatar
             alt="candidate-profile"
-            src={`http://localhost:3000${profileData?.profile_image_path}?t=${new Date(Date.now()).getTime()}`}
+            src={`${HOST.main}${profileData?.profile_image_path}?t=${new Date(Date.now()).getTime()}`}
             sx={{
               width: "6em",
               height: "6em",
@@ -228,7 +229,7 @@ export default function ProfileData({
         }}
         fullWidth
       >
-        <CandidateFormDraft
+        <CandidateForm
           formValue={formValue}
           setFormValue={setFormValue}
           errMsg={errMsg}

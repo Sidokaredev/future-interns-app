@@ -1,20 +1,27 @@
 import {
   AccessTime,
+  AddRounded,
+  AssignmentRounded,
   Business,
   CloseRounded,
   CorporateFareRounded,
+  DescriptionRounded,
   DonutLargeRounded,
+  DownloadRounded,
+  ErrorRounded,
   FindInPageOutlined,
   HandshakeOutlined,
-  InsertDriveFileOutlined,
-  InsertLinkOutlined,
+  InsertDriveFileRounded,
+  LaunchRounded,
+  LinkRounded,
   LocationOnRounded,
   OpenInFullRounded,
   Paid,
   PendingActionsOutlined,
   Place,
-  ScheduleRounded,
+  SearchRounded,
   TimerOutlined,
+  WarningRounded,
 } from "@mui/icons-material";
 import DashboardLayout from "../../../components/Templates/DashboardLayout";
 import {
@@ -22,40 +29,382 @@ import {
   Box,
   Button,
   Chip,
+  CircularProgress,
   Collapse,
+  Dialog,
   Divider,
   Drawer,
   Fade,
+  FormHelperText,
   Grid,
   IconButton,
+  InputAdornment,
+  InputBase,
   Link,
+  Snackbar,
   Stack,
+  SxProps,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  TextField,
   Typography,
   useMediaQuery,
   useTheme,
 } from "@mui/material";
-import { amber, green, grey, lightBlue, orange } from "@mui/material/colors";
-import { useState } from "react";
-import CopyText from "../../../components/Molecules/Texts/CopyText";
-import AttachFileCard from "../../../components/Molecules/Cards/AttachFileCard";
+import { amber, blue, green, grey, lightBlue, orange, red, yellow } from "@mui/material/colors";
+import { ChangeEvent, useEffect, useState } from "react";
 import SimpleEmphasis from "../../../components/Molecules/Texts/SimpleEmphasis";
+import { chipColorDeterminer, GetSession, interviewResultColor, onCloseSnackbar } from "../../global-helpers";
+import RequestAPI from "../../../services/api/request";
+import { ApplicantAssessment, ApplicantInterview, ApplicantOffer, AppliedVacancy } from "../types";
+import { Link as RouterLink } from "react-router-dom";
+import AutoOverflowText from "../../../components/Molecules/Texts/AutoOverflowText";
+import dayjs from "dayjs";
+import { HOST } from "../../administrators/performance/[id]/constants";
 
 export default function ApplicationStatus() {
   /* Material UI Hooks */
   const MUITheme = useTheme();
+  /* breakpoints */
+  const largeMedia = useMediaQuery("(min-width: 1200px)");
+  const smallMedia = useMediaQuery("(max-width: 900px)");
+  const xSmallMedia = useMediaQuery("(max-width: 600px)");
+
   /* state */
   const [displayOn, setDisplayOn] = useState<{
     detail: boolean;
     pipeline: boolean;
   }>({ detail: false, pipeline: true });
   const [openDrawer, setOpenDrawer] = useState<boolean>(false);
-  /* event handler */
+  // data -> applied vacacies
+  const [appliedVacancies, setAppliedVacancies] = useState<AppliedVacancy[]>([]);
+  const [selectedApplied, setSelectedApplied] = useState<AppliedVacancy | null>(null);
+  const [appliedQuery, setAppliedQuery] = useState<string>("");
+  const [alert, setAlert] = useState<{ show: boolean, message: string }>({ show: false, message: "" });
+  // pipeline -> assessments
+  const [applicantAssessments, setApplicantAssessments] = useState<ApplicantAssessment[]>([]);
+  const [selectedAssessment, setSelectedAssessment] = useState<ApplicantAssessment | null>(null);
+  const [assessmentSubmissions, setAssessmentSubmissions] = useState<Record<string, File[]>>({});
+  const [onAddFiles, setOnAddFiles] = useState<Record<string, boolean>>({});
+  const [errMsg, setErrMsg] = useState<Record<string, string>>({});
 
-  /* breakpoints */
-  const large = useMediaQuery("(min-width: 1200px)");
-  const small = useMediaQuery("(max-width: 900px)");
+  // pipeline -> interviews
+  const [applicantInterviews, setApplicantInterviews] = useState<ApplicantInterview[]>([]);
+  const [dataAction, setDataAction] = useState<boolean>(false);
+
+  // pipeline -> offering
+  const [applicantOffers, setApplicantOffers] = useState<ApplicantOffer[]>([]);
+  const [selectedOffer, setSelectedOffer] = useState<ApplicantOffer & { status: "accept" | "decline" } | null>(null);
+
+  const [loading, setLoading] = useState<Record<string, boolean>>({});
+  const [refresh, setRefresh] = useState<Record<string, boolean>>({});
+
+  /* constants */
+  const searchedAppliedVacancies = appliedVacancies.filter(applied => {
+    const byPosition = applied.vacancy.position.toLowerCase().includes(appliedQuery.toLowerCase());
+    const byEmployerName = applied.employer.name.toLowerCase().includes(appliedQuery.toLowerCase());
+    const byEmployerLegalName = applied.employer.legal_name.toLowerCase().includes(appliedQuery.toLowerCase());
+    return byPosition || byEmployerName || byEmployerLegalName;
+  });
+  const scoredAssessments = applicantAssessments.filter(assessment => {
+    let byScoredAssessments = assessment.submission_result !== null
+    return byScoredAssessments;
+  });
+  // pipeline -> interviews
+  const columns = [
+    { prop: "schedule", label: "Schedule" },
+    { prop: "result", label: "Result" },
+  ];
+  const responsiveColumns = smallMedia ? [
+    { prop: "schedule", label: "Schedule" },
+  ] : columns;
+  const conductedInterviews = applicantInterviews.filter(interview => interview.status === "Conducted");
+  const acceptedOffer = applicantOffers.filter(offer => offer.status === "Offer Accepted");
+  const declinedOffer = applicantOffers.filter(offer => offer.status === "Offer Declined");
+
+  /* event handler */
+  const fileOnChange = (key: string) => (event: ChangeEvent<HTMLInputElement>) => {
+    const files = event.target.files
+    if (files && files.length > 0) {
+      let filteredFiles: File[] = [];
+      let invalidFileSize: string[] = [];
+      for (const file of files) {
+        if (file.size > 5242880) {
+          invalidFileSize.push(file.name);
+          continue;
+        };
+
+        filteredFiles.push(file);
+      };
+
+      setAssessmentSubmissions(prev => {
+        const previousFiles = (Boolean(prev[key]) && prev[key].length != 0) ? prev[key] : [];
+        return {
+          ...prev,
+          [key]: [...previousFiles, ...filteredFiles]
+        }
+      });
+
+      if (invalidFileSize.length !== 0) {
+        setErrMsg(prev => ({
+          ...prev,
+          ["submissions"]: invalidFileSize.join(", ") + " should less than 5MB"
+        }));
+      } else {
+        setErrMsg(prev => ({
+          ...prev,
+          ["submissions"]: ""
+        }))
+      };
+    }
+  }
+
+  /* helpers */
+  const coloringPipelinesStatus = (status: string): SxProps => {
+    switch (status) {
+      case "Applied":
+        return {
+          color: blue[500]
+        };
+      case "On Process":
+        return {
+          color: yellow[500]
+        };
+      case "Offered":
+        return {
+          color: orange[500]
+        };
+      case "Waiting for LoA":
+        return {
+          color: amber[500]
+        };
+      case "LoA Issued":
+        return {
+          color: green[500]
+        }
+      default:
+        return {
+          color: grey[400]
+        }
+    }
+  }
+
+  /* submissions */
+  const addSubmissions = async (key: string) => {
+    setLoading(prev => ({ ...prev, [key]: true }));
+
+    const token = GetSession("auth");
+    const formDataRequest = new FormData();
+    formDataRequest.append("assessment_id", String(selectedAssessment?.assessment_id));
+    formDataRequest.append("pipeline_id", selectedApplied?.pipeline_id as string)
+    assessmentSubmissions[key].forEach((file) => {
+      formDataRequest.append("submission_documents[]", file);
+    })
+    const [success, fail] = await RequestAPI.Send<{ message: string, documents_status: any }>(
+      "/api/v1/candidates/assessments/submissions/",
+      {
+        method: "POST",
+        headers: {
+          "Authorization": "Bearer " + token
+        },
+        body: formDataRequest
+      }
+    );
+    if (fail) {
+      setLoading(prev => ({ ...prev, [key]: false }));
+      return setAlert({ show: true, message: fail.message });
+    };
+    if (success) {
+      setLoading(prev => ({ ...prev, [key]: false }));
+      setAssessmentSubmissions(prev => ({ ...prev, [key]: [] }));
+      setSelectedAssessment(null);
+      setOnAddFiles(prev => ({
+        ...prev,
+        [key]: false,
+      }));
+      setDataAction(prev => !prev);
+      return setAlert({ show: true, message: success.message });
+    };
+  };
+  const deleteSubmission = async (documentID: number) => {
+    setLoading(prev => ({
+      ...prev,
+      ["delete-submission"]: true,
+    }));
+    const token = GetSession("auth");
+    const [success, fail] = await RequestAPI.Send<string>(
+      "/api/v1/candidates/assessments/submissions/" + documentID,
+      {
+        method: "DELETE",
+        headers: {
+          "Authorization": "Bearer " + token
+        }
+      }
+    );
+    if (fail) {
+      setLoading(prev => ({
+        ...prev,
+        ["delete-submission"]: false,
+      }));
+      return setAlert({ show: true, message: fail.message });
+    };
+    if (success) {
+      setLoading(prev => ({
+        ...prev,
+        ["delete-submission"]: false,
+      }));
+      setDataAction(prev => !prev);
+      return setAlert({ show: true, message: success });
+    };
+  };
+
+  /* offer */
+  const updateOffer = async (offeringID: number, status: "accept" | "decline") => {
+    setLoading(prev => ({ ...prev, [status]: true }));
+
+    const offerStatus = {
+      "accept": "Offer Accepted",
+      "decline": "Offer Declined"
+    };
+
+    const token = GetSession("auth");
+    const [success, fail] = await RequestAPI.FormDataRequest({
+      status: offerStatus[status],
+      pipeline_id: selectedApplied?.pipeline_id as string
+    }).Send<string>(
+      "/api/v1/candidates/offerings/" + offeringID,
+      {
+        method: "PATCH",
+        headers: {
+          "Authorization": "Bearer " + token
+        }
+      }
+    );
+    if (fail) {
+      setLoading(prev => ({ ...prev, [status]: false }));
+      return setAlert({ show: true, message: fail.message });
+    };
+    if (success) {
+      setSelectedOffer(null);
+      setRefresh(prev => ({ ...prev, ["offering"]: !prev["offering"] }));
+      setLoading(prev => ({ ...prev, [status]: false }));
+      return setAlert({ show: true, message: success });
+    };
+  };
+
+  /* fetching -> assessments */
+  useEffect(() => {
+    if (selectedApplied === null) {
+      return;
+    };
+
+    const token = GetSession("auth");
+    (async () => {
+      const [data, fail] = await RequestAPI.Send<ApplicantAssessment[]>(
+        "/api/v1/candidates/pipelines/" + selectedApplied?.pipeline_id as string + "/assessments/" + selectedApplied?.vacancy.id as string,
+        {
+          method: "GET",
+          headers: {
+            "Authorization": "Bearer " + token
+          }
+        }
+      );
+      if (fail) {
+        return setAlert({ show: true, message: fail.message });
+      };
+      if (data) {
+        return setApplicantAssessments(data);
+      }
+    })();
+  }, [selectedApplied, dataAction]);
+
+  /* fetching -> applied vacancies */
+  useEffect(() => {
+    const token = GetSession("auth");
+    (async () => {
+      const [data, fail] = await RequestAPI.Send<AppliedVacancy[]>(
+        "/api/v1/candidates/pipelines/",
+        {
+          method: "GET",
+          headers: {
+            "Authorization": "Bearer " + token
+          }
+        }
+      );
+      if (fail) {
+        console.info("fail request data applied vacancies \t:", fail);
+        return setAlert({ show: true, message: fail.message });
+      };
+      if (data) {
+        setSelectedApplied(data[0]);
+        return setAppliedVacancies(data);
+      };
+    })();
+  }, []);
+
+  /* fetching -> applicant interviews */
+  useEffect(() => {
+    if (!selectedApplied) {
+      return;
+    }
+    const token = GetSession("auth");
+    (async () => {
+      const [data, fail] = await RequestAPI.Send<ApplicantInterview[]>(
+        "/api/v1/candidates/pipelines/" + selectedApplied?.pipeline_id as string + "/vacancies/" + selectedApplied?.vacancy.id as string + "/interviews",
+        {
+          method: "GET",
+          headers: {
+            "Authorization": "Bearer " + token
+          }
+        }
+      );
+      if (fail) {
+        return setAlert({ show: true, message: fail.message });
+      };
+      if (data) {
+        return setApplicantInterviews(data);
+      };
+    })();
+  }, [refresh["applicant-interviews"], selectedApplied]);
+
+  /* fetching -> applicants offering */
+  useEffect(() => {
+    if (!selectedApplied) {
+      return;
+    }
+    const token = GetSession("auth");
+    (async () => {
+      const [data, fail] = await RequestAPI.Send<ApplicantOffer[]>(
+        "/api/v1/candidates/pipelines/" + selectedApplied.pipeline_id + "/vacancies/" + selectedApplied.vacancy.id + "/offering",
+        {
+          method: "GET",
+          headers: {
+            "Authorization": "Bearer " + token
+          }
+        }
+      );
+      if (fail) {
+        return setAlert({ show: true, message: fail.message });
+      };
+      if (data) {
+        return setApplicantOffers(data);
+      };
+    })();
+  }, [refresh["offering"], selectedApplied]);
   return (
     <DashboardLayout isFor="candidate">
+      {/* Default Notification */}
+      <Snackbar
+        anchorOrigin={{ vertical: "top", horizontal: "center" }}
+        open={alert.show}
+        message={alert.message}
+        autoHideDuration={3000}
+        onClose={onCloseSnackbar(setAlert)}
+      />
       <Grid container spacing={2}>
         <Grid item xs={100} lg={8}>
           <Typography
@@ -67,7 +416,7 @@ export default function ApplicationStatus() {
           >
             Applied Detail
           </Typography>
-          {/* company.profile */}
+          {/* Employer Profile */}
           <Box
             component={"div"}
             sx={{
@@ -80,21 +429,21 @@ export default function ApplicationStatus() {
           >
             <Avatar
               alt="company-logo"
-              src="broken.jpg"
+              src={`${HOST.main}${selectedApplied?.employer.profile_image_path}`}
               sx={{
-                width: small ? "4em" : "5em",
-                height: small ? "4em" : "5em",
+                width: smallMedia ? "4em" : "5em",
+                height: smallMedia ? "4em" : "5em",
               }}
             />
             <Box component={"div"}>
               <Typography
-                variant={small ? "subtitle2" : "h6"}
+                variant={smallMedia ? "subtitle2" : "h6"}
                 sx={{
                   fontWeight: 550,
                   color: grey[800],
                 }}
               >
-                Cloud Architect
+                {selectedApplied?.vacancy.position}
               </Typography>
               <Box sx={{ display: "flex", flexWrap: "wrap", gap: "0 1.5em" }}>
                 <Box
@@ -107,12 +456,12 @@ export default function ApplicationStatus() {
                   <Typography
                     variant="caption"
                     sx={{
-                      fontWeight: small ? 500 : 550,
+                      fontWeight: smallMedia ? 500 : 550,
                       color: grey[600],
                       marginLeft: "0.5em",
                     }}
                   >
-                    PT. Sidokaredev Karya Mandiri
+                    {selectedApplied?.employer.legal_name}
                   </Typography>
                 </Box>
                 <Box
@@ -125,12 +474,12 @@ export default function ApplicationStatus() {
                   <Typography
                     variant="caption"
                     sx={{
-                      fontWeight: small ? 500 : 550,
+                      fontWeight: smallMedia ? 500 : 550,
                       color: grey[600],
                       marginLeft: "0.5em",
                     }}
                   >
-                    Sidoarjo, Indonesia (INA)
+                    {selectedApplied?.employer.location}
                   </Typography>
                 </Box>
               </Box>
@@ -179,7 +528,7 @@ export default function ApplicationStatus() {
                 Pipeline
               </Button>
             </Box>
-            {!large && (
+            {!largeMedia && (
               <Button
                 variant="contained"
                 startIcon={<OpenInFullRounded fontSize="small" />}
@@ -209,8 +558,8 @@ export default function ApplicationStatus() {
                 className="application-pipeline"
                 sx={{ border: "1px solid " + grey[400], borderRadius: "0.3em" }}
               >
-                <Stack sx={{ padding: small ? "0.5em" : "1em" }}>
-                  {/* application.screening */}
+                <Stack sx={{ padding: smallMedia ? "0.5em" : "1em" }}>
+                  {/* Screening */}
                   <Box
                     sx={{
                       display: "flex",
@@ -218,7 +567,9 @@ export default function ApplicationStatus() {
                       paddingBottom: "1em",
                     }}
                   >
-                    <FindInPageOutlined sx={{ color: green[800] }} />
+                    {!xSmallMedia && (
+                      <FindInPageOutlined sx={{ color: applicantAssessments.length > 0 ? green[800] : orange[700] }} />
+                    )}
                     <Box
                       component={"div"}
                       sx={{ flexGrow: 1, paddingX: "0.5em" }}
@@ -233,7 +584,7 @@ export default function ApplicationStatus() {
                           variant="subtitle2"
                           sx={{
                             fontWeight: 550,
-                            color: green[800],
+                            color: applicantAssessments.length > 0 ? green[800] : orange[700],
                             marginY: "0.2em",
                           }}
                         >
@@ -244,23 +595,23 @@ export default function ApplicationStatus() {
                           sx={{
                             minWidth: "12em",
                             fontStyle: "italic",
-                            color: grey[400],
+                            color: applicantAssessments.length > 0 ? green[800] : orange[700],
                             textAlign: "end",
                           }}
                         >
-                          May 24, 2024
+                          {new Date(selectedApplied?.created_at as string).toDateString()}
                         </Typography>
                       </Box>
-                      <Typography variant="body2" sx={{ color: grey[700] }}>
-                        Lorem ipsum dolor sit amet consectetur adipisicing elit.
-                        Lorem ipsum dolor sit amet consectetur adipisicing elit.
-                        Magnam incidunt, maxime aut eos vel nihil, consectetur
-                        quas laudantium nam laboriosam, eum doloremque ipsa unde
-                        recusandae hic molestiae id distinctio architecto.
+                      <Typography variant="body2" sx={{ color: applicantAssessments.length > 0 ? green[800] : grey[700] }}>
+                        {applicantAssessments.length > 0 ? (
+                          "Congratulations! You have passed the screening stage."
+                        ) : (
+                          "Your application is currently in the screening stage. Please make sure to regularly monitor your application status for updates."
+                        )}
                       </Typography>
                     </Box>
                   </Box>
-                  {/* application.assessment */}
+                  {/* Assessments */}
                   <Box
                     sx={{
                       display: "flex",
@@ -269,7 +620,9 @@ export default function ApplicationStatus() {
                       borderTop: "1px solid " + grey[400],
                     }}
                   >
-                    <TimerOutlined sx={{ color: orange[700] }} />
+                    {!xSmallMedia && (
+                      <TimerOutlined sx={{ color: (applicantAssessments.length !== 0 && scoredAssessments.length === applicantAssessments.length) ? green[700] : applicantAssessments.length > 0 ? orange[700] : grey[400] }} />
+                    )}
                     <Box sx={{ flexGrow: 1, paddingX: "0.5em" }}>
                       <Box
                         component={"div"}
@@ -282,7 +635,7 @@ export default function ApplicationStatus() {
                           variant="subtitle2"
                           sx={{
                             fontWeight: 550,
-                            color: orange[700],
+                            color: (applicantAssessments.length !== 0 && scoredAssessments.length === applicantAssessments.length) ? green[700] : applicantAssessments.length > 0 ? orange[700] : grey[400],
                             marginY: "0.2em",
                           }}
                         >
@@ -293,74 +646,484 @@ export default function ApplicationStatus() {
                           sx={{
                             minWidth: "12em",
                             fontStyle: "italic",
-                            color: orange[400],
+                            color: (applicantAssessments.length !== 0 && scoredAssessments.length === applicantAssessments.length) ? green[700] : applicantAssessments.length > 0 ? orange[700] : grey[400],
                             textAlign: "end",
                           }}
                         >
-                          Waiting for assessment
+                          {(applicantAssessments.length !== 0 && scoredAssessments.length === applicantAssessments.length) ?
+                            "Assessment Completed" :
+                            scoredAssessments.length > 0 ?
+                              "submitted " + scoredAssessments.length + " of " + applicantAssessments.length :
+                              applicantAssessments.length === 0 ? "Waiting for assessment" :
+                                "Working on assessment"}
                         </Typography>
                       </Box>
-                      <Box component={"div"} className="stage-body">
-                        <Typography variant="body2" sx={{ color: grey[700] }}>
-                          Lorem ipsum dolor sit amet consectetur adipisicing
-                          elit. Ducimus laboriosam similique fugiat ipsam? Saepe
-                          a praesentium, in cumque ipsum ipsa veritatis sed
-                          debitis ducimus soluta quod accusamus maiores
-                          expedita? Dignissimos! Nobis nam consequuntur, fugiat
-                          modi quod ea reprehenderit quaerat perferendis
-                          suscipit ad optio dicta dolorem accusantium cupiditate
-                          ut incidunt cumque libero maxime, ab expedita
-                          consectetur laborum sequi ducimus quia! Praesentium!
-                        </Typography>
-                        <Box component={"div"} className="attached-link">
-                          <Box sx={{ display: "flex", marginY: "0.5em" }}>
-                            <InsertLinkOutlined
-                              fontSize="small"
-                              sx={{ color: grey[800] }}
-                            />
-                            <Typography
-                              variant="subtitle2"
+                      <Box component={"div"} className="assessments-container">
+                        {applicantAssessments.map((assessment, index) => {
+                          const assessmentKey = `assessment${index}`;
+                          const isLinkExist = assessment.assessment_link === "" || assessment.assessment_link === null ? false : true;
+                          const isDeadline = (new Date(assessment.due_date).getTime() - new Date().getTime()) < 0 ? true : false;
+                          return (
+                            <Box key={index} component={"div"} className="assessment-item"
                               sx={{
-                                fontWeight: 500,
-                                color: grey[800],
-                                marginX: "0.5em",
+                                border: "1px solid " + grey[300],
+                                borderRadius: "0.3em",
+                                marginBottom: "0.7em",
+                                padding: "0.5em 0.7em"
                               }}
                             >
-                              Attached Link
-                            </Typography>
-                          </Box>
-                          <CopyText textToCopy="https://github.com/barjakoub" />
-                        </Box>
-                        <Box component={"div"} className="attached-file">
-                          <Box sx={{ display: "flex", marginY: "0.5em" }}>
-                            <InsertDriveFileOutlined
-                              fontSize="small"
-                              sx={{ color: grey[800] }}
-                            />
-                            <Typography
-                              variant="subtitle2"
-                              sx={{
-                                fontWeight: 500,
-                                color: grey[800],
-                                marginX: "0.5em",
-                              }}
-                            >
-                              Attached File
-                            </Typography>
-                          </Box>
-                          <Box
-                            sx={{
-                              display: "flex",
-                              gap: "0.5em 0.5em",
-                              flexWrap: "wrap",
-                            }}
-                          >
-                            <AttachFileCard fileName="guide-assessment.pdf" />
-                            <AttachFileCard fileName="assessment.docx" />
-                            <AttachFileCard fileName="schedule-interview.pdf" />
-                            <AttachFileCard fileName="letter-of-purpose.pdf" />
-                          </Box>
-                        </Box>
+                              {/* Name */}
+                              <Box component={"div"}
+                                sx={{
+                                  display: { xs: "block", sm: "flex" },
+                                  alignItems: "start",
+                                  columnGap: 1,
+                                  marginBottom: "0.5em",
+                                }}
+                              >
+                                <Box component={"div"}
+                                  sx={{ flexGrow: 1 }}
+                                >
+                                  <Typography component={"p"} variant="subtitle1"
+                                    sx={{ flexGrow: 1, fontWeight: 550, color: grey[700] }}
+                                  >
+                                    {assessment.name}
+                                  </Typography>
+                                </Box>
+                                <Box component={"div"}
+                                  sx={{
+                                    display: "flex",
+                                    columnGap: 1
+                                  }}
+                                >
+                                  <Typography
+                                    component={"p"}
+                                    variant="caption"
+                                    sx={{
+                                      width: "max-content",
+                                      padding: "0.3em 0.8em",
+                                      borderRadius: "2em",
+                                      color: assessment.submission_result ? green[500] : amber[700],
+                                      fontStyle: "italic",
+                                      backgroundColor: assessment.submission_result ? green[50] : amber[50],
+                                    }}
+                                  >
+                                    {assessment.submission_result ? (
+                                      "Your submission already scored"
+                                    ) : (
+                                      <>
+                                        Due date on{" "}
+                                        <SimpleEmphasis
+                                          text={new Date(assessment.due_date).toDateString()}
+                                          textColor={amber[700]}
+                                          sx={{ fontStyle: "italic" }}
+                                        />
+                                      </>
+                                    )}
+                                  </Typography>
+                                </Box>
+                              </Box>
+                              {/* Note */}
+                              <Box component={"div"}
+                                sx={{
+                                  marginBottom: "0.5em",
+                                  display: "flex",
+                                  columnGap: 1,
+                                }}
+                              >
+                                <DescriptionRounded
+                                  fontSize="small"
+                                  sx={{ color: "#06816d" }}
+                                />
+                                <Box component={"div"} sx={{ marginTop: "0.2em" }}>
+                                  <Typography
+                                    component={"p"}
+                                    variant="caption"
+                                    sx={{ fontWeight: 550, color: grey[700] }}
+                                  >
+                                    Note
+                                  </Typography>
+                                  {/* <Typography
+                                    component={"p"}
+                                    variant="caption"
+                                    sx={{ color: grey[600], whiteSpace: "pre-line" }}
+                                  // noWrap={!seeMoreNote[index]}
+                                  >
+                                    {assessment.note}
+                                  </Typography> */}
+                                  <AutoOverflowText text={assessment.note} variant="caption" />
+                                </Box>
+                              </Box>
+                              {/* Assessment Link */}
+                              <Box component={"div"}
+                                sx={{
+                                  marginBottom: "0.5em",
+                                  display: "flex",
+                                  columnGap: 1,
+                                }}
+                              >
+                                <LinkRounded
+                                  fontSize="small"
+                                  sx={{ color: "#06816d" }}
+                                />
+                                <Box component={"div"}>
+                                  <Typography
+                                    component={"div"}
+                                    variant="caption"
+                                    sx={{ fontWeight: 550, color: grey[700] }}
+                                  >
+                                    Assessment Link
+                                  </Typography>
+                                  <Typography
+                                    component={isLinkExist ? "a" : "p"}
+                                    target={isLinkExist ? "_blank" : undefined}
+                                    href={isLinkExist ? assessment.assessment_link : undefined}
+                                    variant="caption"
+                                    sx={{
+                                      color: isLinkExist ? grey[600] : amber[600],
+                                      ":hover": { color: isLinkExist ? blue[500] : amber[600] },
+                                    }}
+                                  >
+                                    {isLinkExist ? assessment.assessment_link : "no link attached"}
+                                  </Typography>
+                                </Box>
+                              </Box>
+                              {/* Assessment Documents */}
+                              <Box component={"div"}
+                                sx={{
+                                  marginBottom: "0.5em",
+                                  display: "flex",
+                                  columnGap: 1,
+                                }}
+                              >
+                                <InsertDriveFileRounded
+                                  fontSize="small"
+                                  sx={{ color: "#06816d" }}
+                                />
+                                <Box component={"div"}>
+                                  <Typography
+                                    component={"p"}
+                                    variant="caption"
+                                    sx={{ fontWeight: 550, color: grey[700] }}
+                                  >
+                                    Attached Files
+                                  </Typography>
+                                  <Box
+                                    component={"div"}
+                                    sx={{
+                                      display: "flex",
+                                      flexWrap: "wrap",
+                                      columnGap: "0.5em",
+                                      rowGap: "0.3em",
+                                    }}
+                                  >
+                                    {assessment.assessment_documents.map((document, index) => {
+                                      const fileURL = document.name.includes(".pdf") ? (document.assessment_document_path) : (document.assessment_document_path + "/download");
+                                      return (
+                                        <Box
+                                          key={index}
+                                          component={"div"}
+                                          sx={{
+                                            padding: "0.2em 0.5em",
+                                            borderRadius: "0.3em",
+                                            backgroundColor: grey[200],
+                                            cursor: "pointer",
+                                            ":hover": {
+                                              backgroundColor: blue[50],
+                                            },
+                                            ":hover .MuiTypography-caption": {
+                                              color: blue[500],
+                                            },
+                                          }}
+                                        >
+                                          <Typography
+                                            component={RouterLink}
+                                            to={HOST.main + fileURL}
+                                            target="_blank"
+                                            variant="caption"
+                                            sx={{ color: grey[600], textDecoration: "none" }}
+                                          >
+                                            {document.name}
+                                          </Typography>
+                                        </Box>
+                                      )
+                                    })}
+                                  </Box>
+                                </Box>
+                              </Box>
+                              {/* Submissions */}
+                              <Box component={"div"}
+                                sx={{
+                                  display: "flex",
+                                  columnGap: 1
+                                }}
+                              >
+                                <AssignmentRounded
+                                  fontSize="small"
+                                  sx={{ color: "#06816d" }}
+                                />
+                                <Box component={"div"}>
+                                  <Typography
+                                    component={"p"}
+                                    variant="caption"
+                                    sx={{ fontWeight: 550, color: grey[700] }}
+                                  >
+                                    Submissions
+                                  </Typography>
+                                  {(assessment.assessment_submissions.length === 0 && !onAddFiles[assessmentKey]) && (
+                                    <Box component={"div"} sx={{ display: "flex", alignItems: "center", columnGap: 1 }}>
+                                      <ErrorRounded fontSize="small" sx={{ color: amber[700] }} />
+                                      <Typography component={"p"} variant="caption" sx={{ color: amber[700], marginTop: "0.3em" }}>
+                                        You have not submitted yet
+                                      </Typography>
+                                    </Box>
+                                  )}
+                                  <Box component={"div"}
+                                    sx={{
+                                      marginBottom: "0.3em",
+                                      display: "flex",
+                                      flexWrap: "wrap",
+                                      columnGap: 1,
+                                      rowGap: 1,
+                                    }}
+                                  >
+                                    {/* Existing Submissions */}
+                                    {assessment.assessment_submissions.map((file, index) => {
+                                      const fileURL = file.name.includes(".pdf") ? (file.submission_document_path) : (file.submission_document_path + "/download");
+                                      return (
+                                        <Box
+                                          key={index}
+                                          component={"div"}
+                                          sx={{
+                                            height: "max-content",
+                                            display: "flex",
+                                            flexWrap: "wrap",
+                                            columnGap: "0.5em",
+                                            rowGap: "0.3em",
+                                          }}
+                                        >
+                                          <Box
+                                            component={"div"}
+                                            sx={{
+                                              display: "flex",
+                                              columnGap: "0.3em",
+                                              alignItems: "center",
+                                              padding: "0.2em 0.5em",
+                                              borderRadius: "0.3em",
+                                              backgroundColor: grey[200],
+                                              cursor: "pointer",
+                                              ":hover": {
+                                                backgroundColor: blue[50],
+                                              },
+                                              ":hover .MuiTypography-caption": {
+                                                color: blue[500],
+                                              },
+                                            }}
+                                          >
+                                            <Typography
+                                              component={RouterLink}
+                                              to={HOST.main + fileURL}
+                                              target="_blank"
+                                              variant="caption"
+                                              sx={{ color: grey[600], textDecoration: "none" }}
+                                            >
+                                              {file.name}
+                                            </Typography>
+                                            {onAddFiles[assessmentKey] && (
+                                              <IconButton size="small" sx={{ padding: "0.1em 0em" }}
+                                                disabled={loading["delete-submission"]}
+                                                onClick={() => {
+                                                  // DELETE API
+                                                  deleteSubmission(file.id);
+                                                }}
+                                              >
+                                                {loading["delete-submission"] ? (
+                                                  <CircularProgress size={20} color="inherit" />
+                                                ) : (
+                                                  <CloseRounded fontSize="small" />
+                                                )}
+                                              </IconButton>
+                                            )}
+                                          </Box>
+                                        </Box>
+                                      )
+                                    })}
+                                    {/* New Submissions */}
+                                    {onAddFiles[assessmentKey] && assessmentSubmissions[assessmentKey] && assessmentSubmissions[assessmentKey].map((file, index) => {
+                                      return (
+                                        <Box
+                                          key={index}
+                                          component={"div"}
+                                          sx={{
+                                            height: "max-content",
+                                            display: "flex",
+                                            flexWrap: "wrap",
+                                            columnGap: "0.5em",
+                                            rowGap: "0.3em",
+                                          }}
+                                        >
+                                          <Box
+                                            component={"div"}
+                                            sx={{
+                                              display: "flex",
+                                              columnGap: "0.3em",
+                                              alignItems: "center",
+                                              padding: "0.2em 0.5em",
+                                              borderRadius: "0.3em",
+                                              backgroundColor: grey[200],
+                                              cursor: "pointer",
+                                              ":hover": {
+                                                backgroundColor: blue[50],
+                                              },
+                                              ":hover .MuiTypography-caption": {
+                                                color: blue[500],
+                                              },
+                                            }}
+                                          >
+                                            <Typography
+                                              component={"p"}
+                                              variant="caption"
+                                              sx={{ color: grey[600] }}
+                                            >
+                                              {file.name}
+                                            </Typography>
+                                            <IconButton size="small" sx={{ padding: "0.1em 0em" }}
+                                              onClick={() => {
+                                                setAssessmentSubmissions(prev => {
+                                                  prev[assessmentKey].splice(index, 1);
+                                                  return {
+                                                    ...prev,
+                                                  }
+                                                })
+                                              }}
+                                            >
+                                              <CloseRounded fontSize="small" />
+                                            </IconButton>
+                                          </Box>
+                                        </Box>
+                                      )
+                                    })}
+                                    {/* Add Files Button */}
+                                    {onAddFiles[assessmentKey] && (
+                                      <Box component={"div"}
+                                        sx={{
+                                          width: 28,
+                                          height: 28,
+                                          border: "1px dashed " + grey[300],
+                                          display: "flex",
+                                          justifyContent: "center",
+                                          alignItems: "center",
+                                        }}
+                                      >
+                                        <IconButton component="label"
+                                          htmlFor="assessment_document"
+                                          size="small"
+                                        >
+                                          <AddRounded fontSize="small" sx={{ color: grey[600] }} />
+                                          <InputBase
+                                            id="assessment_document"
+                                            type="file"
+                                            name="assessment_document"
+                                            inputProps={{ multiple: true }}
+                                            slotProps={{
+                                              input: {
+                                                accept: "application/*"
+                                              }
+                                            }}
+                                            sx={{
+                                              height: '0px',
+                                              width: '0px',
+                                              opacity: 0
+                                            }}
+                                            onChange={fileOnChange(assessmentKey)}
+                                          />
+                                        </IconButton>
+                                      </Box>
+                                    )}
+                                  </Box>
+                                  {onAddFiles[assessmentKey] && (
+                                    <FormHelperText sx={{ color: errMsg["submissions"] ? "red" : undefined }}>
+                                      {errMsg["submissions"] && errMsg["submissions"] !== "" ? errMsg["submissions"] : "Select your submission files"}
+                                    </FormHelperText>
+                                  )}
+                                </Box>
+                              </Box>
+                              <Box component={"div"}
+                                sx={{
+                                  marginY: "0.5em",
+                                  display: "flex",
+                                  alignItems: "center",
+                                  justifyContent: assessment.submission_result ? "space-between" : "end",
+                                }}
+                              >
+                                {assessment.submission_result && (
+                                  <Box component={"div"}
+                                    sx={{
+                                      marginLeft: "1.7em",
+                                      padding: "0.2em 0.5em",
+                                      borderRadius: "1em",
+                                      backgroundColor: blue[50]
+                                    }}
+                                  >
+                                    <Typography component={"p"} variant="subtitle2" sx={{ fontWeight: 550, color: blue[500] }}>
+                                      {assessment.submission_result}/100
+                                    </Typography>
+                                  </Box>
+                                )}
+                                {onAddFiles[assessmentKey] && (
+                                  <Box component={"div"}
+                                    sx={{ display: "flex", columnGap: 1 }}
+                                  >
+                                    <Button
+                                      variant="text"
+                                      color="error"
+                                      size="small"
+                                      onClick={() => {
+                                        setSelectedAssessment(null);
+                                        setOnAddFiles(prev => ({
+                                          ...prev,
+                                          [assessmentKey]: false,
+                                        }));
+                                      }}
+                                    >
+                                      Cancel
+                                    </Button>
+                                    <Button
+                                      variant="contained"
+                                      size="small"
+                                      disabled={loading[assessmentKey]}
+                                      startIcon={loading[assessmentKey] && (<CircularProgress size={20} />)}
+                                      onClick={() => {
+                                        if (assessmentSubmissions[assessmentKey].length === 0) {
+                                          return;
+                                        }
+                                        addSubmissions(assessmentKey);
+                                      }}
+                                    >
+                                      Submit
+                                    </Button>
+                                  </Box>
+                                )}
+                                {!onAddFiles[assessmentKey] && (
+                                  <Button
+                                    variant="contained"
+                                    size="small"
+                                    disabled={isDeadline || assessment.submission_result !== null}
+                                    onClick={() => {
+                                      setSelectedAssessment(assessment);
+                                      setOnAddFiles(prev => ({
+                                        ...prev,
+                                        [assessmentKey]: true,
+                                      }))
+                                    }}
+                                  >
+                                    {assessment.assessment_submissions.length > 0 ? "Edit Submissions" : "Add Submissions"}
+                                  </Button>
+                                )}
+                              </Box>
+                            </Box>
+                          )
+                        })}
                       </Box>
                     </Box>
                   </Box>
@@ -373,7 +1136,10 @@ export default function ApplicationStatus() {
                       borderTop: "1px solid " + grey[400],
                     }}
                   >
-                    <PendingActionsOutlined sx={{ color: grey[400] }} />
+                    <PendingActionsOutlined sx={{
+                      color: applicantInterviews.length === 0 ? grey[400] :
+                        (conductedInterviews.length === applicantInterviews.length) ? green[700] : amber[700]
+                    }} />
                     <Box sx={{ flexGrow: 1, paddingX: "0.5em" }}>
                       <Box
                         component={"div"}
@@ -386,7 +1152,8 @@ export default function ApplicationStatus() {
                           variant="subtitle2"
                           sx={{
                             fontWeight: 550,
-                            color: grey[400],
+                            color: applicantInterviews.length === 0 ? grey[400] :
+                              (conductedInterviews.length === applicantInterviews.length) ? green[700] : amber[700],
                             marginY: "0.2em",
                           }}
                         >
@@ -397,220 +1164,153 @@ export default function ApplicationStatus() {
                           sx={{
                             minWidth: "12em",
                             fontStyle: "italic",
-                            color: grey[400],
+                            color: applicantInterviews.length === 0 ? grey[400] :
+                              (conductedInterviews.length === applicantInterviews.length) ? green[700] : amber[700],
                             textAlign: "end",
                           }}
                         >
-                          unavailable
+                          {applicantInterviews.length === 0 ? "Waiting for Interview Schedules" :
+                            (conductedInterviews.length === applicantInterviews.length) ? "All interviews have been conducted" :
+                              `${conductedInterviews.length} out of ${applicantInterviews.length} interviews conducted`}
                         </Typography>
                       </Box>
-                      {/* on.small screen */}
-                      {small ? (
-                        <Box component={"div"} sx={{ paddingY: "0.5em" }}>
-                          <Box
-                            component={"div"}
+                      <TableContainer
+                        sx={{
+                          ".MuiTableHead-root": {
+                            ".MuiTableCell-root": {
+                              borderBottom: "none",
+                            },
+                          },
+                        }}
+                      >
+                        <Table>
+                          <TableHead>
+                            <TableRow>
+                              {responsiveColumns.map((column, index) => (
+                                <TableCell key={index} size="small">
+                                  <Typography
+                                    variant="subtitle2"
+                                    sx={{ fontWeight: 550, color: grey[500] }}
+                                  >
+                                    {column.label}
+                                  </Typography>
+                                </TableCell>
+                              ))}
+                            </TableRow>
+                          </TableHead>
+                          <TableBody
                             sx={{
-                              borderRadius: "0.3em",
-                              border: "1px solid " + grey[400],
-                              padding: "0.5em",
+                              "> .MuiTableRow-root:hover": {
+                                backgroundColor: grey[100],
+                              },
+                              ".MuiTableCell-root": {
+                                borderColor: grey[300],
+                              },
                             }}
                           >
-                            <Typography
-                              variant="subtitle2"
-                              sx={{ lineHeight: "1em" }}
-                            >
-                              Vera Verina
-                            </Typography>
-                            <Typography
-                              component={"p"}
-                              variant="caption"
-                              sx={{ color: grey[600] }}
-                            >
-                              vera.verina@erajaya.com
-                            </Typography>
-                            <Chip
-                              component={"div"}
-                              size="small"
-                              icon={<ScheduleRounded fontSize="small" />}
-                              label={"Scheduled"}
-                              sx={{
-                                "& .MuiChip-icon": {
-                                  color: amber[500],
-                                },
-                                backgroundColor: amber[50],
-                                color: amber[500],
-                              }}
-                            />
-                            <Typography
-                              component={"p"}
-                              variant="caption"
-                              sx={{ marginTop: "1em", color: grey[600] }}
-                            >
-                              Today
-                              <SimpleEmphasis text={" 10:00 PM - 11:45 PM"} />
-                            </Typography>
-                            <CopyText
-                              textToCopy="Google Meet"
-                              options={{
-                                noBorder: true,
-                                useTextButton: true,
-                                fontSize: "small",
-                              }}
-                            />
-                          </Box>
-                        </Box>
-                      ) : (
-                        <Box component={"div"} sx={{ paddingY: "0.5em" }}>
-                          {/* Row Head */}
-                          <Box
-                            sx={{
-                              display: "flex",
-                              alignItems: "center",
-                              border: "1px solid " + grey[400],
-                              borderRadius: "0.3em 0.3em 0 0",
-                              padding: "0.5em",
-                              backgroundColor: "#06816d",
-                            }}
-                          >
-                            {/* column.date */}
-                            <Box
-                              sx={{
-                                flexBasis: "20%",
-                              }}
-                            >
-                              <Typography
-                                sx={{
-                                  fontWeight: 550,
-                                  color: "whitesmoke",
-                                  fontSize: "0.8em",
-                                }}
-                              >
-                                Date
-                              </Typography>
-                            </Box>
-                            {/* column.recruiter */}
-                            <Box
-                              sx={{
-                                flexBasis: "30%",
-                              }}
-                            >
-                              <Typography
-                                sx={{
-                                  fontWeight: 550,
-                                  color: "whitesmoke",
-                                  fontSize: "0.8em",
-                                }}
-                              >
-                                Recruiter
-                              </Typography>
-                            </Box>
-                            {/* column.place/link video conf */}
-                            <Box
-                              sx={{
-                                flexBasis: "35%",
-                              }}
-                            >
-                              <Typography
-                                sx={{
-                                  fontWeight: 550,
-                                  color: "whitesmoke",
-                                  fontSize: "0.8em",
-                                }}
-                              >
-                                Place/Link video conferencing
-                              </Typography>
-                            </Box>
-                            {/* column.status */}
-                            <Box
-                              sx={{
-                                flexBasis: "15%",
-                              }}
-                            >
-                              <Typography
-                                sx={{
-                                  fontWeight: 550,
-                                  color: "whitesmoke",
-                                  fontSize: "0.8em",
-                                }}
-                              >
-                                Status
-                              </Typography>
-                            </Box>
-                          </Box>
-                          {/* Row Data */}
-                          <Box
-                            component={"div"}
-                            className="schedule-items-container"
-                          >
-                            {[0, 1, 2].map((_, index) => (
-                              <Box
-                                key={index}
-                                component={"div"}
-                                className="schedule-item"
-                                sx={{
-                                  display: "flex",
-                                  padding: "0.5em",
-                                  border: "1px solid " + grey[400],
-                                  borderTop: "none",
-                                  "&:hover": {
-                                    backgroundColor: grey[100],
-                                  },
-                                }}
-                              >
-                                <Box sx={{ flexBasis: "20%" }}>
-                                  <Typography sx={{ fontSize: "0.8em" }}>
-                                    Today
-                                  </Typography>
-                                  <Typography
-                                    variant="caption"
-                                    sx={{ color: grey[600] }}
-                                  >
-                                    09.30 - 10.00
-                                  </Typography>
-                                </Box>
-                                <Box sx={{ flexBasis: "30%" }}>
-                                  <Typography sx={{ fontSize: "0.8em" }}>
-                                    Vera Verina
-                                  </Typography>
-                                  <Typography
-                                    variant="caption"
-                                    sx={{ color: grey[600] }}
-                                  >
-                                    vera-verinatalentacq@erajaya.com
-                                  </Typography>
-                                </Box>
-                                <Box sx={{ flexBasis: "35%" }}>
-                                  <Typography sx={{ fontSize: "0.8em" }}>
-                                    Google Meet
-                                  </Typography>
-                                  <Link
-                                    href="https://github.com"
-                                    underline="hover"
-                                  >
-                                    <Typography
-                                      variant="caption"
-                                      sx={{ color: grey[600] }}
-                                    >
-                                      https://meet.google.com/vfr-cehr-qiq
-                                    </Typography>
-                                  </Link>
-                                </Box>
-                                <Box sx={{ flexBasis: "15%" }}>
-                                  <Typography
-                                    sx={{
-                                      fontSize: "0.8em",
-                                      color: orange[400],
-                                      fontStyle: "italic",
-                                    }}
-                                  >
-                                    Scheduled
-                                  </Typography>
-                                </Box>
-                              </Box>
+                            {applicantInterviews.map((interview, dataIndex) => (
+                              <TableRow key={dataIndex}>
+                                {responsiveColumns.map((column, index) => {
+                                  switch (column.prop) {
+                                    case "result":
+                                      return (
+                                        <TableCell key={index}
+                                          size="small"
+                                          sx={{
+                                            width: "20%",
+                                          }}
+                                        >
+                                          <Typography component={"p"} variant="subtitle2"
+                                            sx={{ ...interviewResultColor(interview.result as string) }}
+                                          >
+                                            {interview.result}
+                                          </Typography>
+                                        </TableCell>
+                                      );
+                                    case "schedule":
+                                      return (
+                                        <TableCell key={index}
+                                          size="small"
+                                          sx={{
+                                            width: "80%",
+                                          }}
+                                        >
+                                          <Typography component={"p"} variant="caption">
+                                            <SimpleEmphasis text={interview.location} textColor={grey[700]} />
+                                            <br />
+                                            <SimpleEmphasis
+                                              text={dayjs(interview.date).format("ddd MMM DD, YYYY - HH:mm")}
+                                            // textColor={grey[600]}
+                                            />
+                                          </Typography>
+                                          <Link
+                                            component={RouterLink}
+                                            to={interview.location_url}
+                                            target="_blank"
+                                            style={{
+                                              textDecoration: "none",
+                                              fontStyle: "italic",
+                                            }}
+                                          >
+                                            <Typography
+                                              component={"p"}
+                                              variant="caption"
+                                              sx={{
+                                                color: grey[600],
+                                                ":hover": {
+                                                  color: blue[500],
+                                                  textDecoration: "underline",
+                                                },
+                                              }}
+                                            >
+                                              Interview link here
+                                            </Typography>
+                                          </Link>
+                                          <Divider
+                                            orientation="horizontal"
+                                            sx={{ marginY: "0.5em" }}
+                                          />
+                                          <Box
+                                            component={"div"}
+                                            sx={{
+                                              display: "flex",
+                                              alignItems: "center",
+                                              justifyContent: "space-between",
+                                            }}
+                                          >
+                                            <Typography variant="caption">
+                                              Status
+                                            </Typography>
+                                            <Chip
+                                              label={interview.status}
+                                              size="small"
+                                              sx={chipColorDeterminer(interview.status)}
+                                            />
+                                          </Box>
+                                        </TableCell>
+                                      );
+                                    default:
+                                      return (
+                                        <TableCell key={index} size="small" sx={{}}>
+                                          <Typography
+                                            variant="subtitle2"
+                                            sx={{ color: grey[600] }}
+                                          >
+                                            {
+                                              interview[
+                                              column.prop as keyof ApplicantInterview
+                                              ] as React.ReactNode
+                                            }
+                                          </Typography>
+                                        </TableCell>
+                                      );
+                                  }
+                                })}
+                              </TableRow>
                             ))}
-                          </Box>
-                        </Box>
-                      )}
+                          </TableBody>
+                        </Table>
+                      </TableContainer>
                     </Box>
                   </Box>
                   {/* Offerings */}
@@ -620,11 +1320,11 @@ export default function ApplicationStatus() {
                       alignItems: "start",
                       paddingY: "1em",
                       borderTop: "1px solid " + grey[400],
-                      cursor: "not-allowed",
+                      // cursor: "not-allowed",
                       userSelect: "none",
                     }}
                   >
-                    <HandshakeOutlined sx={{ color: grey[800] }} />
+                    <HandshakeOutlined sx={{ color: acceptedOffer.length > 0 || declinedOffer.length > 0 ? green[700] : applicantOffers.length > 0 ? amber[700] : grey[400] }} />
                     <Box sx={{ flexGrow: 1, paddingX: "0.5em" }}>
                       <Box
                         component={"div"}
@@ -637,7 +1337,7 @@ export default function ApplicationStatus() {
                           variant="subtitle2"
                           sx={{
                             fontWeight: 550,
-                            color: grey[800],
+                            color: acceptedOffer.length > 0 || declinedOffer.length > 0 ? green[700] : applicantOffers.length > 0 ? amber[700] : grey[400],
                             marginY: "0.2em",
                           }}
                         >
@@ -648,145 +1348,227 @@ export default function ApplicationStatus() {
                           sx={{
                             minWidth: "12em",
                             fontStyle: "italic",
-                            color: grey[400],
+                            color: acceptedOffer.length > 0 ? green[700] : declinedOffer.length > 0 ? red[500] : applicantOffers.length > 0 ? amber[700] : grey[400],
                             textAlign: "end",
                           }}
                         >
-                          May 24, 2024
+                          {acceptedOffer.length > 0 ? "Offer Accepted" :
+                            declinedOffer.length > 0 ? "Offer Declined" :
+                              applicantOffers.length > 0 ? "Waiting for Acceptance" :
+                                "Waiting for Offer"
+                          }
                         </Typography>
                       </Box>
-                      <Box
-                        component={"div"}
-                        sx={{
-                          border: "1px solid " + grey[400],
-                          borderRadius: "0.3em",
-                          marginY: "0.5em",
-                        }}
-                      >
-                        <Box
-                          component={"div"}
-                          sx={{
-                            display: "flex",
-                            gap: "0.5em",
-                            alignItems: "center",
-                            justifyContent: small ? "space-between" : undefined,
-                            paddingTop: "0.5em",
-                            paddingX: "1em",
-                          }}
-                        >
-                          <Typography
-                            variant="subtitle2"
-                            sx={{ fontWeight: 550, color: grey[700] }}
-                          >
-                            Cloud Architect
-                          </Typography>
-                          <Chip
-                            icon={<DonutLargeRounded />}
-                            label="Offered"
-                            size="small"
-                            sx={{
-                              color: lightBlue[500],
-                              bgcolor: lightBlue[50],
-                              "& .MuiChip-icon": {
-                                color: lightBlue[500],
-                              },
-                            }}
-                          />
-                        </Box>
-                        <Box
-                          component={"div"}
-                          sx={{
-                            display: "flex",
-                            flexWrap: "wrap",
-                            gap: small ? undefined : "1em",
-                            paddingX: "1em",
-                          }}
-                        >
+                      {applicantOffers.map((offer, index) => {
+                        const isExpired = dayjs().isAfter(dayjs(offer.end_on));
+                        return (
                           <Box
-                            component={"div"}
-                            sx={{ display: "flex", alignItems: "center" }}
-                          >
-                            <CorporateFareRounded
-                              fontSize="small"
-                              sx={{ color: grey[600], marginRight: "0.3em" }}
-                            />
-                            <Typography
-                              variant="caption"
-                              sx={{ color: grey[600], fontSize: "x-small" }}
-                            >
-                              PT.Sidokaredev Karya Mandiri
-                            </Typography>
-                          </Box>
-                          <Box
-                            component={"div"}
-                            sx={{ display: "flex", alignItems: "center" }}
-                          >
-                            <LocationOnRounded
-                              fontSize="small"
-                              sx={{ color: grey[600], marginRight: "0.3em" }}
-                            />
-                            <Typography
-                              variant="caption"
-                              sx={{ color: grey[600], fontSize: "x-small" }}
-                            >
-                              Kabupaten Sidoarjo
-                            </Typography>
-                          </Box>
-                        </Box>
-                        <Divider
-                          orientation="horizontal"
-                          sx={{ marginY: "0.5em", borderColor: grey[400] }}
-                        />
-                        <Box
-                          component={"div"}
-                          sx={{
-                            display: small ? undefined : "flex",
-                            alignItems: "center",
-                            justifyContent: "space-between",
-                            paddingX: "1em",
-                            paddingBottom: "0.5em",
-                          }}
-                        >
-                          <Typography
-                            variant="caption"
-                            sx={{ fontStyle: "italic", color: grey[600] }}
-                          >
-                            Offer end on :{" "}
-                            <SimpleEmphasis text={"30, May 2024"} />
-                          </Typography>
-                          <Box
+                            key={index}
                             component={"div"}
                             sx={{
-                              display: small ? "flex" : undefined,
-                              marginTop: "0.5em",
+                              border: "1px solid " + grey[400],
+                              borderRadius: "0.3em",
+                              marginY: "0.5em",
                             }}
                           >
-                            <Button
-                              variant="outlined"
-                              size="small"
-                              fullWidth={small}
-                              sx={{ marginRight: "0.2em" }}
+                            <Box
+                              component={"div"}
+                              sx={{
+                                display: "flex",
+                                gap: "0.5em",
+                                alignItems: "center",
+                                // justifyContent: smallMedia ? "space-between" : undefined,
+                                justifyContent: "space-between",
+                                paddingTop: "0.5em",
+                                paddingX: "1em",
+                              }}
                             >
-                              Dismiss
-                            </Button>
-                            <Button
-                              variant="contained"
-                              size="small"
-                              fullWidth={small}
-                              sx={{ marginLeft: "0.2em" }}
+                              <Typography
+                                variant="subtitle2"
+                                sx={{ fontWeight: 550, color: grey[700] }}
+                              >
+                                {selectedApplied?.vacancy.position}
+                              </Typography>
+                              <Chip
+                                icon={<DonutLargeRounded />}
+                                label={offer.status}
+                                size="small"
+                                sx={{
+                                  color: acceptedOffer.length > 0 ? green[500] : declinedOffer.length > 0 ? red[500] : lightBlue[500],
+                                  bgcolor: acceptedOffer.length > 0 ? green[50] : declinedOffer.length > 0 ? red[50] : lightBlue[50],
+                                  "& .MuiChip-icon": {
+                                    color: acceptedOffer.length > 0 ? green[500] : declinedOffer.length > 0 ? red[500] : lightBlue[500],
+                                  },
+                                }}
+                              />
+                            </Box>
+                            <Box
+                              component={"div"}
+                              sx={{
+                                display: "flex",
+                                flexWrap: "wrap",
+                                gap: smallMedia ? undefined : "1em",
+                                paddingX: "1em",
+                              }}
                             >
-                              Confirm
-                            </Button>
+                              <Box
+                                component={"div"}
+                                sx={{ display: "flex", alignItems: "center" }}
+                              >
+                                <CorporateFareRounded
+                                  fontSize="small"
+                                  sx={{ color: grey[600], marginRight: "0.3em" }}
+                                />
+                                <Typography
+                                  variant="caption"
+                                  sx={{ color: grey[600], fontSize: "x-small" }}
+                                >
+                                  {selectedApplied?.employer.legal_name}
+                                </Typography>
+                              </Box>
+                              <Box
+                                component={"div"}
+                                sx={{ display: "flex", alignItems: "center" }}
+                              >
+                                <LocationOnRounded
+                                  fontSize="small"
+                                  sx={{ color: grey[600], marginRight: "0.3em" }}
+                                />
+                                <Typography
+                                  variant="caption"
+                                  sx={{ color: grey[600], fontSize: "x-small" }}
+                                >
+                                  {selectedApplied?.employer.location}
+                                </Typography>
+                              </Box>
+                            </Box>
+                            <Divider
+                              orientation="horizontal"
+                              sx={{ marginY: "0.5em", borderColor: grey[400] }}
+                            />
+                            <Box
+                              component={"div"}
+                              sx={{
+                                display: smallMedia ? undefined : "flex",
+                                alignItems: "center",
+                                justifyContent: "space-between",
+                                paddingX: "1em",
+                                paddingBottom: "0.5em",
+                              }}
+                            >
+                              <Typography
+                                variant="caption"
+                                sx={{ fontStyle: "italic", color: grey[600] }}
+                              >
+                                Offer end on :{" "}
+                                <SimpleEmphasis text={dayjs(offer.end_on).format("dddd MMM DD, YYYY")} textColor={isExpired ? "red" : undefined} />
+                                <br />
+                                {isExpired && offer.status === "Pending Acceptance" && (
+                                  <span
+                                    style={{
+                                      color: red[500]
+                                    }}
+                                  >
+                                    The offer has expired
+                                  </span>
+                                )}
+                                {offer.status === "Offer Accepted" && offer.loa_document_path == null && (
+                                  <span style={{ color: lightBlue[500] }}>
+                                    Please wait for the Letter of Acceptance and check it periodically for updates.
+                                  </span>
+                                )}
+                                {offer.loa_document_path && (
+                                  <span style={{ color: "#06816d" }}>
+                                    The Letter of Acceptance has been issued. Please check and download the document below.
+                                  </span>
+                                )}
+                              </Typography>
+                              <Box
+                                component={"div"}
+                                sx={{
+                                  display: smallMedia ? "flex" : undefined,
+                                  marginTop: "0.5em",
+                                }}
+                              >
+                                {!isExpired && offer.status === "Pending Acceptance" && (
+                                  <Box component={"div"}
+                                    sx={{
+                                      display: "flex",
+                                      columnGap: 1.5
+                                    }}
+                                  >
+                                    <Button
+                                      variant="outlined"
+                                      size="small"
+                                      fullWidth={smallMedia}
+                                      onClick={() => {
+                                        setSelectedOffer({ ...offer, status: "decline" });
+                                      }}
+                                    >
+                                      Dismiss
+                                    </Button>
+                                    <Button
+                                      variant="contained"
+                                      size="small"
+                                      fullWidth={smallMedia}
+                                      onClick={() => {
+                                        setSelectedOffer({ ...offer, status: "accept" });
+                                      }}
+                                    >
+                                      Confirm
+                                    </Button>
+                                  </Box>
+                                )}
+                              </Box>
+                            </Box>
+                            {offer.status === "Offer Accepted" && offer.loa_document_path !== null && (
+                              <Box component={"div"}
+                                sx={{
+                                  marginY: "0.5em",
+                                  display: "flex",
+                                  justifyContent: "end",
+                                  paddingRight: "1em",
+                                  columnGap: 1.5
+                                }}
+                              >
+                                <Button
+                                  component={RouterLink}
+                                  to={`${HOST.main}${offer.loa_document_path}`}
+                                  target="_blank"
+                                  variant="text"
+                                  size="small"
+                                  startIcon={<LaunchRounded fontSize="small" />}
+                                  sx={{
+                                    minWidth: "8em"
+                                  }}
+                                >
+                                  View
+                                </Button>
+                                <Button
+                                  component={RouterLink}
+                                  to={`${HOST.main}${offer.loa_document_path}/download`}
+                                  target="_blank"
+                                  variant="contained"
+                                  size="small"
+                                  startIcon={<DownloadRounded fontSize="small" />}
+                                  sx={{
+                                    minWidth: "8em"
+                                  }}
+                                >
+                                  Download
+                                </Button>
+                              </Box>
+                            )}
                           </Box>
-                        </Box>
-                      </Box>
+                        )
+                      })}
                     </Box>
                   </Box>
                 </Stack>
               </Box>
             </Box>
           </Fade>
-          {/* detail */}
+          {/* Detail */}
           <Fade in={displayOn.detail} mountOnEnter unmountOnExit>
             <Stack direction={"column"} spacing={2} sx={{ marginY: "0.5em" }}>
               {/* decription */}
@@ -797,11 +1579,8 @@ export default function ApplicationStatus() {
                 >
                   Description
                 </Typography>
-                <Typography variant="body1" sx={{ color: grey[600] }}>
-                  Lorem ipsum dolor sit amet, consectetur adipisicing elit.
-                  Cupiditate quo hic tenetur voluptas laboriosam a cum rem
-                  voluptatem dignissimos dicta ipsam quasi in, minima ut
-                  aperiam. Exercitationem suscipit maiores similique!
+                <Typography variant="body1" sx={{ color: grey[600], whiteSpace: "pre-line" }}>
+                  {selectedApplied?.vacancy.description}
                 </Typography>
               </Box>
               {/* qualification */}
@@ -812,15 +1591,9 @@ export default function ApplicationStatus() {
                 >
                   Qualification
                 </Typography>
-                <ul>
-                  {[0, 1, 2, 3].map((_, index) => (
-                    <li key={index} style={{ marginLeft: "1em" }}>
-                      <Typography variant="body1" sx={{ color: grey[600] }}>
-                        Lorem, ipsum dolor sit amet consectetur adipisicing elit
-                      </Typography>
-                    </li>
-                  ))}
-                </ul>
+                <Typography variant="body1" sx={{ color: grey[600], whiteSpace: "pre-line" }}>
+                  {selectedApplied?.vacancy.qualification}
+                </Typography>
               </Box>
               {/* responsibility */}
               <Box component={"div"}>
@@ -830,23 +1603,17 @@ export default function ApplicationStatus() {
                 >
                   Responsibility
                 </Typography>
-                <ul>
-                  {[0, 1, 2, 3].map((_, index) => (
-                    <li key={index} style={{ marginLeft: "1em" }}>
-                      <Typography variant="body1" sx={{ color: grey[600] }}>
-                        Lorem ipsum dolor sit amet consectetur adipisicing elit.
-                        Perspiciatis atque modi mollitia?
-                      </Typography>
-                    </li>
-                  ))}
-                </ul>
+                <Typography variant="body1" sx={{ color: grey[600], whiteSpace: "pre-line" }}>
+                  {selectedApplied?.vacancy.responsibility}
+                </Typography>
               </Box>
             </Stack>
           </Fade>
         </Grid>
         <Grid item lg={4}>
+          {/* Applied Vacancies */}
           <Collapse
-            in={large}
+            in={largeMedia}
             mountOnEnter
             unmountOnExit
             sx={{
@@ -855,15 +1622,43 @@ export default function ApplicationStatus() {
             }}
           >
             <Box component={"div"}>
-              <Typography
-                variant="subtitle1"
-                sx={{
-                  fontWeight: 550,
-                  color: grey[800],
-                }}
+              <Box component={"div"}
+                sx={{ marginBottom: "0.5em" }}
               >
-                Applied List
-              </Typography>
+                <Typography
+                  variant="subtitle1"
+                  sx={{
+                    fontWeight: 550,
+                    color: grey[800],
+                  }}
+                >
+                  Applied List
+                </Typography>
+                <TextField
+                  type="text"
+                  name="search" // search for applicant
+                  placeholder="Search ..."
+                  autoComplete="off"
+                  size="small"
+                  fullWidth
+                  InputProps={{
+                    startAdornment: (
+                      <InputAdornment position="start">
+                        <SearchRounded />
+                      </InputAdornment>
+                    ),
+                    sx: {
+                      minWidth: {
+                        md: "20em",
+                      },
+                    },
+                  }}
+                  value={appliedQuery}
+                  onChange={(event: ChangeEvent<HTMLInputElement>) => {
+                    setAppliedQuery(event.target.value);
+                  }}
+                />
+              </Box>
               <Box
                 sx={{
                   height: "87vh",
@@ -879,127 +1674,221 @@ export default function ApplicationStatus() {
                   // },
                 }}
               >
-                {[1, 2, 3, 4, 5].map((_, index) => (
-                  <Box
-                    key={index}
-                    component={"div"}
-                    sx={{
-                      border: `1px solid ${grey[400]}`,
-                      padding: "1em",
-                      marginRight: "0.5em",
-                      borderRadius: "0.5em",
-                      marginY: "0.5em",
-                    }}
-                  >
+                {searchedAppliedVacancies.map((applied, index) => {
+                  const lastUpdated = new Date(applied.updated_at).toDateString();
+                  return (
                     <Box
+                      key={index}
                       component={"div"}
                       sx={{
-                        display: "flex",
+                        border: `1px solid ${grey[400]}`,
+                        padding: "1em",
+                        marginRight: "0.5em",
+                        borderRadius: "0.5em",
+                        marginY: "0.5em",
                       }}
                     >
-                      <Avatar
-                        alt="company-logo"
-                        src="broken.jpg"
-                        sx={{
-                          width: "3em",
-                          height: "3em",
-                          borderRadius: "0.5em",
-                        }}
-                      />
                       <Box
-                        sx={{
-                          flexGrow: 1,
-                          marginLeft: "0.5em",
-                        }}
-                      >
-                        <Typography
-                          variant="subtitle1"
-                          sx={{ fontWeight: 550, color: grey[800] }}
-                        >
-                          UX Research
-                        </Typography>
-                        <Typography
-                          variant="body2"
-                          sx={{ fontWeight: 550, color: "#045a55" }}
-                        >
-                          Sidokaredev
-                        </Typography>
-                      </Box>
-                      <Box>
-                        <Chip
-                          label={"On process"}
-                          size="small"
-                          sx={{ backgroundColor: "#ffcc80" }}
-                        />
-                      </Box>
-                    </Box>
-                    <Divider sx={{ marginY: "0.5em" }} />
-                    <Stack rowGap={0.5}>
-                      <Box sx={{ display: "flex" }}>
-                        <Place
-                          fontSize="small"
-                          sx={{ color: lightBlue[600] }}
-                        />
-                        <Typography
-                          variant="subtitle2"
-                          sx={{ marginLeft: "0.5em" }}
-                        >
-                          Sidoarjo, Indonesia
-                        </Typography>
-                      </Box>
-                      <Box sx={{ display: "flex" }}>
-                        <Paid fontSize="small" sx={{ color: grey[600] }} />
-                        <Typography
-                          variant="subtitle2"
-                          sx={{ marginLeft: "0.5em" }}
-                        >
-                          Rp. 3.000.000,00
-                        </Typography>
-                      </Box>
-                      <Box
+                        component={"div"}
                         sx={{
                           display: "flex",
-                          justifyContent: "space-between",
-                          alignItems: "end",
                         }}
                       >
+                        <Avatar
+                          alt="company-logo"
+                          src={`${HOST.main}${applied.employer.profile_image_path}`}
+                          sx={{
+                            width: "2.5em",
+                            height: "2.5em",
+                            borderRadius: "0.5em",
+                          }}
+                        />
+                        <Box
+                          sx={{
+                            flexGrow: 1,
+                            marginLeft: "0.5em",
+                          }}
+                        >
+                          <Typography
+                            variant="subtitle1"
+                            sx={{ fontWeight: 550, color: grey[800] }}
+                          >
+                            {applied.vacancy.position}
+                          </Typography>
+                          <Typography
+                            variant="body2"
+                            sx={{ fontWeight: 550, color: "#045a55" }}
+                          >
+                            {applied.employer.name}
+                          </Typography>
+                          {applied.vacancy.is_inactive && (
+                            <Box component={"div"} sx={{ display: "flex", alignItems: "center", columnGap: "0.3em" }}>
+                              <WarningRounded fontSize="small" sx={{ marginTop: "-0.2em", fontSize: "small", color: "red" }} />
+                              <Typography component={"p"} variant="caption" sx={{ color: "red" }}>
+                                no longer active
+                              </Typography>
+                            </Box>
+                          )}
+                        </Box>
+                        <Box component={"div"}>
+                          <Typography component={"p"} variant="caption"
+                            sx={{ ...coloringPipelinesStatus(applied.status) }}
+                          >
+                            {applied.status}
+                          </Typography>
+                          {/* <Chip
+                            label={applied.status}
+                            size="small"
+                            sx={{ backgroundColor: "#ffcc80", fontSize: "small" }}
+                          /> */}
+                        </Box>
+                      </Box>
+                      <Divider sx={{ marginY: "0.5em" }} />
+                      <Stack rowGap={0.5}>
+                        <Box sx={{ display: "flex" }}>
+                          <Place
+                            fontSize="small"
+                            sx={{ color: lightBlue[600] }}
+                          />
+                          <Typography
+                            variant="subtitle2"
+                            sx={{ marginLeft: "0.5em" }}
+                          >
+                            {applied.employer.location}
+                          </Typography>
+                        </Box>
+                        <Box sx={{ display: "flex" }}>
+                          <Paid fontSize="small" sx={{ color: grey[600] }} />
+                          <Typography
+                            variant="subtitle2"
+                            sx={{ marginLeft: "0.5em" }}
+                          >
+                            {new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR" }).format(applied.vacancy.salary)}
+                          </Typography>
+                        </Box>
                         <Box
                           sx={{
                             display: "flex",
-                            alignItems: "center",
+                            justifyContent: "space-between",
+                            alignItems: "end",
                           }}
                         >
-                          <AccessTime
-                            fontSize="small"
-                            sx={{ color: grey[500] }}
-                          />
-                          <Typography
-                            variant="caption"
+                          <Box
                             sx={{
-                              marginLeft: "0.5em",
-                              fontStyle: "italic",
-                              color: grey[500],
+                              display: "flex",
+                              alignItems: "center",
                             }}
                           >
-                            Last update at 3 hours ago
-                          </Typography>
+                            <AccessTime
+                              fontSize="small"
+                              sx={{ color: grey[500] }}
+                            />
+                            <Typography
+                              variant="caption"
+                              sx={{
+                                marginLeft: "0.5em",
+                                fontStyle: "italic",
+                                color: grey[500],
+                              }}
+                            >
+                              {"Last updated, " + lastUpdated}
+                            </Typography>
+                          </Box>
+                          <Button variant="contained" size="small" sx={{ minWidth: "8em" }}
+                            onClick={() => {
+                              setSelectedApplied(applied);
+                            }}
+                          >
+                            Detail
+                          </Button>
                         </Box>
-                        <Button variant="contained" sx={{ minWidth: "8em" }}>
-                          Detail
-                        </Button>
-                      </Box>
-                    </Stack>
-                  </Box>
-                ))}
+                      </Stack>
+                    </Box>
+                  )
+                })}
               </Box>
             </Box>
           </Collapse>
         </Grid>
-      </Grid>
+      </Grid >
+      {/* Offer Acceptance Dialog */}
+      <Dialog
+        open={Boolean(selectedOffer)}
+        maxWidth="xs"
+        fullWidth
+        PaperProps={{
+          sx: {
+            padding: "1em 1.5em"
+          }
+        }}
+      >
+        <Typography component={"p"} variant="subtitle1"
+          sx={{
+            fontWeight: 550, color: grey[700]
+          }}
+        >
+          <SimpleEmphasis
+            text={selectedOffer?.status === "accept" ? "Accept " : selectedOffer?.status === "decline" ? "Decline " : ""}
+            textColor={selectedOffer?.status === "decline" ? "red" : undefined}
+          /> Offer
+        </Typography>
+        <Typography component={"p"} variant="subtitle2"
+          sx={{
+            marginTop: "0.3em",
+            color: grey[600]
+          }}
+        >
+          {selectedOffer?.status === "accept" ?
+            (
+              `Are you sure you want to accept ${selectedApplied?.vacancy.position} offer?`
+            ) : (
+              `Are you sure you want to decline ${selectedApplied?.vacancy.position} offer?`
+            )
+          }
+        </Typography>
+        <Box component={"div"}
+          sx={{
+            marginTop: "1.5em",
+            display: "flex",
+            justifyContent: "end",
+            columnGap: 2
+          }}
+        >
+          <Button
+            variant="text"
+            color="error"
+            size="small"
+            sx={{
+              minWidth: "8em"
+            }}
+            onClick={() => {
+              setSelectedOffer(null);
+            }}
+          >
+            CANCEL
+          </Button>
+          <Button
+            variant="contained"
+            size="small"
+            disabled={loading[selectedOffer?.status as string]}
+            startIcon={loading[selectedOffer?.status as string] && (<CircularProgress size={20} color="inherit" />)}
+            sx={{
+              minWidth: "8em"
+            }}
+            onClick={() => {
+              updateOffer(selectedOffer?.id as number, selectedOffer?.status as "accept" | "decline");
+            }}
+          >
+            CONTINUE
+          </Button>
+        </Box>
+      </Dialog>
+      {/* Applied List Drawer */}
       <Drawer
         open={openDrawer}
         anchor="bottom"
-        onClose={() => setOpenDrawer(false)}
+        onClose={() => setOpenDrawer(false)
+        }
         PaperProps={{
           sx: {
             height: "100vh",
@@ -1026,6 +1915,33 @@ export default function ApplicationStatus() {
               <CloseRounded color="error" />
             </IconButton>
           </Box>
+          <TextField
+            type="text"
+            name="search" // search for applicant
+            placeholder="Search ..."
+            autoComplete="off"
+            size="small"
+            fullWidth
+            InputProps={{
+              startAdornment: (
+                <InputAdornment position="start">
+                  <SearchRounded />
+                </InputAdornment>
+              ),
+              sx: {
+                minWidth: {
+                  md: "20em",
+                },
+              },
+            }}
+            sx={{
+              paddingRight: "0.5em",
+            }}
+            value={appliedQuery}
+            onChange={(event: ChangeEvent<HTMLInputElement>) => {
+              setAppliedQuery(event.target.value);
+            }}
+          />
           <Box
             sx={{
               height: "87vh",
@@ -1041,7 +1957,7 @@ export default function ApplicationStatus() {
               paddingBottom: "0.5em",
             }}
           >
-            {[1, 2, 3, 4, 5].map((_, index) => (
+            {searchedAppliedVacancies.map((applied, index) => (
               <Box
                 key={index}
                 component={"div"}
@@ -1062,7 +1978,7 @@ export default function ApplicationStatus() {
                 >
                   <Avatar
                     alt="company-logo"
-                    src="broken.jpg"
+                    src={`${HOST.main}${applied.employer.profile_image_path}`}
                     sx={{
                       width: "3em",
                       height: "3em",
@@ -1079,18 +1995,26 @@ export default function ApplicationStatus() {
                       variant="subtitle1"
                       sx={{ fontWeight: 550, color: grey[800] }}
                     >
-                      UX Research
+                      {applied.vacancy.position}
                     </Typography>
                     <Typography
                       variant="body2"
                       sx={{ fontWeight: 550, color: "#045a55" }}
                     >
-                      Sidokaredev
+                      {applied.employer.name}
                     </Typography>
+                    {applied.vacancy.is_inactive && (
+                      <Box component={"div"} sx={{ display: "flex", alignItems: "center", columnGap: "0.3em" }}>
+                        <WarningRounded fontSize="small" sx={{ marginTop: "-0.2em", fontSize: "small", color: "red" }} />
+                        <Typography component={"p"} variant="caption" sx={{ color: "red" }}>
+                          no longer active
+                        </Typography>
+                      </Box>
+                    )}
                   </Box>
                   <Box>
                     <Chip
-                      label={"On process"}
+                      label={applied.status}
                       size="small"
                       sx={{ backgroundColor: "#ffcc80" }}
                     />
@@ -1104,7 +2028,7 @@ export default function ApplicationStatus() {
                       variant="subtitle2"
                       sx={{ marginLeft: "0.5em" }}
                     >
-                      Sidoarjo, Indonesia
+                      {applied.employer.location}
                     </Typography>
                   </Box>
                   <Box sx={{ display: "flex" }}>
@@ -1113,7 +2037,7 @@ export default function ApplicationStatus() {
                       variant="subtitle2"
                       sx={{ marginLeft: "0.5em" }}
                     >
-                      Rp. 3.000.000,00
+                      {new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR" }).format(applied.vacancy.salary)}
                     </Typography>
                   </Box>
                   <Box
@@ -1138,10 +2062,13 @@ export default function ApplicationStatus() {
                           color: grey[500],
                         }}
                       >
-                        Last update at 3 hours ago
+                        {"Last updated, " + new Date(applied.updated_at).toDateString()}
                       </Typography>
                     </Box>
-                    <Button variant="contained" sx={{ minWidth: "8em" }}>
+                    <Button variant="contained" sx={{ minWidth: "8em" }} onClick={() => {
+                      setSelectedApplied(applied);
+                      setOpenDrawer(false);
+                    }}>
                       Detail
                     </Button>
                   </Box>
@@ -1151,6 +2078,6 @@ export default function ApplicationStatus() {
           </Box>
         </Box>
       </Drawer>
-    </DashboardLayout>
+    </DashboardLayout >
   );
 }

@@ -11,13 +11,14 @@ import {
   ListItemText,
   Menu,
   MenuItem,
+  Snackbar,
   Stack,
   type SxProps,
   Typography,
   useMediaQuery,
   useScrollTrigger,
 } from "@mui/material";
-import { Link as ReactRouterLink, useLocation } from "react-router-dom";
+import { Link as ReactRouterLink, useLocation, useNavigate } from "react-router-dom";
 import {
   ArrowDropDown,
   ContactsRounded,
@@ -31,12 +32,12 @@ import {
   MenuRounded,
   Person,
   PersonAddAlt1Rounded,
-  Settings,
   SupportAgentRounded,
   WorkRounded,
 } from "@mui/icons-material";
 import { grey } from "@mui/material/colors";
-import { SesssionChecker } from "../../../pages/global-helpers";
+import { DeleteSession, GetSession, onCloseSnackbar, SesssionChecker } from "../../../pages/global-helpers";
+import RequestAPI from "../../../services/api/request";
 
 type onScrollSxProps = {
   navigation: SxProps;
@@ -44,12 +45,27 @@ type onScrollSxProps = {
   button: SxProps;
 };
 
+type AccountInformation = {
+  identity: {
+    name: string;
+    type: string;
+  };
+  permissions: Record<string, boolean>;
+  user: {
+    email: string;
+    fullname: string;
+  };
+};
+
 export default function BaseNavigation() {
   /* react-router */
   const location = useLocation();
+  const navigate = useNavigate();
   /* breakpoints */
   const mediumSize = useMediaQuery("(max-width: 900px)");
   /* state */
+  const [account, setAccount] = useState<AccountInformation | null>(null);
+  const [alert, setAlert] = useState<{ show: boolean, message: string }>({ show: false, message: "" });
   const [anchorEl, setAnchorEl] = useState<{
     supportMenuAnchor: HTMLElement | null;
     profileMenuAnchor: HTMLElement | null;
@@ -100,8 +116,44 @@ export default function BaseNavigation() {
     }
     return { ":hover": { backgroundColor: "#e6f2f0" } };
   };
-  /* data display */
+  const pathnameDeterminer = (type: string): string => {
+    switch (type) {
+      case 'candidate':
+        return "/candidates/profile-overview";
+      case 'employer':
+        return "/employers/profile-overview";
+      case 'administrator':
+        return "/administrators"
+      default:
+        return "/unmatched-pathname"
+    }
+  }
+
+  /* constants */
   const isAuthenticated = SesssionChecker('auth');
+  /* fetching */
+  useEffect(() => {
+    const token = GetSession("auth");
+    if (isAuthenticated) {
+      (async () => {
+        const [data, fail] = await RequestAPI.Send<AccountInformation>(
+          "/api/v1/accounts/user-information",
+          {
+            method: "GET",
+            headers: {
+              "Authorization": "Bearer " + token
+            }
+          }
+        );
+        if (fail) {
+          return setAlert({ show: true, message: fail.message });
+        };
+        if (data) {
+          return setAccount(data);
+        };
+      })();
+    }
+  }, []);
   /* side effect */
   useEffect(() => {
     if (trigger) {
@@ -144,6 +196,15 @@ export default function BaseNavigation() {
         ...sxProps.navigation,
       }}
     >
+      {/* Default Notification */}
+      <Snackbar
+        anchorOrigin={{ vertical: "top", horizontal: "center" }}
+        open={alert.show}
+        message={alert.message}
+        autoHideDuration={3000}
+        onClose={onCloseSnackbar
+          (setAlert)}
+      />
       <Container
         disableGutters
         maxWidth="lg"
@@ -208,26 +269,28 @@ export default function BaseNavigation() {
                 Account
               </Typography>
               {isAuthenticated ? (
-                <>
-                  <MenuItem>
+                <Box component={"div"} className="menu-wrapper-no-fragment">
+                  <MenuItem component={ReactRouterLink}
+                    to={pathnameDeterminer(account?.identity.type as string)}>
                     <ListItemIcon>
                       <Person fontSize="small" sx={{ color: "#045a55" }} />
                     </ListItemIcon>
                     <ListItemText>
-                      <Typography variant="subtitle2">Profile</Typography>
+                      <Typography variant="subtitle2">Dashboard</Typography>
                     </ListItemText>
                   </MenuItem>
-                  <MenuItem component={ReactRouterLink} to="/">
+
+                  {/* <MenuItem component={ReactRouterLink} to="/">
                     <ListItemIcon>
                       <Settings fontSize="small" sx={{ color: "#045a55" }} />
                     </ListItemIcon>
                     <ListItemText>
                       <Typography variant="subtitle2">Settings</Typography>
                     </ListItemText>
-                  </MenuItem>
-                </>
+                  </MenuItem> */}
+                </Box>
               ) : (
-                <>
+                <Box component={"div"} className="menu-wrapper-no-fragment">
                   <MenuItem component={ReactRouterLink} to="/accounts/auth">
                     <ListItemIcon>
                       <LoginRounded
@@ -250,7 +313,7 @@ export default function BaseNavigation() {
                       <Typography variant="subtitle2">Register</Typography>
                     </ListItemText>
                   </MenuItem>
-                </>
+                </Box>
               )}
               <Typography
                 variant="caption"
@@ -338,7 +401,10 @@ export default function BaseNavigation() {
                 </MenuItem>
               </Collapse>
               {isAuthenticated && (
-                <MenuItem>
+                <MenuItem onClick={() => {
+                  DeleteSession("auth");
+                  navigate("/accounts/auth");
+                }}>
                   <ListItemIcon>
                     <Logout fontSize="small" sx={{ color: "#045a55" }} />
                   </ListItemIcon>
@@ -431,7 +497,7 @@ export default function BaseNavigation() {
                     endIcon={<ArrowDropDown />}
                     onClick={profileMenuOnClick}
                   >
-                    Hi, Fatkhur
+                    Hi, {account?.user.fullname.split(" ")[0]}
                   </Button>
                   <Menu
                     disableScrollLock
@@ -453,7 +519,9 @@ export default function BaseNavigation() {
                       },
                     }}
                   >
-                    <MenuItem>
+                    <MenuItem component={ReactRouterLink}
+                      to={pathnameDeterminer(account?.identity.type as string)}
+                    >
                       <ListItemIcon>
                         <Person fontSize="small" sx={{ color: "#045a55" }} />
                       </ListItemIcon>
@@ -462,11 +530,11 @@ export default function BaseNavigation() {
                           variant="body1"
                           style={{ fontSize: "small" }}
                         >
-                          Profile
+                          Dashboard
                         </Typography>
                       </ListItemText>
                     </MenuItem>
-                    <MenuItem component={ReactRouterLink} to="/">
+                    {/* <MenuItem component={ReactRouterLink} to="/">
                       <ListItemIcon>
                         <Settings fontSize="small" sx={{ color: "#045a55" }} />
                       </ListItemIcon>
@@ -478,11 +546,11 @@ export default function BaseNavigation() {
                           Settings
                         </Typography>
                       </ListItemText>
-                    </MenuItem>
+                    </MenuItem> */}
                     <Divider />
                     <MenuItem
-                      component={ReactRouterLink}
-                      to="/"
+                      // component={ReactRouterLink}
+                      // to="/"
                       sx={{
                         "&:hover": {
                           color: "#045a55",
@@ -490,6 +558,8 @@ export default function BaseNavigation() {
                       }}
                       onClick={() => {
                         // _EMITTER.emit('onDataUpdated', 'address-updated');
+                        DeleteSession("auth")
+                        navigate("/accounts/auth")
                       }}
                     >
                       <ListItemIcon>

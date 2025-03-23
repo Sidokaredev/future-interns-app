@@ -70,7 +70,7 @@ export default function SocialCard({
             onClick={() => window.open(item.url, "_blank")}
           >
             <Box component={"img"}
-              src={`http://localhost:3000${item.icon_image_path}`}
+              src={`${item.icon_image_path}`}
               width={25}
               height={25}
               sx={{

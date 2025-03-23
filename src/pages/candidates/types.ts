@@ -1,4 +1,4 @@
-import { string, z } from 'zod'
+import { z } from 'zod'
 
 export const CandidateProfileSchema = z.object({
   id: z.string(),
@@ -82,8 +82,8 @@ export type CandidateFormType = z.infer<typeof CandidateFormSchema>
 export const AddressFormSchema = z.object({
   id: z.number().optional(),
   street: z.string().min(3),
-  neighborhood: z.string().min(3),
-  rural_area: z.string().min(3),
+  neighborhood: z.string(),
+  rural_area: z.string(),
   sub_district: z.string().min(3),
   city: z.string().min(3),
   province: z.string().min(3),
@@ -140,7 +140,7 @@ export const ExperienceFormSchema = z.object({
   start_at: z.string().datetime({ offset: true }),
   end_at: z.string().datetime({ offset: true }),
   attachment_document: z.instanceof(File).optional(),
-  attachment_document_path: z.string().optional(),
+  attachment_document_path: z.string().nullable().optional(),
   description: z.string().min(3)
 })
 
@@ -231,4 +231,98 @@ export type SocialDataType = {
   name: string,
   icon_image_path: string,
   url: string
+}
+
+export type AppliedVacancy = {
+  pipeline_id: string;
+  stage: string;
+  status: string;
+  created_at: string;
+  updated_at: string;
+  vacancy: {
+    id: string;
+    position: string;
+    description: string;
+    qualification: string;
+    responsibility: string;
+    salary: number;
+    is_inactive: boolean;
+  };
+  employer: {
+    id: string;
+    name: string;
+    legal_name: string;
+    location: string;
+    profile_image_path: string;
+  };
+};
+
+export type ApplicantAssessment = {
+  assessment_id: number;
+  name: string;
+  note: string;
+  assessment_link: string;
+  start_at: string;
+  due_date: string;
+  submission_status: string;
+  submission_result: number | null;
+  assessment_documents: {
+    id: number;
+    assessment_document_path: string;
+    name: string;
+    size: number;
+  }[];
+  assessment_submissions: {
+    id: number;
+    submission_document_path: string;
+    name: string;
+  }[];
+};
+
+export type ApplicantUnscheduled = {
+  id: string;
+  stage: string;
+  candidate: {
+    id: string;
+    profile_image_path: string;
+    user: {
+      id: string;
+      fullname: string;
+      email: string;
+    };
+  };
+};
+
+export type ApplicantInterview = {
+  id: number;
+  date: string;
+  location: string;
+  location_url: string;
+  status: string;
+  result: string | null;
+};
+
+export type ApplicantOffer = {
+  id: number;
+  end_on: string;
+  status: string;
+  loa_document_path: string | null;
+};
+
+export type ApplicationOffer = {
+  offering_id: number;
+  loa_document_path: string | null;
+  document: {
+    id: number | null;
+    name: string | null;
+  };
+  vacancy: {
+    id: string;
+    position: string;
+    employer: {
+      id: string;
+      name: string;
+      legal_name: string;
+    };
+  };
 }

@@ -1,4 +1,4 @@
-import { ArrowOutward, BookmarkBorder, Place } from "@mui/icons-material";
+import { ArrowOutward, Place } from "@mui/icons-material";
 import {
   Avatar,
   Card,
@@ -11,7 +11,8 @@ import {
   type SxProps,
   Typography,
 } from "@mui/material";
-import { Link as ReactRouterLink } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
+import { VacancyType } from "../../../pages/employers/types";
 
 type VacancyItemSxProps = {
   gridItem: SxProps;
@@ -22,7 +23,13 @@ type VacancyItemSxProps = {
   title: SxProps;
 };
 
-export default function VacancyItemGrid() {
+export default function VacancyItemGrid({
+  vacancy
+}: {
+  vacancy: VacancyType
+}) {
+  /* react-router */
+  const navigate = useNavigate();
   /* sx */
   const styles: VacancyItemSxProps = {
     gridItem: {
@@ -66,28 +73,29 @@ export default function VacancyItemGrid() {
           avatar={
             <Stack spacing={1}>
               <Avatar
-                src="/future-interns-app/logos/google-png.png"
+                src={"http://localhost:3000" + vacancy.employer.profile_image_path}
                 alt="Company Logo"
               />
               <Typography
                 variant="body1"
                 fontWeight={"bold"}
-                component={ReactRouterLink}
-                to={"/company-details"}
                 sx={styles.companyName}
               >
-                Google Android
+                {vacancy.employer.name}
               </Typography>
             </Stack>
           }
           action={
             <Stack direction={"row"} spacing={2}>
-              <IconButton sx={styles.bookmarkButton}>
+              {/* <IconButton sx={styles.bookmarkButton}>
                 <BookmarkBorder />
-              </IconButton>
+              </IconButton> */}
               <IconButton
                 className="cardheader-open-vacancy-detail"
                 sx={styles.goToButton}
+                onClick={() => {
+                  navigate("/vacancy/" + vacancy.id)
+                }}
               >
                 <ArrowOutward />
               </IconButton>
@@ -99,17 +107,19 @@ export default function VacancyItemGrid() {
           <Typography
             fontWeight={600}
             fontSize={"1.2rem"}
-            component={ReactRouterLink}
-            to={"/company-details"}
-            sx={styles.title}
+            sx={{
+              ...styles.title,
+              cursor: "pointer"
+            }}
+            onClick={() => {
+              navigate("/vacancy/" + vacancy.id)
+            }}
           >
-            Marketing Director at Virginia
+            {vacancy.position}
           </Typography>
           {/* Vacancy Summary Description */}
-          <Typography marginY={2} noWrap>
-            Looking for an experienced Web Designer for an our company. Looking
-            for an experienced Web Designer for an our company. Looking for an
-            experienced Web Designer for an our company.
+          <Typography marginY={2} noWrap sx={{ whiteSpace: "pre-line" }}>
+            {vacancy.description}
           </Typography>
           {/* Vacancy Label */}
           <Grid container spacing={1}>
@@ -117,7 +127,7 @@ export default function VacancyItemGrid() {
               <Chip
                 label={
                   <Typography variant="caption" color={"orange"}>
-                    On-Site
+                    {vacancy.work_arrangement}
                   </Typography>
                 }
               />
@@ -126,7 +136,7 @@ export default function VacancyItemGrid() {
               <Chip
                 label={
                   <Typography variant="caption" color={"blueviolet"}>
-                    Rp1.700.000,00
+                    {new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR" }).format(vacancy.salary)}
                   </Typography>
                 }
               />
@@ -134,7 +144,7 @@ export default function VacancyItemGrid() {
             <Grid item>
               <Chip
                 icon={<Place fontSize="small" color="primary" />}
-                label={"Bandengan Selatan, Kota Adm. Jakarta Utara"}
+                label={vacancy.employer.location}
                 sx={{ color: "#045a55", bgcolor: "#c2fffb55" }}
               />
             </Grid>

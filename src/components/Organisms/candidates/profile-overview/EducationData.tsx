@@ -1,13 +1,14 @@
-import { AddRounded, EditRounded } from "@mui/icons-material"
-import { Box, Button, Dialog, Divider, IconButton, Snackbar, Typography } from "@mui/material"
-import { grey } from "@mui/material/colors"
+import { AddRounded, DeleteRounded, EditRounded } from "@mui/icons-material"
+import { Box, Button, CircularProgress, Dialog, Divider, IconButton, Snackbar, Typography } from "@mui/material"
+import { grey, red } from "@mui/material/colors"
 import { FormEvent, useEffect, useState } from "react"
 import { EducationDataType, EducationFormSchema, EducationFormType } from "../../../../pages/candidates/types"
 import { GetSession, onCloseSnackbar } from "../../../../pages/global-helpers"
 import RequestAPI from "../../../../services/api/request"
 import dayjs from "dayjs"
-import EducationFormDraft from "./EducationFormDraft"
+import EducationForm from "./EducationForm"
 import { DEFAULT_EDUCATION_FORM } from "../../../../pages/candidates/constants"
+import SimpleEmphasis from "../../../Molecules/Texts/SimpleEmphasis"
 
 export default function EducationsData({
   openDialog,
@@ -42,7 +43,7 @@ export default function EducationsData({
 
     const token = GetSession("auth")
     let requestMethod = onEdit ? "PATCH" : "POST"
-    const [success, fail] = await RequestAPI.JSONRequest(formValue).Send<string>("/api/v1/candidates/educations/", {
+    const [success, fail] = await RequestAPI.JSONRequest([formValue]).Send<string>("/api/v1/candidates/educations/", {
       method: requestMethod,
       headers: {
         "Authorization": "Bearer " + token
@@ -50,7 +51,6 @@ export default function EducationsData({
     })
 
     if (fail) {
-      console.info("erro req \t:", fail)
       setLoading(false)
       return setAlert({ show: true, message: fail.message })
     }
@@ -61,6 +61,33 @@ export default function EducationsData({
       setLoading(false)
       return setAlert({ show: true, message: success })
     }
+  }
+  /* onDelete */
+  const onDelete = async (educationId: number) => {
+    setLoading(true);
+    const token = GetSession("auth");
+    const [success, fail] = await RequestAPI.Send<string>(
+      "/api/v1/candidates/educations/" + educationId,
+      {
+        method: "DELETE",
+        headers: {
+          "Authorization": "Bearer " + token
+        }
+      }
+    );
+
+    if (fail) {
+      setLoading(false);
+      console.info("fail deleting \t:", fail);
+      return setAlert({ show: true, message: fail.message });
+    };
+
+    if (success) {
+      onCloseDialog("delete-education");
+      setLoading(false);
+      setAlert({ show: true, message: success });
+      return setRefetch(prev => !prev);
+    };
   }
   /* fetching */
   useEffect(() => {
@@ -78,7 +105,6 @@ export default function EducationsData({
 
       if (data_educations) {
         onCloseDialog("education")
-        // setRefetch(prev => !prev)
         return setEducationsData(data_educations)
       }
     })()
@@ -121,14 +147,16 @@ export default function EducationsData({
             display: "flex",
           }}
         >
-          <IconButton size="small"
-            onClick={() => {
-              setFormValue(DEFAULT_EDUCATION_FORM)
-              handleOpenDialog("education")
-            }}
-          >
-            <AddRounded fontSize="small" />
-          </IconButton>
+          {!onEdit && (
+            <IconButton size="small"
+              onClick={() => {
+                setFormValue(DEFAULT_EDUCATION_FORM)
+                handleOpenDialog("education")
+              }}
+            >
+              <AddRounded fontSize="small" />
+            </IconButton>
+          )}
           <IconButton size="small"
             onClick={() => {
               setonEdit(prev => !prev)
@@ -198,15 +226,30 @@ export default function EducationsData({
                   </Typography>
                 </Box>
                 {onEdit && (
-                  <IconButton
-                    size="small"
-                    onClick={() => {
-                      setFormValue(education)
-                      handleOpenDialog("education")
-                    }}
-                  >
-                    <EditRounded fontSize="small" sx={{ color: "#06816d" }} />
-                  </IconButton>
+                  <Box component={"div"}>
+                    {educationsData.length > 1 && index != 0 && (
+                      <IconButton
+                        size="small"
+                        onClick={() => {
+                          setFormValue(education)
+                          handleOpenDialog("delete-education")
+                        }}
+                      >
+                        <DeleteRounded fontSize="small" sx={{
+                          color: red[400]
+                        }} />
+                      </IconButton>
+                    )}
+                    <IconButton
+                      size="small"
+                      onClick={() => {
+                        setFormValue(education)
+                        handleOpenDialog("education")
+                      }}
+                    >
+                      <EditRounded fontSize="small" sx={{ color: "#06816d" }} />
+                    </IconButton>
+                  </Box>
                 )}
               </Box>
               {!(index == educationsData.length - 1) && (
@@ -230,13 +273,75 @@ export default function EducationsData({
         }}
         fullWidth
       >
-        <EducationFormDraft
+        <EducationForm
           formValue={formValue}
           setFormValue={setFormValue}
           errMsg={errMsg}
           onSubmit={onSubmit}
           loading={loading}
         />
+      </Dialog>
+      {/* Delete Confirmation Dialog */}
+      <Dialog
+        open={Boolean(openDialog["delete-education"])}
+        onClose={() => {
+          setFormValue(DEFAULT_EDUCATION_FORM)
+          onCloseDialog("delete-education");
+        }}
+        maxWidth="sm"
+        PaperProps={{
+          sx: {
+            padding: "1em"
+          }
+        }}
+        fullWidth
+      >
+        <Box component={"div"}>
+          <Typography component={"p"} variant="body1" sx={{ color: grey[600] }}>
+            Are you sure want to
+            <SimpleEmphasis text={" delete "} textColor="red" />
+            your Education data at {formValue.university} ?
+          </Typography>
+        </Box>
+        <Box component={"div"} sx={{
+          marginTop: 2,
+          display: "flex",
+          justifyContent: "end",
+          columnGap: "0.5em"
+        }}>
+          <Button
+            variant="contained"
+            size="small"
+            color="error"
+            sx={{
+              minWidth: "8em"
+            }}
+            disabled={loading}
+            onClick={() => {
+              setFormValue(DEFAULT_EDUCATION_FORM)
+              onCloseDialog("delete-education")
+            }}
+          >
+            No
+          </Button>
+          <Button
+            variant="outlined"
+            size="small"
+            color="secondary"
+            sx={{
+              minWidth: "8em"
+            }}
+            disabled={loading}
+            onClick={() => {
+              console.info("form value id \t:", formValue.id)
+              onDelete(formValue.id as number)
+            }}
+          >
+            {loading ? (
+              <CircularProgress size={20} />
+            ) : "Yes"}
+          </Button>
+        </Box>
       </Dialog>
     </Box>
   )

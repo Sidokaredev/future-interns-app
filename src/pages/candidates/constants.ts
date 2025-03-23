@@ -97,11 +97,11 @@ export const DEGREE_LIST = [
   "Bachelor's Degree (S1/D4)",
   "Master's Degree (S2)",
   "Doctoral Degree / Ph.D. (S3)",
-]
+];
 
 export const jobTypes = [
   "Staff",
   "Contract",
   "Freelance",
   "Internship",
-]
+];

@@ -4,6 +4,8 @@ import FutureInternsTheme from "./Themes";
 /* Route */
 import { RouterProvider } from "react-router-dom";
 import _APPROUTERS from "./routes";
+/* KaTeX css */
+import 'katex/dist/katex.min.css';
 
 function App() {
   return (

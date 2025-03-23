@@ -74,6 +74,11 @@ export default function Auth() {
             return navigate(redirectUrl)
           }
           return navigate("/employers/profile-overview")
+        case 'administrator':
+          if (redirectUrl) {
+            return navigate(redirectUrl);
+          }
+          return navigate("/administrators/performance") // DEFAULT TO ADMINISTRATOR
       }
     }
 

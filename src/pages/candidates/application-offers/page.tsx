@@ -17,8 +17,17 @@ import {
   Place,
   SearchRounded,
 } from "@mui/icons-material";
+import { useEffect } from "react";
+// import { ApplicationOffer } from "../types";
 
 export default function CandidateApplicationsOffers() {
+  /* state */
+  // const [applicationsOffer, setApplicationsOffer] = useState<ApplicationOffer[]>([]);
+
+  /* fetching -> applications offer */
+  useEffect(() => {
+    // const token = GetSession()
+  }, []);
   return (
     <DashboardLayout isFor="candidate">
       <Box

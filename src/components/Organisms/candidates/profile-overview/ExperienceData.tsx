@@ -1,6 +1,6 @@
-import { AddRounded, EditRounded } from "@mui/icons-material"
-import { Box, Button, Dialog, Divider, IconButton, Snackbar, Typography } from "@mui/material"
-import { grey } from "@mui/material/colors"
+import { AddRounded, DeleteRounded, EditRounded } from "@mui/icons-material"
+import { Box, Button, CircularProgress, Dialog, Divider, IconButton, Snackbar, Typography } from "@mui/material"
+import { grey, lightBlue, red } from "@mui/material/colors"
 import dayjs from "dayjs"
 import SimpleEmphasis from "../../../Molecules/Texts/SimpleEmphasis"
 import { FormEvent, useEffect, useState } from "react"
@@ -8,7 +8,8 @@ import { ExperienceDataType, ExperienceFormSchema, ExperienceFormType } from "..
 import { DEFAULT_EXPERIENCE_FORM } from "../../../../pages/candidates/constants"
 import { GetSession, onCloseSnackbar } from "../../../../pages/global-helpers"
 import RequestAPI from "../../../../services/api/request"
-import ExperienceFormDraft from "./ExperienceFormDraft"
+import ExperienceForm from "./ExperienceForm"
+import { HOST } from "../../../../pages/administrators/performance/[id]/constants"
 
 export default function ExperienceData({
   openDialog,
@@ -26,17 +27,19 @@ export default function ExperienceData({
   const [errMsg, setErrMsg] = useState<{ [key: string]: string[] }>({})
   const [alert, setAlert] = useState<{ show: boolean, message: string }>({ show: false, message: "" })
   const [loading, setLoading] = useState<boolean>(false)
-  const [refetch, setRefetch] = useState<boolean>(false)
+  const [refetch, setRefetch] = useState<boolean>(false);
+  const [embedFullHeight, setEmbedFullHeight] = useState<boolean>(false);
   /* onSubmit */
   const onSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
     setLoading(true)
 
-    const validate = ExperienceFormSchema.safeParse(formValue)
+    const validate = ExperienceFormSchema.safeParse(formValue);
     if (!validate.success) {
       setLoading(false)
-      const errorSchema = validate.error.flatten().fieldErrors
-      return setErrMsg(errorSchema)
+      const errorSchema = validate.error.flatten().fieldErrors;
+      setErrMsg(errorSchema)
+      return setAlert({ show: true, message: "please follow the form value rules!" });
     }
     setErrMsg({})
 
@@ -60,6 +63,34 @@ export default function ExperienceData({
       return setAlert({ show: true, message: success.message })
     }
   }
+  /* onDelete */
+  const onDelete = async (experienceId: number) => {
+    setLoading(true);
+    const token = GetSession("auth");
+    const [success, fail] = await RequestAPI.Send<string>(
+      "/api/v1/candidates/experiences/" + experienceId,
+      {
+        method: "DELETE",
+        headers: {
+          "Authorization": "Bearer " + token
+        }
+      }
+    )
+
+    if (fail) {
+      setLoading(false);
+      onCloseDialog("delete-experience")
+      return setAlert({ show: true, message: fail.message });
+    };
+
+    if (success) {
+      setLoading(false);
+      onCloseDialog("delete-experience")
+      setFormValue(DEFAULT_EXPERIENCE_FORM);
+      setRefetch(prev => !prev);
+      return setAlert({ show: true, message: success });
+    };
+  };
   /* helper */
   const experienceDescFormatter = (desc: string): string => {
     if (desc.includes("- ")) {
@@ -95,6 +126,7 @@ export default function ExperienceData({
         backgroundColor: grey[50]
       }}
     >
+      {/* Snackbar for Notification Message */}
       <Snackbar
         anchorOrigin={{ vertical: "top", horizontal: "center" }}
         open={alert.show}
@@ -124,15 +156,18 @@ export default function ExperienceData({
             display: "flex",
           }}
         >
-          <IconButton size="small"
-            onClick={() => {
-              setOnEdit(false)
-              setFormValue(DEFAULT_EXPERIENCE_FORM)
-              handleOpenDialog("experience")
-            }}
-          >
-            <AddRounded fontSize="small" />
-          </IconButton>
+          {/* Begin to edit the item */}
+          {!onEdit && (
+            <IconButton size="small"
+              onClick={() => {
+                setOnEdit(false)
+                setFormValue(DEFAULT_EXPERIENCE_FORM)
+                handleOpenDialog("experience")
+              }}
+            >
+              <AddRounded fontSize="small" />
+            </IconButton>
+          )}
           <IconButton size="small"
             onClick={() => {
               setOnEdit(prev => !prev)
@@ -166,7 +201,6 @@ export default function ExperienceData({
                 // alignItems: "start",
               }}
             >
-
               <Box
                 component={"div"}
               >
@@ -182,15 +216,28 @@ export default function ExperienceData({
                   >
                     {experience.position}
                   </Typography>
+                  {/* Edit button on each item to set the formValue state. */}
                   {onEdit && (
-                    <IconButton size="small"
-                      onClick={() => {
-                        setFormValue(experience)
-                        handleOpenDialog("experience")
-                      }}
-                    >
-                      <EditRounded fontSize="small" />
-                    </IconButton>
+                    <Box component={"div"}>
+                      {experiencesData.length > 1 && index != 0 && (
+                        <IconButton size="small"
+                          onClick={() => {
+                            setFormValue(experience);
+                            handleOpenDialog("delete-experience");
+                          }}
+                        >
+                          <DeleteRounded fontSize="small" sx={{ color: red[400] }} />
+                        </IconButton>
+                      )}
+                      <IconButton size="small"
+                        onClick={() => {
+                          setFormValue(experience)
+                          handleOpenDialog("experience")
+                        }}
+                      >
+                        <EditRounded fontSize="small" />
+                      </IconButton>
+                    </Box>
                   )}
                 </Box>
                 <Typography variant="caption">
@@ -219,18 +266,60 @@ export default function ExperienceData({
                     marginY: "1em",
                   }}
                 >
-                  <Typography variant="body1">
+                  {/* This description text using text formatter that add (\n) as new line for "-" */}
+                  <Typography component={"p"} variant="subtitle2" sx={{
+                    whiteSpace: "pre-line",
+                    color: grey[800]
+                  }}>
                     {experienceDescFormatter(experience.description)}
                   </Typography>
                 </Box>
+                {experience.attachment_document_path && (
+                  <Box component={"div"}>
+                    <Box component={"div"}>
+                      <Typography component={"p"} variant="subtitle2" sx={{
+                        color: lightBlue[700],
+                        fontStyle: "italic",
+                        textDecoration: "underline",
+                        cursor: "pointer",
+                      }}
+                        onClick={() => {
+                          setEmbedFullHeight(prev => !prev)
+                        }}
+                      >
+                        {embedFullHeight ? (
+                          "See default"
+                        ) : "See full height"}
+                      </Typography>
+                    </Box>
+                    <Box component={"div"} sx={{
+                      width: "100%",
+                      height: embedFullHeight ? "100vh" : "30vh",
+                    }}>
+                      <embed
+                        src={`${HOST.main}${experience.attachment_document_path}`}
+                        width={"100%"}
+                        height={"100%"}
+                      />
+                    </Box>
+                  </Box>
+                )}
               </Box>
               {!(index == experiencesData.length - 1) && (
-                <Divider orientation="horizontal" sx={{ marginBottom: "0.5em" }} />
+                <Divider orientation="horizontal" sx={{
+                  // marginBottom: "0.5em",
+                  marginY: "0.7em",
+                  borderWidth: "1px",
+                  borderRadius: "1px",
+                  borderColor: grey[300],
+                  // borderColor: "#51a799",
+                }} />
               )}
             </Box>
           )
         })}
       </Box>
+      {/* Dialog for Experience Form */}
       <Dialog
         open={Boolean(openDialog["experience"])}
         onClose={() => {
@@ -244,13 +333,77 @@ export default function ExperienceData({
         }}
         fullWidth
       >
-        <ExperienceFormDraft
+        {/* used as primary Experience Form (fixed version) */}
+        <ExperienceForm
           formValue={formValue}
           setFormValue={setFormValue}
           errMsg={errMsg}
           onSubmit={onSubmit}
           loading={loading}
         />
+      </Dialog>
+      {/* Delete Confirmation Dialog */}
+      <Dialog
+        open={Boolean(openDialog["delete-experience"])}
+        onClose={() => {
+          setFormValue(DEFAULT_EXPERIENCE_FORM)
+          onCloseDialog("delete-experience");
+        }}
+        maxWidth="sm"
+        PaperProps={{
+          sx: {
+            padding: "1em"
+          }
+        }}
+        fullWidth
+      >
+        <Box component={"div"}>
+          <Typography component={"p"} variant="body1" sx={{ color: grey[600] }}>
+            Are you sure want to
+            <SimpleEmphasis text={" delete "} textColor="red" />
+            your Education data at
+            <SimpleEmphasis text={" " + formValue.company_name} /> ?
+          </Typography>
+        </Box>
+        <Box component={"div"} sx={{
+          marginTop: 2,
+          display: "flex",
+          justifyContent: "end",
+          columnGap: "0.5em"
+        }}>
+          <Button
+            variant="contained"
+            size="small"
+            color="error"
+            sx={{
+              minWidth: "8em"
+            }}
+            disabled={loading}
+            onClick={() => {
+              setFormValue(DEFAULT_EXPERIENCE_FORM)
+              onCloseDialog("delete-experience")
+            }}
+          >
+            No
+          </Button>
+          <Button
+            variant="outlined"
+            size="small"
+            color="secondary"
+            sx={{
+              minWidth: "8em"
+            }}
+            disabled={loading}
+            onClick={() => {
+              console.info("form value id \t:", formValue.id)
+              onDelete(formValue.id as number)
+            }}
+          >
+            {loading ? (
+              <CircularProgress size={20} />
+            ) : "Yes"}
+          </Button>
+        </Box>
       </Dialog>
     </Box>
   )

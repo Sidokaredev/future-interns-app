@@ -6,7 +6,7 @@ import { AddressDataType, AddressFormSchema, AddressFormType, CandidateProfileDa
 import dayjs from "dayjs";
 import { GetSession } from "../../../../pages/global-helpers";
 import RequestAPI from "../../../../services/api/request";
-import AddressFormDraft from "./AddressFormDraft";
+import AddressForm from "./AddressForm";
 import { DEFAULT_ADDRESS_FORM } from "../../../../pages/candidates/constants";
 
 type CandidateProfileUserDataType = CandidateProfileDataType & {
@@ -93,7 +93,7 @@ export default function AddressData({
       label: "Postal Code",
       value: addressData?.postal_code,
     },
-  ]
+  ];
   /* onSubmit */
   const onSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
@@ -301,13 +301,13 @@ export default function AddressData({
         }}
         fullWidth
       >
-        <AddressFormDraft
+        <AddressForm
           formValue={formValue}
           setFormValue={setFormValue}
           errMsg={errMsg}
           onSubmit={onSubmit}
           loading={loading}
-          setLoading={setLoading}
+        // setLoading={setLoading}
         />
       </Dialog>
     </Stack>

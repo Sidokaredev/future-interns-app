@@ -4,7 +4,6 @@ import {
   GroupWorkRounded,
   MenuRounded,
   NotificationsNone,
-  PublishedWithChanges,
 } from "@mui/icons-material";
 import {
   AppBar,
@@ -23,17 +22,29 @@ import {
   ListItemIcon,
   ListItemText,
 } from "@mui/material";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import SimpleEmphasis from "../../Molecules/Texts/SimpleEmphasis";
 import { grey, lightBlue } from "@mui/material/colors";
-import { Link as ReactRouterLink } from "react-router-dom";
+import { Link as ReactRouterLink, useNavigate } from "react-router-dom";
+import { DeleteSession, GetSession } from "../../../pages/global-helpers";
+import RequestAPI from "../../../services/api/request";
+import BaseAlert from "../../Molecules/Feedback/BaseAlert";
+
+type UserAccountType = {
+  fullname: string;
+  email: string;
+}
 
 export default function DashboardNavigation({
   isFor,
 }: {
   isFor: "candidate" | "employer";
 }) {
+  /* react-router-hook */
+  const navigate = useNavigate()
   /* state */
+  const [userAccount, setUserAccount] = useState<UserAccountType | null>(null);
+  const [errAlert, setErrAlert] = useState<{ show: boolean, message: string }>({ show: false, message: "" })
   const [anchorElement, setAnchorElement] = useState<{
     profileMenu: HTMLElement | null;
     navigationMenu: HTMLElement | null;
@@ -43,7 +54,6 @@ export default function DashboardNavigation({
     navigationMenu: Boolean(anchorElement.navigationMenu),
   };
   /* event handler */
-  /* Handler */
   const menuTrigger = (event: React.MouseEvent<HTMLDivElement>) => {
     setAnchorElement((prev) => ({ ...prev, profileMenu: event.currentTarget }));
   };
@@ -69,12 +79,12 @@ export default function DashboardNavigation({
       label: <Typography variant="subtitle2">Application Status</Typography>,
       divider: "none",
     },
-    {
-      icon: <PublishedWithChanges fontSize="small" sx={{ color: "#045a55" }} />,
-      path: "/candidates/application-offers",
-      label: <Typography variant="subtitle2">Application Offers</Typography>,
-      divider: "none",
-    },
+    // {
+    //   icon: <PublishedWithChanges fontSize="small" sx={{ color: "#045a55" }} />,
+    //   path: "/candidates/application-offers",
+    //   label: <Typography variant="subtitle2">Application Offers</Typography>,
+    //   divider: "none",
+    // },
   ];
   const menuItemsEmployer = [
     {
@@ -90,6 +100,24 @@ export default function DashboardNavigation({
       divider: "none",
     },
   ];
+  useEffect(() => {
+    (async () => {
+      const [data, fail] = await RequestAPI.Send<UserAccountType>("/api/v1/accounts/user-account", {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer " + GetSession("auth")
+        }
+      })
+      if (fail != undefined) {
+        return setErrAlert({ show: true, message: fail.message });
+      }
+
+      if (data != undefined) {
+        return setUserAccount(data)
+      }
+    })()
+  }, [])
   return (
     <AppBar
       sx={{
@@ -109,6 +137,12 @@ export default function DashboardNavigation({
             paddingX: "1em",
           }}
         >
+          {/* Base Alert */}
+          <BaseAlert
+            show={errAlert.show}
+            message={errAlert.message}
+            setShow={setErrAlert}
+          />
           <Box
             component={"div"}
             sx={{
@@ -119,7 +153,7 @@ export default function DashboardNavigation({
             <IconButton onClick={navigationMenuOnClick}>
               <MenuRounded />
             </IconButton>
-            {/* navigation menu */}
+            {/* Dashboard navigation menu */}
             <Menu
               open={openMenu.navigationMenu}
               anchorEl={anchorElement.navigationMenu}
@@ -137,6 +171,7 @@ export default function DashboardNavigation({
                 marginTop: "0.5em",
               }}
             >
+              {/* Decide to use candidate or employer navigation items */}
               {isFor === "candidate"
                 ? menuItemsCandidate.map((item, index) => {
                   return (
@@ -150,9 +185,7 @@ export default function DashboardNavigation({
                       >
                         <ListItemIcon>{item.icon}</ListItemIcon>
                         <ListItemText>
-                          <Typography variant="subtitle2">
-                            {item.label}
-                          </Typography>
+                          {item.label}
                         </ListItemText>
                       </MenuItem>
                       {item.divider !== "none" && (
@@ -185,9 +218,7 @@ export default function DashboardNavigation({
                       >
                         <ListItemIcon>{item.icon}</ListItemIcon>
                         <ListItemText>
-                          <Typography variant="subtitle2">
-                            {item.label}
-                          </Typography>
+                          {item.label}
                         </ListItemText>
                       </MenuItem>
                       {item.divider !== "none" && (
@@ -278,19 +309,19 @@ export default function DashboardNavigation({
                 <NotificationsNone />
               </IconButton>
             </Tooltip>
-            <Tooltip title="Account: [:name][:email]" onClick={menuTrigger}>
+            <Tooltip title={`${userAccount?.fullname} - ${userAccount?.email}`} onClick={menuTrigger}>
               <Avatar
-                alt="Name"
-                src={"/broken.img"}
                 sx={{
                   width: 32,
                   height: 32,
                   bgcolor: "#06816d",
                   cursor: "pointer",
                 }}
-              />
+              >
+                {userAccount?.fullname.charAt(0).toUpperCase()}
+              </Avatar>
             </Tooltip>
-            {/* profile menu */}
+            {/* Profile Menu Dashboard */}
             <Menu
               open={openMenu.profileMenu}
               anchorEl={anchorElement.profileMenu}
@@ -330,9 +361,9 @@ export default function DashboardNavigation({
                     color: grey[700],
                   }}
                 >
-                  Fatkhur Rozak
+                  {userAccount?.fullname}
                 </Typography>
-                <Typography variant="caption">fatkhurawe@gmail.com</Typography>
+                <Typography variant="caption">{userAccount?.email}</Typography>
                 <Divider sx={{ marginY: "0.5em" }} />
                 <Box
                   sx={{
@@ -349,7 +380,15 @@ export default function DashboardNavigation({
                   >
                     Homepage
                   </Button>
-                  <Button variant="outlined" color="secondary" size="small">
+                  <Button
+                    variant="outlined"
+                    color="secondary"
+                    size="small"
+                    onClick={() => {
+                      DeleteSession("auth")
+                      navigate("/accounts/auth")
+                    }}
+                  >
                     Sign out
                   </Button>
                 </Box>

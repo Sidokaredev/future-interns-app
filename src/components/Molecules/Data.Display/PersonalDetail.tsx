@@ -6,7 +6,7 @@ import {
 import AddressData from "../../Organisms/candidates/profile-overview/AddressData";
 import { useState } from "react";
 import { onCloseSnackbar } from "../../../pages/global-helpers";
-import SocialData from "../../Organisms/candidates/profile-overview/SocialData";
+import CandidateSocialData from "../../Organisms/candidates/profile-overview/SocialData";
 
 export default function PersonalDetail({
   containerStyle,
@@ -55,7 +55,7 @@ export default function PersonalDetail({
           setAlert={setAlert}
         />
         {/* social data component */}
-        <SocialData
+        <CandidateSocialData
           openDialog={openDialog}
           handleOpenDialog={handleOpenDialog}
           onCloseDialog={onCloseDialog}

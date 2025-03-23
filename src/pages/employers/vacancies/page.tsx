@@ -3,22 +3,22 @@ import {
   Box,
   Breadcrumbs,
   Button,
+  Checkbox,
   Chip,
-  Container,
+  CircularProgress,
   Dialog,
   Divider,
-  Drawer,
+  FormControlLabel,
   Grid,
   IconButton,
   InputAdornment,
   Link,
-  ListItem,
   ListItemIcon,
   ListItemText,
   Menu,
   MenuItem,
   Pagination,
-  Popover,
+  Snackbar,
   Stack,
   TextField,
   Typography,
@@ -33,8 +33,8 @@ import {
   Business,
   CloseRounded,
   DeleteRounded,
+  FiberManualRecordRounded,
   FoundationRounded,
-  GroupWorkRounded,
   HomeRounded,
   LinearScaleRounded,
   LocationOnRounded,
@@ -46,18 +46,23 @@ import {
   SortRounded,
   UpdateRounded,
   Visibility,
-  WorkRounded,
   WorkspacePremiumRounded,
 } from "@mui/icons-material";
 import SimpleEmphasis from "../../../components/Molecules/Texts/SimpleEmphasis";
-import React, { useState } from "react";
+import { ChangeEvent, FormEvent, MouseEvent, useEffect, useState } from "react";
 import {
   useLocation,
   useNavigate,
   useParams,
   Link as ReactRouterLink,
 } from "react-router-dom";
-import BreadcrumbsCreator from "../helpers";
+import BreadcrumbsCreator, { EmployerTypeStyler, SLAConverter, SLADaysRemaining } from "../helpers";
+import { GetSession, onCloseSnackbar } from "../../global-helpers";
+import { VacancyFormSchema, VacancyFormType, VacancyType } from "../types";
+import RequestAPI from "../../../services/api/request";
+import { DEFAULT_VACANCY_FORM, EMPLOYEE_TYPE, LINE_INDUSTRY, MIN_EXPERIENCE, WORK_ARRANGEMENT } from "../constants";
+import VacancyForm from "../../../components/Organisms/employers/vacancies/VacancyForm";
+import { HOST } from "../../administrators/performance/[id]/constants";
 
 export default function EmployerVacancies() {
   /* react-router */
@@ -68,25 +73,159 @@ export default function EmployerVacancies() {
   const xsmall = useMediaQuery("(max-width: 600px)");
   const small = useMediaQuery("(max-width: 900px)");
   /* state */
-  const [anchorEl, setAnchorEl] = useState<HTMLElement | null>(null);
-  const openMenuOptions = Boolean(anchorEl);
-  const [openDrawer, setOpenDrawer] = useState<boolean>(false);
-  const [openDialog, setOpenDialog] = useState<boolean>(false);
+  const [vacancies, setVacancies] = useState<VacancyType[]>([]);
+  const [currentPage, setCurrentPage] = useState<number>(1);
+  const [viewedVacancy, setViewedVacancy] = useState<VacancyType | null>(null);
+  const [selectedVacancyID, setSelectedVacancyID] = useState<{ id: string; is_inactive?: boolean }>({ id: "" });
+  const [search, setSearch] = useState<string>("");
+  const [filterCheck, setFilterCheck] = useState<Record<string, string>>({});
+  const [anchorEl, setAnchorEl] = useState<Record<string, HTMLElement | null>>({});
+  const [openDialog, setOpenDialog] = useState<Record<string, boolean>>({});
+  const [alert, setAlert] = useState<{ show: boolean, message: string }>({ show: false, message: "" });
+  const [dataAction, setDataAction] = useState<boolean>(false);
+  // state -> Vacancy Form
+  const [formValue, setFormValue] = useState<VacancyFormType>(DEFAULT_VACANCY_FORM);
+  const [errMsg, setErrMsg] = useState<{ [key: string]: string[] }>({});
+  const [loading, setLoading] = useState<boolean>(false);
+
   /* event handler */
-  const optionsOnClick = (event: React.MouseEvent<HTMLButtonElement>) => {
-    setAnchorEl(event.currentTarget);
+  const optionsOnClick = (key: string, event: MouseEvent<HTMLButtonElement>) => {
+    setAnchorEl(prev => ({
+      ...prev,
+      [key]: event.currentTarget
+    }));
   };
-  console.info(
-    "Breadcrumbs \t:",
-    BreadcrumbsCreator(
-      URLParams as Record<string, string>,
-      URLLocation.pathname
-    )
-  );
-  console.info("current \t:", URLLocation.pathname);
-  /* helpers */
+  const onPageChange = (_: ChangeEvent<any>, pageNumber: number) => {
+    setCurrentPage(pageNumber);
+  };
+
+  /* onSubmit */
+  const onSubmit = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setLoading(true);
+
+    const validate = VacancyFormSchema.safeParse(formValue);
+    if (!validate.success) {
+      setLoading(false);
+      const errSchema = validate.error.flatten().fieldErrors;
+      setErrMsg(errSchema);
+      return setAlert({ show: true, message: "please follow the form rules!" });
+    } else {
+      setErrMsg({});
+    };
+
+    const token = GetSession("auth");
+    const [success, fail] = await RequestAPI.FormDataRequest(formValue).Send<string>(
+      "/api/v1/employers/vacancies/" + selectedVacancyID.id,
+      {
+        method: "PATCH",
+        headers: {
+          "Authorization": "Bearer " + token
+        }
+      }
+    );
+    if (fail) {
+      setLoading(false);
+      return setAlert({ show: true, message: fail.message });
+    };
+    if (success) {
+      setLoading(false);
+      setDataAction(prev => !prev);
+      setOpenDialog(prev => ({ ...prev, ["vacancy-update"]: false }));
+      return setAlert({ show: true, message: success });
+    };
+  };
+  const onDisable = async () => {
+    setLoading(true);
+    const token = GetSession("auth");
+
+    const value = !selectedVacancyID?.is_inactive
+    const [success, fail] = await RequestAPI.FormDataRequest({
+      is_inactive: value,
+      sla: value ? 0 : 168,
+    }).Send<string>(
+      "/api/v1/employers/vacancies/" + selectedVacancyID.id,
+      {
+        method: "PATCH",
+        headers: {
+          "Authorization": "Bearer " + token
+        }
+      }
+    );
+    if (fail) {
+      setLoading(false);
+      return setAlert({ show: true, message: fail.message });
+    };
+    if (success) {
+      setLoading(false);
+      setDataAction(prev => !prev);
+      setOpenDialog(prev => ({ ...prev, ["vacancy-disable"]: false }));
+      return setAlert({ show: true, message: success });
+    };
+  };
+  const onDelete = async () => {
+    setLoading(true);
+    const token = GetSession("auth");
+
+    const [success, fail] = await RequestAPI.Send<string>(
+      "/api/v1/employers/vacancies/" + selectedVacancyID.id,
+      {
+        method: "DELETE",
+        headers: {
+          "Authorization": "Bearer " + token
+        }
+      }
+    );
+    if (fail) {
+      setLoading(false);
+      return setAlert({ show: true, message: fail.message });
+    };
+    if (success) {
+      setLoading(false);
+      setDataAction(prev => !prev);
+      setAnchorEl(prev => ({ ...prev, ["vacancy-option"]: null }));
+      setOpenDialog(prev => ({ ...prev, ["vacancy-delete"]: false }));
+      return setAlert({ show: true, message: success });
+    };
+  };
+
+  /* constants */
+  const searchedVacancies = vacancies.filter((value) => value.position.toLowerCase().includes(search.toLowerCase()));
+  const filteredVacancies = searchedVacancies.filter((vacancy) => Object.entries(filterCheck).every(([key, value]) => value === undefined || value === "" || vacancy[key as keyof VacancyType] === value)).sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+  const managedVacancies = filteredVacancies.slice((currentPage * 5) - 5, currentPage * 5)
+  const totalPage = search === "" ? Math.ceil(filteredVacancies.length / 5) : Math.ceil(filteredVacancies.length / 5);
+
+  /* fetching */
+  useEffect(() => {
+    const token = GetSession("auth");
+    (async () => {
+      const [data, fail] = await RequestAPI.Send<VacancyType[]>(
+        "/api/v1/employers/vacancies/",
+        {
+          method: "GET",
+          headers: {
+            "Authorization": "Bearer " + token
+          }
+        }
+      );
+      if (fail) {
+        return setAlert({ show: true, message: fail.message });
+      };
+      if (data) {
+        return setVacancies(data);
+      };
+    })();
+  }, [dataAction]);
   return (
     <DashboardLayout isFor="employer">
+      {/* Default Notification */}
+      <Snackbar
+        anchorOrigin={{ vertical: "top", horizontal: "center" }}
+        open={alert.show}
+        message={alert.message}
+        autoHideDuration={3000}
+        onClose={onCloseSnackbar(setAlert)}
+      />
       {/* Breadcrumbs */}
       <Breadcrumbs aria-label="breadcrumb" sx={{ marginBottom: "1em" }}>
         {BreadcrumbsCreator(
@@ -162,12 +301,22 @@ export default function EmployerVacancies() {
                 fontSize: "small",
               },
             }}
+            value={search}
+            onChange={(event: ChangeEvent<HTMLInputElement>) => {
+              setSearch(event.target.value);
+              if (currentPage > totalPage) {
+                setCurrentPage(1);
+              };
+            }}
           />
           <Button
             variant="outlined"
             startIcon={!small && <SortRounded />}
             sx={{
               fontSize: "small",
+            }}
+            onClick={(event: MouseEvent<HTMLButtonElement>) => {
+              optionsOnClick("filters", event)
             }}
           >
             {small ? <SortRounded /> : "Filters"}
@@ -178,6 +327,7 @@ export default function EmployerVacancies() {
             sx={{ fontSize: "small" }}
             onClick={() => {
               console.info("Add vacancy ...");
+              navigate(location.pathname.replace("/future-interns-app", "") + "/create")
             }}
           >
             {small ? <AddRounded /> : "Vacancy"}
@@ -186,7 +336,7 @@ export default function EmployerVacancies() {
       </Box>
       <Box component={"div"} sx={{ marginTop: "1em" }}>
         {small ? (
-          [0, 1, 2, 3, 4].map((_, index) => (
+          managedVacancies.map((vacancy, index) => (
             <Box
               key={index}
               component={"div"}
@@ -205,11 +355,11 @@ export default function EmployerVacancies() {
                   variant="subtitle1"
                   sx={{ fontWeight: 550, color: grey[800] }}
                 >
-                  Cloud Architect
+                  {vacancy.position}
                 </Typography>
                 <Chip
                   size="small"
-                  label="Interns"
+                  label={vacancy.employee_type}
                   sx={{
                     backgroundColor: lightBlue[50],
                     color: lightBlue[500],
@@ -226,7 +376,7 @@ export default function EmployerVacancies() {
                   variant="caption"
                   sx={{ color: grey[600] }}
                 >
-                  Posted on <SimpleEmphasis text={"Friday, 30 May 2024"} />
+                  Posted on <SimpleEmphasis text={new Date(vacancy.created_at).toDateString()} />
                 </Typography>
                 <Typography
                   variant="caption"
@@ -234,7 +384,7 @@ export default function EmployerVacancies() {
                 >
                   Inactive on{" "}
                   <SimpleEmphasis
-                    text={"Sunday, 6 June 2024"}
+                    text={SLAConverter(vacancy.sla, vacancy.created_at).toDateString()}
                     textColor={red[200]}
                   />
                 </Typography>
@@ -252,11 +402,18 @@ export default function EmployerVacancies() {
                   startIcon={<Visibility />}
                   size="small"
                   fullWidth
-                  onClick={() => setOpenDialog(true)}
+                  onClick={() => {
+                    setViewedVacancy(vacancy);
+                    setOpenDialog(prev => ({ ...prev, ["view-detail"]: true }));
+                  }}
                 >
                   View
                 </Button>
-                <IconButton size="small" onClick={optionsOnClick}>
+                <IconButton size="small" onClick={(event: MouseEvent<HTMLButtonElement>) => {
+                  optionsOnClick("vacancy-option", event);
+                  setSelectedVacancyID({ id: vacancy.id, is_inactive: vacancy.is_inactive });
+                  setFormValue(vacancy);
+                }}>
                   <MoreVert />
                 </IconButton>
               </Box>
@@ -264,7 +421,7 @@ export default function EmployerVacancies() {
           ))
         ) : (
           <Box component={"div"}>
-            {/* table row */}
+            {/* Vacancy Title Head */}
             <Box
               component={"div"}
               sx={{
@@ -335,7 +492,7 @@ export default function EmployerVacancies() {
                 </Typography>
               </Box>
             </Box>
-            {/* table data */}
+            {/* Vacancy Row Data */}
             <Box
               component={"div"}
               sx={{
@@ -345,7 +502,7 @@ export default function EmployerVacancies() {
                 marginTop: "0.5em",
               }}
             >
-              {[0, 1, 2, 3, 4].map((_, index) => (
+              {managedVacancies.map((vacancy, index) => (
                 <Box
                   key={index}
                   component={"div"}
@@ -367,10 +524,11 @@ export default function EmployerVacancies() {
                       variant="subtitle2"
                       sx={{ fontWeight: 550, color: grey[800] }}
                     >
-                      {index == 2
-                        ? "Social Media Marketing at Erajaya Food & Nurishment"
-                        : "Cloud Architect"}
+                      {vacancy.position}
                     </Typography>
+                    {vacancy.is_inactive && (
+                      <Chip label="No longer active" color="error" size="small" sx={{ fontSize: "x-small" }} />
+                    )}
                   </Box>
                   <Box component={"div"} sx={{ flexBasis: "20%" }}>
                     <Typography
@@ -381,7 +539,7 @@ export default function EmployerVacancies() {
                         fontWeight: 550,
                       }}
                     >
-                      Friday, May 30, 2024
+                      {new Date(vacancy.created_at).toDateString()}
                     </Typography>
                   </Box>
                   <Box component={"div"} sx={{ flexBasis: "20%" }}>
@@ -394,16 +552,16 @@ export default function EmployerVacancies() {
                         fontStyle: "italic",
                       }}
                     >
-                      Monday, June 4, 2024
+                      {SLADaysRemaining(vacancy.sla)}
                     </Typography>
                   </Box>
                   <Box component={"div"} sx={{ flexBasis: "20%" }}>
                     <Chip
                       size="small"
-                      label="Interns"
+                      label={vacancy.employee_type}
                       sx={{
-                        backgroundColor: lightBlue[50],
-                        color: lightBlue[500],
+                        backgroundColor: EmployerTypeStyler(vacancy.employee_type).backgroundColor,
+                        color: EmployerTypeStyler(vacancy.employee_type).color,
                       }}
                     />
                   </Box>
@@ -419,12 +577,18 @@ export default function EmployerVacancies() {
                       variant="text"
                       startIcon={<Visibility fontSize="small" />}
                       size="small"
-                      // onClick={() => setOpenDrawer(true)}
-                      onClick={() => setOpenDialog(true)}
+                      onClick={() => {
+                        setViewedVacancy(vacancy);
+                        setOpenDialog(prev => ({ ...prev, ["view-detail"]: true }));
+                      }}
                     >
                       View
                     </Button>
-                    <IconButton size="small" onClick={optionsOnClick}>
+                    <IconButton size="small" onClick={(event: MouseEvent<HTMLButtonElement>) => {
+                      optionsOnClick("vacancy-option", event);
+                      setSelectedVacancyID({ id: vacancy.id, is_inactive: vacancy.is_inactive });
+                      setFormValue(vacancy);
+                    }}>
                       <MoreVert fontSize="small" />
                     </IconButton>
                   </Box>
@@ -435,388 +599,645 @@ export default function EmployerVacancies() {
         )}
         <Pagination
           color="primary"
-          count={13}
+          count={totalPage} // total pages
+          onChange={onPageChange}
+          page={currentPage} // the current page
           sx={{
             display: "flex",
             justifyContent: "end",
             marginY: "2em",
           }}
         />
-        {/* Menu Options */}
-        <Menu
-          open={openMenuOptions}
-          anchorEl={anchorEl}
-          anchorOrigin={{ horizontal: "right", vertical: "bottom" }}
-          transformOrigin={{ horizontal: "right", vertical: "top" }}
-          onClose={() => setAnchorEl(null)}
-          slotProps={{
-            paper: {
-              sx: {
-                minWidth: "10em",
-                border: "1px solid " + grey[400],
-                boxShadow: "none",
-              },
+      </Box>
+      {/* Vacancy Filters Menu */}
+      <Menu
+        anchorEl={anchorEl["filters"]}
+        open={Boolean(anchorEl["filters"])}
+        anchorOrigin={{ horizontal: "right", vertical: "bottom" }}
+        transformOrigin={{ horizontal: "right", vertical: "top" }}
+        onClose={() => setAnchorEl(prev => ({ ...prev, ["filters"]: null }))}
+        slotProps={{
+          paper: {
+            sx: {
+              minWidth: "10em",
+              border: "1px solid " + grey[400],
+              boxShadow: "none",
+              marginTop: "0.5em"
             },
-          }}
-          MenuListProps={{
-            sx: {},
-          }}
-          sx={{
-            ".MuiMenuItem-root": {
-              ":hover": {
-                color: "#06816d",
-                backgroundColor: grey[200],
-              },
-              ":hover > .MuiListItemIcon-root": {
-                color: "#06816d",
-              },
-            },
-            ".MuiMenuItem-root:nth-of-type(4)": {
-              ":hover": {
-                color: red[400],
-              },
-              ":hover > .MuiListItemIcon-root": {
-                color: red[400],
-              },
-            },
-          }}
-        >
-          <MenuItem
-            sx={{ color: grey[600] }}
-            onClick={() => {
-              navigate(URLLocation.pathname + "/1/pipeline");
-            }}
-          >
-            <ListItemIcon>
-              <LinearScaleRounded fontSize="small" />
-            </ListItemIcon>
-            <ListItemText
-              primary="Pipeline"
-              sx={{
-                ".MuiListItemText-primary": {
-                  fontSize: "small",
-                  fontWeight: 550,
-                },
-              }}
-            />
-          </MenuItem>
-          <MenuItem sx={{ color: grey[600] }}>
-            <ListItemIcon>
-              <UpdateRounded fontSize="small" />
-            </ListItemIcon>
-            <ListItemText
-              primary="Update"
-              sx={{
-                ".MuiListItemText-primary": {
-                  fontSize: "small",
-                  fontWeight: 550,
-                },
-              }}
-            />
-          </MenuItem>
-          <MenuItem sx={{ color: grey[600] }}>
-            <ListItemIcon>
-              <BlockRounded fontSize="small" />
-            </ListItemIcon>
-            <ListItemText
-              primary="Disable"
-              sx={{
-                ".MuiListItemText-primary": {
-                  fontSize: "small",
-                  fontWeight: 550,
-                },
-              }}
-            />
-          </MenuItem>
-          <MenuItem sx={{ color: red[200] }}>
-            <ListItemIcon sx={{ color: red[200] }}>
-              <DeleteRounded fontSize="small" />
-            </ListItemIcon>
-            <ListItemText
-              primary="Delete"
-              sx={{
-                ".MuiListItemText-primary": {
-                  fontSize: "small",
-                  fontWeight: 550,
-                },
-              }}
-            />
-          </MenuItem>
-        </Menu>
-        {/* Dialog */}
-        <Dialog
-          open={openDialog}
-          onClose={() => setOpenDialog(false)}
-          maxWidth="lg"
-          fullWidth
-          fullScreen={xsmall}
-        >
-          <Box
-            component={"div"}
-            sx={{
-              display: "flex",
-              justifyContent: "end",
-              paddingTop: "0.5em",
-              paddingX: "1em",
-            }}
-          >
-            <IconButton onClick={() => setOpenDialog(false)}>
-              <CloseRounded />
-            </IconButton>
-          </Box>
-          <Grid container>
-            <Grid item xs={12} lgTablet={8}>
-              <Box component={"div"} sx={{ margin: "0.5em" }}>
-                <Box
-                  component={"div"}
-                  sx={{
-                    display: "flex",
-                    justifyContent: "start",
-                    alignItems: "center",
-                    gap: "0 1em",
-                    paddingLeft: "1em",
-                  }}
-                >
-                  <Avatar
-                    alt="company-logo"
-                    src="broken.jpg"
-                    sx={{
-                      width: small ? "4em" : "5em",
-                      height: small ? "4em" : "5em",
-                    }}
+          },
+        }}
+      >
+        <Box component={"div"} sx={{ display: { xs: "block", md: "flex" } }}>
+          <Box component={"div"}>
+            <Typography component={"p"} variant="subtitle2" sx={{ fontWeight: 550, color: grey[700], paddingX: "0.5em" }}>Line Industry</Typography>
+            {LINE_INDUSTRY.map((value, index) => {
+              return (
+                <MenuItem key={index} dense>
+                  <FormControlLabel
+                    label={<Typography component={"p"} variant="subtitle2" sx={{ color: grey[500] }}>{value}</Typography>}
+                    control={<Checkbox size="small" checked={filterCheck["line_industry"] === value} onChange={(event: ChangeEvent<HTMLInputElement>) => {
+                      setFilterCheck(prev => ({ ...prev, ["line_industry"]: event.target.checked ? value : "" }))
+                    }} />}
                   />
-                  <Box component={"div"}>
-                    <Typography
-                      variant={small ? "subtitle2" : "h6"}
+                </MenuItem>
+              )
+            })}
+          </Box>
+          <Box component={"div"}>
+            <Typography component={"p"} variant="subtitle2" sx={{ fontWeight: 550, color: grey[700], paddingX: "0.5em" }}>Employee Type</Typography>
+            {EMPLOYEE_TYPE.map((value, index) => {
+              return (
+                <MenuItem key={index} dense>
+                  <FormControlLabel
+                    label={<Typography component={"p"} variant="subtitle2" sx={{ color: grey[500] }}>{value}</Typography>}
+                    control={<Checkbox size="small" checked={filterCheck["employee_type"] === value} onChange={(event: ChangeEvent<HTMLInputElement>) => {
+                      setFilterCheck(prev => ({ ...prev, ["employee_type"]: event.target.checked ? value : "" }))
+                    }} />}
+                  />
+                </MenuItem>
+              )
+            })}
+          </Box>
+          <Box component={"div"}>
+            <Typography component={"p"} variant="subtitle2" sx={{ fontWeight: 550, color: grey[700], paddingX: "0.5em" }}>Min Experience</Typography>
+            {MIN_EXPERIENCE.map((value, index) => {
+              return (
+                <MenuItem key={index} dense>
+                  <FormControlLabel
+                    label={<Typography component={"p"} variant="subtitle2" sx={{ color: grey[500] }}>{value}</Typography>}
+                    control={<Checkbox size="small" checked={filterCheck["min_experience"] === value} onChange={(event: ChangeEvent<HTMLInputElement>) => {
+                      setFilterCheck(prev => ({ ...prev, ["min_experience"]: event.target.checked ? value : "" }))
+                    }} />}
+                  />
+                </MenuItem>
+              )
+            })}
+          </Box>
+          <Box component={"div"}>
+            <Typography component={"p"} variant="subtitle2" sx={{ fontWeight: 550, color: grey[700], paddingX: "0.5em" }}>Work Arrangement</Typography>
+            {WORK_ARRANGEMENT.map((value, index) => {
+              return (
+                <MenuItem key={index} dense>
+                  <FormControlLabel
+                    label={<Typography component={"p"} variant="subtitle2" sx={{ color: grey[500] }}>{value}</Typography>}
+                    control={<Checkbox size="small" checked={filterCheck["work_arrangement"] === value} onChange={(event: ChangeEvent<HTMLInputElement>) => {
+                      setFilterCheck(prev => ({ ...prev, ["work_arrangement"]: event.target.checked ? value : "" }))
+                    }} />}
+                  />
+                </MenuItem>
+              )
+            })}
+          </Box>
+        </Box>
+        <Box component={"div"}>
+          <Button variant="text" color="error" fullWidth onClick={() => setFilterCheck({})}>Reset Filters</Button>
+        </Box>
+      </Menu>
+      {/* Vacancy Menu Options */}
+      <Menu
+        open={Boolean(anchorEl["vacancy-option"])}
+        anchorEl={anchorEl["vacancy-option"]}
+        anchorOrigin={{ horizontal: "right", vertical: "bottom" }}
+        transformOrigin={{ horizontal: "right", vertical: "top" }}
+        onClose={() => setAnchorEl(prev => ({ ...prev, ["vacancy-option"]: null }))}
+        slotProps={{
+          paper: {
+            sx: {
+              minWidth: "10em",
+              border: "1px solid " + grey[400],
+              boxShadow: "none",
+            },
+          },
+        }}
+        MenuListProps={{
+          sx: {},
+        }}
+        sx={{
+          ".MuiMenuItem-root": {
+            ":hover": {
+              color: "#06816d",
+              backgroundColor: grey[200],
+            },
+            ":hover > .MuiListItemIcon-root": {
+              color: "#06816d",
+            },
+          },
+          ".MuiMenuItem-root:nth-of-type(4)": {
+            ":hover": {
+              color: red[400],
+            },
+            ":hover > .MuiListItemIcon-root": {
+              color: red[400],
+            },
+          },
+        }}
+      >
+        {/* Piepeline */}
+        <MenuItem
+          sx={{ color: grey[600] }}
+          onClick={() => {
+            navigate(URLLocation.pathname + "/" + selectedVacancyID.id + "/pipeline");
+          }}
+          disabled={selectedVacancyID.is_inactive}
+        >
+          <ListItemIcon>
+            <LinearScaleRounded fontSize="small" />
+          </ListItemIcon>
+          <ListItemText
+            primary="Pipeline"
+            sx={{
+              ".MuiListItemText-primary": {
+                fontSize: "small",
+                fontWeight: 550,
+              },
+            }}
+          />
+        </MenuItem>
+        {/* Update */}
+        <MenuItem sx={{ color: grey[600] }}
+          onClick={() => {
+            setOpenDialog(prev => ({ ...prev, ["vacancy-update"]: true }));
+          }}
+        >
+          <ListItemIcon>
+            <UpdateRounded fontSize="small" />
+          </ListItemIcon>
+          <ListItemText
+            primary="Update"
+            sx={{
+              ".MuiListItemText-primary": {
+                fontSize: "small",
+                fontWeight: 550,
+              },
+            }}
+          />
+        </MenuItem>
+        {/* Disable */}
+        <MenuItem sx={{ color: grey[600] }}
+          onClick={() => {
+            setOpenDialog(prev => ({ ...prev, ["vacancy-disable"]: true }));
+          }}
+          disabled={loading}
+        >
+          <ListItemIcon>
+            {selectedVacancyID?.is_inactive ? (<FiberManualRecordRounded fontSize="small" />) : (<BlockRounded fontSize="small" />)}
+          </ListItemIcon>
+          <ListItemText
+            primary={selectedVacancyID?.is_inactive ? "Enable" : "Disable"}
+            sx={{
+              ".MuiListItemText-primary": {
+                fontSize: "small",
+                fontWeight: 550,
+              },
+            }}
+          />
+        </MenuItem>
+        {/* Delete */}
+        <MenuItem sx={{ color: red[200] }}
+          onClick={() => setOpenDialog(prev => ({ ...prev, ["vacancy-delete"]: true }))}
+        >
+          <ListItemIcon sx={{ color: red[200] }}>
+            <DeleteRounded fontSize="small" />
+          </ListItemIcon>
+          <ListItemText
+            primary="Delete"
+            sx={{
+              ".MuiListItemText-primary": {
+                fontSize: "small",
+                fontWeight: 550,
+              },
+            }}
+          />
+        </MenuItem>
+      </Menu>
+      {/* View Detail Vacancy in Dialog */}
+      <Dialog
+        open={Boolean(openDialog["view-detail"])}
+        maxWidth="lg"
+        fullWidth
+        fullScreen={xsmall}
+      >
+        <Box
+          component={"div"}
+          sx={{
+            display: "flex",
+            justifyContent: "end",
+            paddingTop: "0.5em",
+            paddingX: "1em",
+          }}
+        >
+          <IconButton onClick={() => setOpenDialog(prev => ({ ...prev, ["view-detail"]: false }))}>
+            <CloseRounded />
+          </IconButton>
+        </Box>
+        <Grid container sx={{
+          marginBottom: "2.5em"
+        }}>
+          <Grid item xs={12} lgTablet={8}>
+            <Box component={"div"} sx={{ margin: "0.5em" }}>
+              <Box
+                component={"div"}
+                sx={{
+                  display: "flex",
+                  justifyContent: "start",
+                  alignItems: "center",
+                  gap: "0 1em",
+                  paddingLeft: "1em",
+                }}
+              >
+                <Avatar
+                  alt="company-logo"
+                  src={`${HOST.main}${viewedVacancy?.employer.profile_image_path}`}
+                  sx={{
+                    width: small ? "4em" : "5em",
+                    height: small ? "4em" : "5em",
+                  }}
+                />
+                <Box component={"div"}>
+                  <Typography
+                    variant={small ? "subtitle2" : "h6"}
+                    sx={{
+                      fontWeight: 550,
+                      color: grey[800],
+                    }}
+                  >
+                    {viewedVacancy?.position}
+                  </Typography>
+                  <Box
+                    sx={{ display: "flex", flexWrap: "wrap", gap: "0 1.5em" }}
+                  >
+                    <Box
                       sx={{
-                        fontWeight: 550,
-                        color: grey[800],
+                        display: "flex",
+                        alignItems: "end",
                       }}
                     >
-                      Cloud Architect
-                    </Typography>
+                      <Business fontSize="small" sx={{ color: "#06816d" }} />
+                      <Typography
+                        variant="caption"
+                        sx={{
+                          fontWeight: small ? 500 : 550,
+                          color: grey[600],
+                          marginLeft: "0.5em",
+                        }}
+                      >
+                        {viewedVacancy?.employer.legal_name}
+                      </Typography>
+                    </Box>
                     <Box
-                      sx={{ display: "flex", flexWrap: "wrap", gap: "0 1.5em" }}
+                      sx={{
+                        display: "flex",
+                        alignItems: "end",
+                      }}
                     >
-                      <Box
+                      <Place fontSize="small" sx={{ color: "#06816d" }} />
+                      <Typography
+                        variant="caption"
                         sx={{
-                          display: "flex",
-                          alignItems: "end",
+                          fontWeight: small ? 500 : 550,
+                          color: grey[600],
+                          marginLeft: "0.5em",
                         }}
                       >
-                        <Business fontSize="small" sx={{ color: "#06816d" }} />
-                        <Typography
-                          variant="caption"
-                          sx={{
-                            fontWeight: small ? 500 : 550,
-                            color: grey[600],
-                            marginLeft: "0.5em",
-                          }}
-                        >
-                          PT. Sidokaredev Karya Mandiri
-                        </Typography>
-                      </Box>
-                      <Box
-                        sx={{
-                          display: "flex",
-                          alignItems: "end",
-                        }}
-                      >
-                        <Place fontSize="small" sx={{ color: "#06816d" }} />
-                        <Typography
-                          variant="caption"
-                          sx={{
-                            fontWeight: small ? 500 : 550,
-                            color: grey[600],
-                            marginLeft: "0.5em",
-                          }}
-                        >
-                          Sidoarjo, Indonesia (INA)
-                        </Typography>
-                      </Box>
+                        {viewedVacancy?.employer.location}, Indonesia (INA)
+                      </Typography>
                     </Box>
                   </Box>
                 </Box>
-                <Box component={"div"} sx={{ padding: "1em" }}>
-                  <Stack
-                    direction={"column"}
-                    spacing={2}
-                    sx={{ marginY: "0.5em" }}
-                  >
-                    {/* decription */}
-                    <Box component={"div"}>
-                      <Typography
-                        variant="subtitle2"
-                        sx={{ fontWeight: 550, color: grey[800] }}
-                      >
-                        Description
-                      </Typography>
-                      <Typography variant="body1" sx={{ color: grey[600] }}>
-                        Lorem ipsum dolor sit amet, consectetur adipisicing
-                        elit. Cupiditate quo hic tenetur voluptas laboriosam a
-                        cum rem voluptatem dignissimos dicta ipsam quasi in,
-                        minima ut aperiam. Exercitationem suscipit maiores
-                        similique!
-                      </Typography>
-                    </Box>
-                    {/* qualification */}
-                    <Box component={"div"}>
-                      <Typography
-                        variant="subtitle2"
-                        sx={{ fontWeight: 550, color: grey[800] }}
-                      >
-                        Qualification
-                      </Typography>
-                      <ul>
-                        {[0, 1, 2, 3].map((_, index) => (
-                          <li key={index} style={{ marginLeft: "1em" }}>
-                            <Typography
-                              variant="body1"
-                              sx={{ color: grey[600] }}
-                            >
-                              Lorem, ipsum dolor sit amet consectetur
-                              adipisicing elit
-                            </Typography>
-                          </li>
-                        ))}
-                      </ul>
-                    </Box>
-                    {/* responsibility */}
-                    <Box component={"div"}>
-                      <Typography
-                        variant="subtitle2"
-                        sx={{ fontWeight: 550, color: grey[800] }}
-                      >
-                        Responsibility
-                      </Typography>
-                      <ul>
-                        {[0, 1, 2, 3].map((_, index) => (
-                          <li key={index} style={{ marginLeft: "1em" }}>
-                            <Typography
-                              variant="body1"
-                              sx={{ color: grey[600] }}
-                            >
-                              Lorem ipsum dolor sit amet consectetur adipisicing
-                              elit. Perspiciatis atque modi mollitia?
-                            </Typography>
-                          </li>
-                        ))}
-                      </ul>
-                    </Box>
-                  </Stack>
-                </Box>
               </Box>
-            </Grid>
-            <Grid item xs={12} lgTablet={4}>
-              <Box
-                component={"div"}
-                sx={{ margin: "0.5em", paddingRight: "1em" }}
-              >
-                <Typography
-                  component={"p"}
-                  variant="subtitle1"
-                  sx={{
-                    fontWeight: 550,
-                    marginBottom: "1em",
-                    paddingLeft: "1em",
-                  }}
-                >
-                  Job Information
-                </Typography>
+              <Box component={"div"} sx={{ padding: "1em" }}>
                 <Stack
                   direction={"column"}
                   spacing={2}
-                  sx={{
-                    padding: "1em",
-                    border: "1px solid " + grey[300],
-                    borderRadius: "0.3em",
-                  }}
+                  sx={{ marginY: "0.5em" }}
                 >
-                  <Box
-                    component={"div"}
-                    sx={{ display: "flex", columnGap: "0.5em" }}
-                  >
-                    <FoundationRounded />
-                    <Box component={"div"}>
-                      <Typography variant="subtitle2" sx={{ fontWeight: 550 }}>
-                        Line Industry
-                      </Typography>
-                      <Typography variant="caption">Technology</Typography>
-                    </Box>
+                  {/* decription */}
+                  <Box component={"div"}>
+                    <Typography
+                      variant="subtitle2"
+                      sx={{ fontWeight: 550, color: grey[800] }}
+                    >
+                      Description
+                    </Typography>
+                    <Typography variant="body1" sx={{ color: grey[600], whiteSpace: "pre-line" }}>
+                      {viewedVacancy?.description}
+                    </Typography>
                   </Box>
-                  <Box
-                    component={"div"}
-                    sx={{ display: "flex", columnGap: "0.5em" }}
-                  >
-                    <LocationOnRounded />
-                    <Box component={"div"}>
-                      <Typography variant="subtitle2" sx={{ fontWeight: 550 }}>
-                        Location
-                      </Typography>
-                      <Typography variant="caption">
-                        Kabupaten Sidoarjo
-                      </Typography>
-                    </Box>
+                  {/* qualification */}
+                  <Box component={"div"}>
+                    <Typography
+                      variant="subtitle2"
+                      sx={{ fontWeight: 550, color: grey[800] }}
+                    >
+                      Qualification
+                    </Typography>
+                    <Typography variant="body1" sx={{ color: grey[600], whiteSpace: "pre-line" }}>
+                      {viewedVacancy?.qualification}
+                    </Typography>
                   </Box>
-                  <Box
-                    component={"div"}
-                    sx={{ display: "flex", columnGap: "0.5em" }}
-                  >
-                    <BadgeRounded />
-                    <Box component={"div"}>
-                      <Typography variant="subtitle2" sx={{ fontWeight: 550 }}>
-                        Employee Type
-                      </Typography>
-                      <Typography variant="caption">Intern</Typography>
-                    </Box>
-                  </Box>
-                  <Box
-                    component={"div"}
-                    sx={{ display: "flex", columnGap: "0.5em" }}
-                  >
-                    <WorkspacePremiumRounded />
-                    <Box component={"div"}>
-                      <Typography variant="subtitle2" sx={{ fontWeight: 550 }}>
-                        Experience
-                      </Typography>
-                      <Typography variant="caption">2+ years</Typography>
-                    </Box>
-                  </Box>
-                  <Box
-                    component={"div"}
-                    sx={{ display: "flex", columnGap: "0.5em" }}
-                  >
-                    <MonetizationOnRounded />
-                    <Box component={"div"}>
-                      <Typography variant="subtitle2" sx={{ fontWeight: 550 }}>
-                        Salary
-                      </Typography>
-                      <Typography variant="caption">
-                        {Intl.NumberFormat("id-ID", {
-                          style: "currency",
-                          currency: "IDR",
-                        }).format(3200000)}
-                      </Typography>
-                    </Box>
-                  </Box>
-                  <Box
-                    component={"div"}
-                    sx={{ display: "flex", columnGap: "0.5em" }}
-                  >
-                    <MeetingRoomRounded />
-                    <Box component={"div"}>
-                      <Typography variant="subtitle2" sx={{ fontWeight: 550 }}>
-                        Work Arrangement
-                      </Typography>
-                      <Typography variant="caption">Remote Work</Typography>
-                    </Box>
+                  {/* responsibility */}
+                  <Box component={"div"}>
+                    <Typography
+                      variant="subtitle2"
+                      sx={{ fontWeight: 550, color: grey[800] }}
+                    >
+                      Responsibility
+                    </Typography>
+                    <Typography variant="body1" sx={{ color: grey[600], whiteSpace: "pre-line" }}>
+                      {viewedVacancy?.responsibility}
+                    </Typography>
                   </Box>
                 </Stack>
               </Box>
-            </Grid>
+            </Box>
           </Grid>
-        </Dialog>
-      </Box>
+          {/* Job Information */}
+          <Grid item xs={12} lgTablet={4}>
+            <Box
+              component={"div"}
+              sx={{ margin: "0.5em", paddingRight: "1em" }}
+            >
+              <Typography
+                component={"p"}
+                variant="subtitle1"
+                sx={{
+                  fontWeight: 550,
+                  marginBottom: "1em",
+                  paddingLeft: "1em",
+                }}
+              >
+                Job Information
+              </Typography>
+              <Stack
+                direction={"column"}
+                spacing={2}
+                sx={{
+                  padding: "1em",
+                  border: "1px solid " + grey[300],
+                  borderRadius: "0.3em",
+                }}
+              >
+                <Box
+                  component={"div"}
+                  sx={{ display: "flex", columnGap: "0.5em" }}
+                >
+                  <FoundationRounded />
+                  <Box component={"div"}>
+                    <Typography variant="subtitle2" sx={{ fontWeight: 550 }}>
+                      Line Industry
+                    </Typography>
+                    <Typography variant="caption">
+                      {viewedVacancy?.line_industry}
+                    </Typography>
+                  </Box>
+                </Box>
+                <Box
+                  component={"div"}
+                  sx={{ display: "flex", columnGap: "0.5em" }}
+                >
+                  <LocationOnRounded />
+                  <Box component={"div"}>
+                    <Typography variant="subtitle2" sx={{ fontWeight: 550 }}>
+                      Location
+                    </Typography>
+                    <Typography variant="caption">
+                      {viewedVacancy?.employer.location}
+                    </Typography>
+                  </Box>
+                </Box>
+                <Box
+                  component={"div"}
+                  sx={{ display: "flex", columnGap: "0.5em" }}
+                >
+                  <BadgeRounded />
+                  <Box component={"div"}>
+                    <Typography variant="subtitle2" sx={{ fontWeight: 550 }}>
+                      Employee Type
+                    </Typography>
+                    <Typography variant="caption">
+                      {viewedVacancy?.employee_type}
+                    </Typography>
+                  </Box>
+                </Box>
+                <Box
+                  component={"div"}
+                  sx={{ display: "flex", columnGap: "0.5em" }}
+                >
+                  <WorkspacePremiumRounded />
+                  <Box component={"div"}>
+                    <Typography variant="subtitle2" sx={{ fontWeight: 550 }}>
+                      Experience
+                    </Typography>
+                    <Typography variant="caption">
+                      {viewedVacancy?.min_experience}
+                    </Typography>
+                  </Box>
+                </Box>
+                <Box
+                  component={"div"}
+                  sx={{ display: "flex", columnGap: "0.5em" }}
+                >
+                  <MonetizationOnRounded />
+                  <Box component={"div"}>
+                    <Typography variant="subtitle2" sx={{ fontWeight: 550 }}>
+                      Salary
+                    </Typography>
+                    <Typography variant="caption">
+                      {Intl.NumberFormat("id-ID", {
+                        style: "currency",
+                        currency: "IDR",
+                      }).format(viewedVacancy?.salary as number)}
+                    </Typography>
+                  </Box>
+                </Box>
+                <Box
+                  component={"div"}
+                  sx={{ display: "flex", columnGap: "0.5em" }}
+                >
+                  <MeetingRoomRounded />
+                  <Box component={"div"}>
+                    <Typography variant="subtitle2" sx={{ fontWeight: 550 }}>
+                      Work Arrangement
+                    </Typography>
+                    <Typography variant="caption">
+                      {viewedVacancy?.work_arrangement}
+                    </Typography>
+                  </Box>
+                </Box>
+              </Stack>
+            </Box>
+          </Grid>
+        </Grid>
+      </Dialog>
+      {/* Vacancy Update Dialog */}
+      <Dialog
+        open={Boolean(openDialog["vacancy-update"])}
+        maxWidth="lg"
+        fullWidth
+        fullScreen={xsmall}
+        PaperProps={{
+          sx: {
+            padding: "1.5em"
+          }
+        }}
+      >
+        <Box component={"div"}
+          sx={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            marginBottom: "1em",
+          }}
+        >
+          <Typography component={"div"} variant="subtitle1"
+            sx={{
+              fontWeight: 550,
+              color: grey[700]
+            }}
+          >
+            Update Vacancy Data
+          </Typography>
+          <IconButton size="small"
+            onClick={() => {
+              setOpenDialog(prev => ({ ...prev, ["vacancy-update"]: false }))
+            }}
+          >
+            <CloseRounded fontSize="small" />
+          </IconButton>
+        </Box>
+        {/* Vacancy Form */}
+        <VacancyForm
+          formValue={formValue}
+          setFormValue={setFormValue}
+          onSubmit={onSubmit}
+          errMsg={errMsg}
+          loading={loading}
+        />
+      </Dialog>
+      {/* Vacancy Disable Dialog */}
+      <Dialog
+        open={Boolean(openDialog["vacancy-disable"])}
+        maxWidth="sm"
+        PaperProps={{
+          sx: {
+            marginTop: "-20em",
+            padding: "1em"
+          }
+        }}
+        fullWidth
+      >
+        <Box component={"div"}>
+          <Typography component={"div"} variant="subtitle1"
+            sx={{
+              marginBottom: "1em",
+              fontWeight: 550,
+              color: "#06816d"
+            }}
+          >
+            Note
+          </Typography>
+          <Typography component={"div"} variant="subtitle2">
+            {selectedVacancyID?.is_inactive ? (
+              <>
+                Once <SimpleEmphasis text={" enabled"} />, this job will be visible and accessible to candidates on the main page and search results.
+              </>
+            ) : (
+              <>
+                Once <SimpleEmphasis text={" disabled"} textColor="red" />, this job will no longer be visible or accessible to candidates on the main page or search results.
+              </>
+            )}
+          </Typography>
+        </Box>
+        <Box component={"div"}
+          sx={{
+            marginTop: "2em",
+            display: "flex",
+            justifyContent: "end",
+            columnGap: "1em",
+          }}
+        >
+          <Button
+            variant="text"
+            color="secondary"
+            size="small"
+            onClick={() => {
+              setOpenDialog(prev => ({ ...prev, ["vacancy-disable"]: false }));
+            }}
+          >
+            DISAGREE
+          </Button>
+          <Button
+            variant="contained"
+            color="primary"
+            size="small"
+            endIcon={loading && <CircularProgress size={20} />}
+            disabled={loading}
+            onClick={() => {
+              onDisable();
+            }}
+          >
+            AGREE
+          </Button>
+        </Box>
+      </Dialog>
+      {/* Vacancy Delete Dialog */}
+      <Dialog
+        open={Boolean(openDialog["vacancy-delete"])}
+        maxWidth="sm"
+        PaperProps={{
+          sx: {
+            marginTop: "-20em",
+            padding: "1em"
+          }
+        }}
+        fullWidth
+      >
+        <Box component={"div"}>
+          <Typography component={"div"} variant="subtitle1"
+            sx={{
+              marginBottom: "1em",
+              fontWeight: 550,
+              color: "#06816d"
+            }}
+          >
+            Note
+          </Typography>
+          <Typography component={"div"} variant="subtitle2">
+            Deleting this job will <SimpleEmphasis text={" permanently remove "} textColor="red" /> all related data, including pipelines, screenings, assessments, interviews, and offerings associated with it.
+          </Typography>
+        </Box>
+        <Box component={"div"}
+          sx={{
+            marginTop: "2em",
+            display: "flex",
+            justifyContent: "end",
+            columnGap: "1em",
+          }}
+        >
+          <Button
+            variant="text"
+            color="secondary"
+            size="small"
+            onClick={() => {
+              setOpenDialog(prev => ({ ...prev, ["vacancy-delete"]: false }));
+            }}
+          >
+            DISAGREE
+          </Button>
+          <Button
+            variant="contained"
+            color="primary"
+            size="small"
+            endIcon={loading && <CircularProgress size={20} />}
+            disabled={loading}
+            onClick={() => {
+              onDelete();
+            }}
+          >
+            AGREE
+          </Button>
+        </Box>
+      </Dialog>
     </DashboardLayout>
   );
 }

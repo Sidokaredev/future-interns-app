@@ -5,7 +5,8 @@ import { ArraySkillFormSchema, SkillDataType, SkillFormType } from "../../../../
 import { grey } from "@mui/material/colors";
 import { GetSession, onCloseSnackbar } from "../../../../pages/global-helpers";
 import RequestAPI from "../../../../services/api/request";
-import SkillFormDraft from "./SkillFormDraft";
+import SkillForm from "./SkillForm";
+import { HOST } from "../../../../pages/administrators/performance/[id]/constants";
 
 export default function SkillData({
   openDialog,
@@ -184,7 +185,7 @@ export default function SkillData({
           <Chip key={index}
             avatar={
               <Avatar
-                src={`http://localhost:3000${skill.skill_icon_image_path}`}
+                src={`${HOST.main}${skill.skill_icon_image_path}`}
                 slotProps={{
                   img: {
                     style: {
@@ -227,7 +228,7 @@ export default function SkillData({
         }}
         fullWidth
       >
-        <SkillFormDraft
+        <SkillForm
           formValue={formValue}
           setFormValue={setFormValue}
           errMsg={errMsg}
