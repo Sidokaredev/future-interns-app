@@ -90,7 +90,7 @@ export default function WriteThroughTestPage() {
     setLogs(prev => prev + "\n" + `${dayjs().format("DD/MM/YYYY HH.mm.ss")}: \tBegin Write-Through test` +
       "\n" + `${dayjs().format("DD/MM/YYYY HH.mm.ss")}: \tGenerating sampling queries`);
 
-    const TOTAL_REQUEST = 250;
+    const TOTAL_REQUEST = 100;
     setRequestStats(prev => ({ ...prev, awaiting: TOTAL_REQUEST }));
 
     const basicHeaders = new Headers({
@@ -103,7 +103,7 @@ export default function WriteThroughTestPage() {
     });
 
     const [dataSampling, failSampling] = await RequestAPI.Send<SamplingQuery[]>(
-      "/api/v1/administrators/test/generates/sampling?count=80",
+      "/api/v1/administrators/test/generates/sampling?count=30", // getting sampling
       { method: "GET", headers: basicHeaders }
     );
     if (failSampling) {
@@ -114,7 +114,7 @@ export default function WriteThroughTestPage() {
       setLogs(prev => prev + "\n" + `${dayjs().format("DD/MM/YYYY HH.mm.ss")}: \tSampling queries is ready!` +
         "\n" + `${dayjs().format("DD/MM/YYYY HH.mm.ss")}: \tWriting new data`);
 
-      const firstSampling = dataSampling.slice(0, 50);
+      const firstSampling = dataSampling.slice(0, 20);
       const writtenID: Map<string, string[]> = new Map();
       /**
        * Writing new data
@@ -396,7 +396,7 @@ export default function WriteThroughTestPage() {
       /**
        * Combination write and read data
        */
-      const combinationSampling = dataSampling.slice(50, 75);
+      const combinationSampling = dataSampling.slice(20, 30);
       for (let idx = 0; idx < combinationSampling.length; idx++) {
         const [rawVacancies, fail] = await RequestAPI.JSONRequest({
           sampling: combinationSampling,
@@ -611,7 +611,7 @@ export default function WriteThroughTestPage() {
                 color: "#c2fffb",
               }}
             >
-              Write Through Test
+              Pengujian Write Through
             </Typography>
           </Box>
           <Grid container spacing={2}
@@ -787,40 +787,56 @@ export default function WriteThroughTestPage() {
               marginY: "1em"
             }}
           >
+            <Typography component={"p"} variant="subtitle1" fontWeight={550}
+              sx={{
+                marginBottom: "0.5em",
+                color: grey[800]
+              }}
+            >
+              Deskripsi Pengujian
+            </Typography>
             <Typography component={"p"} variant="body1"
               sx={{
                 color: grey[700],
               }}
             >
-              This test will execute 250 requests to the write-through service. Below are the details of the request phases:
+              Tes ini akan menjalankan 100 permintaan ke layanan write-through. Berikut rincian fase permintaan:
             </Typography>
             <ol style={{ color: grey[700], lineHeight: "1.5em", marginLeft: "1em", marginTop: "0.5em" }}>
               <li>
                 <Typography component={"p"} variant="body1">
-                  Execute 50 requests to write new job vacancy data, writing 500 records per request (total: 25,000 records).
+                  Mengeksekusi 20 permintaan untuk menulis data lowongan kerja baru, menulis 500 record per permintaan (total: 10.000 record).
                 </Typography>
               </li>
               <li>
                 <Typography component={"p"} variant="body1">
-                  Execute 50 requests to read the job vacancy data written in the first phase, reading 500 records per request.
+                  Mengeksekusi 20 permintaan untuk membaca data lowongan kerja yang ditulis pada fase pertama, membaca 500 record per permintaan.
                 </Typography>
               </li>
               <li>
                 <Typography component={"p"} variant="body1">
-                  Execute 50 requests to update the job vacancy data written in the first phase, updating 500 records per request.
+                  Mengeksekusi 20 permintaan untuk memperbarui data lowongan kerja yang ditulis pada fase pertama, memperbarui 500 record per permintaan.
                 </Typography>
               </li>
               <li>
                 <Typography component={"p"} variant="body1">
-                  Execute 50 requests to read the job vacancy data that was updated in the third phase, reading 500 records per request.
+                  Mengeksekusi 20 permintaan untuk membaca data lowongan kerja yang diperbarui pada fase ketiga, membaca 500 record per permintaan.
                 </Typography>
               </li>
               <li>
                 <Typography component={"p"} variant="body1">
-                  Execute 50 requests with a combination of reading and writing job vacancy data at a 50:50 ratio. Writing 500 records per request (total: 12,500 records) and reading 500 records per request.
+                  Mengeksekusi 20 permintaan dengan kombinasi membaca dan menulis data lowongan kerja dengan rasio 50:50. Menulis 500 record per permintaan (total: 5.000 record) dan membaca 500 record per permintaan.
                 </Typography>
               </li>
             </ol>
+            <Typography component={"p"} variant="subtitle1" fontWeight={550}
+              sx={{
+                marginTop: "1em",
+                color: grey[800]
+              }}
+            >
+              Monitoring <span style={{ fontStyle: "italic" }}>Logs</span> Pengujian
+            </Typography>
             <Box component={"div"}
               ref={logsRef}
               sx={{
@@ -848,7 +864,7 @@ export default function WriteThroughTestPage() {
                 <Typography component={"p"} variant="caption" fontFamily={"monospace"} sx={{ whiteSpace: "pre-line" }}>
                   {logs + " " + dots + "\n"}
                   -----------------------------------------------------------------
-                  {`\n Testing progress -> ⏳Pending: ${requestStats.awaiting} | ✅Success: ${requestStats.success} | ❌Failed: ${requestStats.fail}`}
+                  {`\n Progres Pengujian -> ⏳Menunggu: ${requestStats.awaiting} | ✅Berhasil: ${requestStats.success} | ❌Gagal: ${requestStats.fail}`}
                 </Typography>
               )}
             </Box>
@@ -856,16 +872,16 @@ export default function WriteThroughTestPage() {
               <Button
                 startIcon={
                   loading ? <CircularProgress size={20} /> :
-                    writeThroughLogs.logs.length === 250 ? <DoneRounded fontSize="small" /> :
+                    writeThroughLogs.logs.length === 100 ? <DoneRounded fontSize="small" /> :
                       <PlayCircleRounded fontSize="small" />
                 }
-                disabled={loading || writeThroughLogs.logs.length === 250}
+                disabled={loading || writeThroughLogs.logs.length === 100}
                 variant="contained"
                 onClick={() => {
                   setOpenDialog(true);
                 }}
               >
-                {writeThroughLogs.logs.length === 250 ? "Completed" : "Run Write Test"}
+                {writeThroughLogs.logs.length === 100 ? "Selesai" : "Jalankan Pengujian"}
               </Button>
             </Box>
           </Box>
@@ -877,35 +893,44 @@ export default function WriteThroughTestPage() {
                 paddingY: "0.5em",
                 color: "#06816d",
                 fontWeight: 550,
-                textAlign: "center",
-                borderBottom: "1px solid " + grey[300]
+                textAlign: "start",
+                // borderBottom: "1px solid " + grey[300]
               }}
             >
-              Write Test Results
+              Hasil Pengujian Write Through
             </Typography>
             <TableContainer>
-              <Table size="small">
+              <Table size="small"
+                sx={{
+                  borderCollapse: "unset",
+                  border: "1px solid " + grey[400],
+                  borderRadius: "0.3em",
+                  ".MuiTableCell-root": {
+                    border: "none",
+                  },
+                }}
+              >
                 <TableHead>
                   <TableRow>
-                    <TableCell sx={{ width: "10%" }}>
-                      <Typography component={"p"} variant="body2" sx={{ color: grey[600], fontWeight: 550 }}>No. Request</Typography>
+                    <TableCell sx={{ width: "10%", borderBottom: "1px solid " + grey[400] + "!important" }}>
+                      <Typography component={"p"} variant="body2" sx={{ paddingY: "0.3em", color: grey[600], fontWeight: 550 }}>No. Request</Typography>
                     </TableCell>
-                    <TableCell sx={{ width: "10%" }}>
+                    <TableCell sx={{ width: "10%", borderBottom: "1px solid " + grey[400] + "!important" }}>
                       <Typography component={"p"} variant="body2" sx={{ color: grey[600], fontWeight: 550 }}>Cache Hit</Typography>
                     </TableCell>
-                    <TableCell sx={{ width: "10%" }}>
+                    <TableCell sx={{ width: "10%", borderBottom: "1px solid " + grey[400] + "!important" }}>
                       <Typography component={"p"} variant="body2" sx={{ color: grey[600], fontWeight: 550 }}>Cache Miss</Typography>
                     </TableCell>
-                    <TableCell sx={{ width: "16.5%" }}>
+                    <TableCell sx={{ width: "16.5%", borderBottom: "1px solid " + grey[400] + "!important" }}>
                       <Typography component={"p"} variant="body2" sx={{ color: grey[600], fontWeight: 550 }}>Response Time (ms)</Typography>
                     </TableCell>
-                    <TableCell sx={{ width: "16.5%" }}>
+                    <TableCell sx={{ width: "16.5%", borderBottom: "1px solid " + grey[400] + "!important" }}>
                       <Typography component={"p"} variant="body2" sx={{ color: grey[600], fontWeight: 550 }}>Memory Usage (MB)</Typography>
                     </TableCell>
-                    <TableCell sx={{ width: "16.5%" }}>
+                    <TableCell sx={{ width: "16.5%", borderBottom: "1px solid " + grey[400] + "!important" }}>
                       <Typography component={"p"} variant="body2" sx={{ color: grey[600], fontWeight: 550 }}>CPU Usage (%)</Typography>
                     </TableCell>
-                    <TableCell sx={{ width: "20%" }}>
+                    <TableCell sx={{ width: "20%", borderBottom: "1px solid " + grey[400] + "!important" }}>
                       <Typography component={"p"} variant="body2" sx={{ color: grey[600], fontWeight: 550 }}>Resource Utilization (%)</Typography>
                     </TableCell>
                   </TableRow>
@@ -927,7 +952,7 @@ export default function WriteThroughTestPage() {
                             backgroundColor: amber[50]
                           }}
                         >
-                          Request logs for the write test are empty. Please run the test first.
+                          Log permintaan untuk pengujian masih kosong. Silakan jalankan pengujian terlebih dahulu.
                         </Typography>
                       </TableCell>
                     </TableRow>
@@ -1007,7 +1032,7 @@ export default function WriteThroughTestPage() {
             color: grey[700]
           }}
         >
-          Confirm Write-Through Test Execution
+          Konfirmasi Pengujian
         </Typography>
         <Typography component={"p"} variant="body2"
           sx={{
@@ -1015,9 +1040,9 @@ export default function WriteThroughTestPage() {
             whiteSpace: "pre-line"
           }}
         >
-          This test will execute 250 requests to the write-through service, performing multiple read and write operations on job vacancy data. The process involves writing, reading, updating, and a combination of both. Given the large data volume, the test may take some time to complete.
+          Pengujian ini akan menjalankan 100 permintaan ke layanan write-through, yang mencakup berbagai operasi baca dan tulis pada data lowongan pekerjaan.
 
-          Do you want to proceed?
+          Apakah Anda ingin melanjutkan?
         </Typography>
         <Box component={"div"}
           sx={{
@@ -1035,7 +1060,7 @@ export default function WriteThroughTestPage() {
               setOpenDialog(false);
             }}
           >
-            Cancel
+            Batal
           </Button>
           <Button
             variant="contained"
@@ -1046,7 +1071,7 @@ export default function WriteThroughTestPage() {
               setOpenDialog(false);
             }}
           >
-            Continue
+            Lanjutkan
           </Button>
         </Box>
       </Dialog>

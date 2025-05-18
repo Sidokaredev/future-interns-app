@@ -38,14 +38,11 @@ type CacheSessionInfoType = {
     status: string | null;
     created_at: string;
   };
-  no_cache: {
-    write: string;
-    read: string;
-  };
-  cache_aside: string;
-  read_through: string;
-  write_through: string;
-  write_behind: string;
+  no_cache: number;
+  cache_aside: number;
+  read_through: number;
+  write_through: number;
+  write_behind: number;
 };
 
 export default function TestSessionPage() {
@@ -88,16 +85,16 @@ export default function TestSessionPage() {
   });
   const [openDialog, setOpenDialog] = useState<Record<string, boolean>>({});
   const [datasetRadarOption, setDatasetRadarOption] = useState<Record<string, boolean>>({
-    "no-cache-write": false,
-    "no-cache-read": false,
+    // "no-cache-write": false,
+    "no-cache": false,
     "cache-aside": false,
     "read-through": false,
     "write-through": false,
     "write-behind": false,
   });
   const [datasetRadar, setDatasetRadar] = useState<Record<string, number[]>>({
-    "no-cache-write": [],
-    "no-cache-read": [],
+    // "no-cache-write": [],
+    "no-cache": [],
     "cache-aside": [],
     "read-through": [],
     "write-through": [],
@@ -113,19 +110,14 @@ export default function TestSessionPage() {
   const _defaultAltPerPage = 15;
   const _defaultPrefPerPage = 15;
   const token = GetSession("auth");
-  const noCacheCompletedTest = cacheSessionStatus ? Object.entries(cacheSessionStatus.no_cache).map(([_, value]) => {
-    return value;
-  }).filter(value => value === "completed") : [];
   const totalTestCompleted = cacheSessionStatus ? Object.entries(cacheSessionStatus).filter(([key, value]) => {
     if (key === "detail") return false;
-    if (key === "no_cache") {
-      const noCache = value as { write: string; read: string };
-      return noCache.write === "completed" && noCache.read === "completed";
+    if (value == 100) {
+      return `${key}:completed`
     }
-    return value === "completed"
   }) : [];
-  const noCacheWriteLogs = allRequestLogs.filter(log_ => log_.cache_type === "no-cache-write");
-  const noCacheReadLogs = allRequestLogs.filter(log_ => log_.cache_type === "no-cache-read");
+  const noCacheLogs = allRequestLogs.filter(log_ => log_.cache_type === "no-cache");
+  // const noCacheReadLogs = allRequestLogs.filter(log_ => log_.cache_type === "no-cache-read");
   const cacheAsideLogs = allRequestLogs.filter(log_ => log_.cache_type === "cache-aside");
   const readThroughLogs = allRequestLogs.filter(log_ => log_.cache_type === "read-through");
   const writeThroughLogs = allRequestLogs.filter(log_ => log_.cache_type === "write-through");
@@ -204,12 +196,12 @@ export default function TestSessionPage() {
     Object.entries(option).forEach(([key, value], _) => {
       if (value) {
         switch (key) {
-          case "no-cache-write":
-            alternatives.push(...noCacheWriteLogs);
+          case "no-cache":
+            alternatives.push(...noCacheLogs);
             break;
-          case "no-cache-read":
-            alternatives.push(...noCacheReadLogs);
-            break;
+          // case "no-cache-read":
+          //   alternatives.push(...noCacheReadLogs);
+          //   break;
           case "cache-aside":
             alternatives.push(...cacheAsideLogs);
             break;
@@ -252,16 +244,16 @@ export default function TestSessionPage() {
   const ResetDataset = () => {
     setTopRankPreferences({});
     setDatasetRadar({
-      "no-cache-write": [],
-      "no-cache-read": [],
+      // "no-cache-write": [],
+      "no-cache": [],
       "cache-aside": [],
       "read-through": [],
       "write-through": [],
       "write-behind": [],
     });
     setDatasetRadarOption({
-      "no-cache-write": false,
-      "no-cache-read": false,
+      // "no-cache-write": false,
+      "no-cache": false,
       "cache-aside": false,
       "read-through": false,
       "write-through": false,
@@ -318,6 +310,7 @@ export default function TestSessionPage() {
         sx={{
           paddingX: "0.5em",
           marginTop: "-10em",
+          paddingBottom: "5em",
         }}
       >
         {/* Data Visualization Container */}
@@ -352,19 +345,19 @@ export default function TestSessionPage() {
                       labels: ["Cache Hit", "Cache Miss", "Response Time", "Resource Utilization", "Preference Value"],
                       datasets: [
                         {
-                          label: "No Cache Write",
-                          data: [...datasetRadar["no-cache-write"]],
-                          backgroundColor: "rgba(167, 0, 0, 0.2)",
-                          borderColor: "rgba(167, 0, 0, 1)",
+                          label: "No Cache",
+                          data: [...datasetRadar["no-cache"]],
+                          backgroundColor: "rgba(189, 189, 189, 0.2)",
+                          borderColor: "rgba(189, 189, 189, 1)",
                           borderWidth: 2,
                         },
-                        {
-                          label: "No Cache Read",
-                          data: [...datasetRadar["no-cache-read"]],
-                          backgroundColor: "rgba(255, 0, 0, 0.2)",
-                          borderColor: "rgba(255, 0, 0, 1)",
-                          borderWidth: 2,
-                        },
+                        // {
+                        //   label: "No Cache Read",
+                        //   data: [...datasetRadar["no-cache-read"]],
+                        //   backgroundColor: "rgba(255, 0, 0, 0.2)",
+                        //   borderColor: "rgba(255, 0, 0, 1)",
+                        //   borderWidth: 2,
+                        // },
                         {
                           label: "Cache Aside",
                           data: [...datasetRadar["cache-aside"]],
@@ -399,7 +392,7 @@ export default function TestSessionPage() {
                       maintainAspectRatio: false, // Supaya chart tetap di tengah dengan ukuran fleksibel
                       plugins: {
                         title: {
-                          text: "Cache Strategy Preference Comparison",
+                          text: "Perbandingan Nilai Preferensi Strategi Cache",
                           display: true,
                           padding: { bottom: 20 },
                           font: {
@@ -463,6 +456,7 @@ export default function TestSessionPage() {
                       flexWrap: "wrap"
                     }}
                   >
+                    {/* No Cache */}
                     <Box component={"div"}
                       sx={{
                         flexBasis: "45%",
@@ -475,30 +469,13 @@ export default function TestSessionPage() {
                         sx={{
                           width: "2em",
                           height: "1em",
-                          backgroundColor: "#a70000",
+                          backgroundColor: grey[400],
                           borderRadius: "0.2em",
                         }}
                       />
-                      <Typography component={"p"} variant="caption" sx={{ fontWeight: 550, color: grey[600] }}>No Cache Write</Typography>
+                      <Typography component={"p"} variant="caption" sx={{ fontWeight: 550, color: grey[600] }}>No Cache</Typography>
                     </Box>
-                    <Box component={"div"}
-                      sx={{
-                        flexBasis: "45%",
-                        display: "flex",
-                        columnGap: "0.5em",
-                        alignItems: "center",
-                      }}
-                    >
-                      <Box component={"div"}
-                        sx={{
-                          width: "2em",
-                          height: "1em",
-                          backgroundColor: "#ff0000",
-                          borderRadius: "0.2em",
-                        }}
-                      />
-                      <Typography component={"p"} variant="caption" sx={{ fontWeight: 550, color: grey[600] }}>No Cache Read</Typography>
-                    </Box>
+                    {/* Cache Aside */}
                     <Box component={"div"}
                       sx={{
                         flexBasis: "45%",
@@ -517,6 +494,7 @@ export default function TestSessionPage() {
                       />
                       <Typography component={"p"} variant="caption" sx={{ fontWeight: 550, color: grey[600] }}>Cache Aside</Typography>
                     </Box>
+                    {/* Read Through */}
                     <Box component={"div"}
                       sx={{
                         flexBasis: "45%",
@@ -535,6 +513,7 @@ export default function TestSessionPage() {
                       />
                       <Typography component={"p"} variant="caption" sx={{ fontWeight: 550, color: grey[600] }}>Read Through</Typography>
                     </Box>
+                    {/* Write Through */}
                     <Box component={"div"}
                       sx={{
                         flexBasis: "45%",
@@ -553,6 +532,7 @@ export default function TestSessionPage() {
                       />
                       <Typography component={"p"} variant="caption" sx={{ fontWeight: 550, color: grey[600] }}>Write Through</Typography>
                     </Box>
+                    {/* Write Behind */}
                     <Box component={"div"}
                       sx={{
                         flexBasis: "45%",
@@ -584,11 +564,11 @@ export default function TestSessionPage() {
                       color: grey[700],
                     }}
                   >
-                    Choose a dataset to display on the chart
+                    Pilih dataset untuk ditampilkan pada grafik
                   </Typography>
                   <Box component={"div"}>
                     <FormGroup>
-                      <FormControlLabel control={
+                      {/* <FormControlLabel control={
                         <Checkbox size="small"
                           checked={datasetRadarOption["no-cache-write"]}
                           onChange={CheckboxOnChange("no-cache-write")}
@@ -600,20 +580,20 @@ export default function TestSessionPage() {
                           No Cache Write
                         </Typography>
                       }
-                        disabled={noCacheWriteLogs.length === 0} />
+                        disabled={noCacheWriteLogs.length === 0} /> */}
                       <FormControlLabel control={
                         <Checkbox size="small"
-                          checked={datasetRadarOption["no-cache-read"]}
-                          onChange={CheckboxOnChange("no-cache-read")}
+                          checked={datasetRadarOption["no-cache"]}
+                          onChange={CheckboxOnChange("no-cache")}
                           sx={{ paddingY: "0.3em" }} />
                       } label={
                         <Typography component={"p"} variant="body2"
                           sx={{ color: grey[600] }}
                         >
-                          No Cache Read
+                          No Cache
                         </Typography>
                       }
-                        disabled={noCacheReadLogs.length === 0} />
+                        disabled={noCacheLogs.length === 0} />
                       <FormControlLabel control={
                         <Checkbox size="small"
                           checked={datasetRadarOption["cache-aside"]}
@@ -694,7 +674,7 @@ export default function TestSessionPage() {
                         }}
                         onClick={() => ApplyDataset(datasetRadarOption)}
                       >
-                        Apply
+                        Terapkan
                       </Button>
                     </Box>
                   </Box>
@@ -710,7 +690,7 @@ export default function TestSessionPage() {
                       color: grey[700]
                     }}
                   >
-                    Criteria and Weights
+                    Kriteria dan Bobot
                   </Typography>
                   <TableContainer>
                     <Table
@@ -737,22 +717,22 @@ export default function TestSessionPage() {
                         <TableRow>
                           <TableCell>
                             <Typography component={"p"} variant="subtitle2">
-                              Criteria
+                              Kriteria
                             </Typography>
                           </TableCell>
                           <TableCell>
                             <Typography component={"p"} variant="subtitle2">
-                              Description
+                              Deskripsi
                             </Typography>
                           </TableCell>
                           <TableCell>
                             <Typography component={"p"} variant="subtitle2">
-                              Weight
+                              Bobot
                             </Typography>
                           </TableCell>
                           <TableCell>
                             <Typography component={"p"} variant="subtitle2">
-                              Attribute
+                              Atribut
                             </Typography>
                           </TableCell>
                         </TableRow>
@@ -808,7 +788,7 @@ export default function TestSessionPage() {
                       color: grey[700]
                     }}
                   >
-                    Highest Value
+                    Nilai Tertinggi
                   </Typography>
                   <TableContainer sx={{ height: "100%" }}>
                     <Table
@@ -835,7 +815,7 @@ export default function TestSessionPage() {
                         <TableRow>
                           <TableCell>
                             <Typography component={"p"} variant="subtitle2">
-                              Cache Type
+                              Jenis Cache
                             </Typography>
                           </TableCell>
                           <TableCell>
@@ -937,7 +917,7 @@ export default function TestSessionPage() {
                 color: grey[700]
               }}
             >
-              Test Workflow
+              Jenis Pengujian
             </Typography>
             <Typography component={"p"} variant="caption"
               sx={{
@@ -980,14 +960,14 @@ export default function TestSessionPage() {
                       No-Cache Test
                     </Typography>
                     <Typography component={"p"} variant="caption">
-                      {noCacheCompletedTest?.length + "/2"}
+                      {cacheSessionStatus?.no_cache == 100 ? "1" : "0" + "/1"}
                     </Typography>
                   </Box>
                   <Box
                     component={"img"}
                     width={"100%"}
                     height={"5.5em"}
-                    src={"/future-interns-app/caches/No-Cache.drawio.png"}
+                    src={"/caches/No-Cache.drawio.png"}
                     sx={{
                       objectFit: "contain"
                     }}
@@ -998,27 +978,27 @@ export default function TestSessionPage() {
                       color: grey[700]
                     }}
                   >
-                    No-Cache Test is a test scenario where the application retrieves all data directly from the database without using any caching mechanism.
+                    Pengujian No-Cache merupakan skenario di mana aplikasi mengambil seluruh data langsung dari database, tanpa memanfaatkan mekanisme caching.
                   </Typography>
                   <Button
                     variant="contained"
-                    startIcon={noCacheCompletedTest.length == 2 && <LaunchRounded fontSize="small" />}
+                    startIcon={cacheSessionStatus?.no_cache == 100 && <LaunchRounded fontSize="small" />}
                     fullWidth
                     sx={{
                       marginTop: "1em",
-                      color: noCacheCompletedTest.length == 2 ? grey[800] : undefined,
-                      backgroundColor: noCacheCompletedTest.length == 2 ? grey[300] : undefined,
+                      color: cacheSessionStatus?.no_cache == 100 ? grey[800] : undefined,
+                      backgroundColor: cacheSessionStatus?.no_cache == 100 ? grey[300] : undefined,
                       "&:hover": {
-                        backgroundColor: noCacheCompletedTest.length == 2 ? grey[400] : undefined,
-                        boxShadow: noCacheCompletedTest.length == 2 ? "none" : undefined,
+                        backgroundColor: cacheSessionStatus?.no_cache == 100 ? grey[400] : undefined,
+                        boxShadow: cacheSessionStatus?.no_cache == 100 ? "none" : undefined,
                       },
-                      boxShadow: noCacheCompletedTest.length == 2 ? "none" : undefined,
+                      boxShadow: cacheSessionStatus?.no_cache == 100 ? "none" : undefined,
                     }}
                     onClick={() => {
                       navigate(location.pathname + "/no-cache-test");
                     }}
                   >
-                    {noCacheCompletedTest.length == 2 ? "View Test Results" : "Start Test"}
+                    {cacheSessionStatus?.no_cache == 100 ? "Lihat Hasil Pengujian" : "Mulai Test"}
                   </Button>
                 </Box>
               </Grid>
@@ -1052,14 +1032,14 @@ export default function TestSessionPage() {
                       Write-Through Test
                     </Typography>
                     <Typography component={"div"} variant="caption">
-                      {cacheSessionStatus?.write_through === "completed" ? "1" : "0"}/1
+                      {cacheSessionStatus?.write_through === 100 ? "1" : "0"}/1
                     </Typography>
                   </Box>
                   <Box
                     component={"img"}
                     width={"100%"}
                     height={"5.5em"}
-                    src={"/future-interns-app/caches/campus4-internship-app-Write-Through.drawio.png"}
+                    src={"/caches/campus4-internship-app-Write-Through.drawio.png"}
                     sx={{
                       objectFit: "contain"
                     }}
@@ -1070,27 +1050,27 @@ export default function TestSessionPage() {
                       color: grey[700]
                     }}
                   >
-                    Write-Through Test is a test scenario that follows the write-through caching pattern, where data is written to both the cache and the database simultaneously.
+                    Pengujian Write-Through merupakan skenario yang menerapkan pola caching write-through, di mana setiap penulisan data dilakukan secara simultan ke cache dan database.
                   </Typography>
                   <Button
                     variant="contained"
-                    startIcon={cacheSessionStatus?.write_through === "completed" && <LaunchRounded fontSize="small" />}
+                    startIcon={cacheSessionStatus?.write_through === 100 && <LaunchRounded fontSize="small" />}
                     fullWidth
                     sx={{
                       marginTop: "1em",
-                      color: cacheSessionStatus?.write_through === "completed" ? grey[800] : undefined,
-                      backgroundColor: cacheSessionStatus?.write_through === "completed" ? grey[300] : undefined,
+                      color: cacheSessionStatus?.write_through === 100 ? grey[800] : undefined,
+                      backgroundColor: cacheSessionStatus?.write_through === 100 ? grey[300] : undefined,
                       "&:hover": {
-                        backgroundColor: cacheSessionStatus?.write_through === "completed" ? grey[400] : undefined,
-                        boxShadow: cacheSessionStatus?.write_through === "completed" ? "none" : undefined,
+                        backgroundColor: cacheSessionStatus?.write_through === 100 ? grey[400] : undefined,
+                        boxShadow: cacheSessionStatus?.write_through === 100 ? "none" : undefined,
                       },
-                      boxShadow: cacheSessionStatus?.write_through === "completed" ? "none" : undefined,
+                      boxShadow: cacheSessionStatus?.write_through === 100 ? "none" : undefined,
                     }}
                     onClick={() => {
                       navigate(location.pathname + "/write-through")
                     }}
                   >
-                    {cacheSessionStatus?.write_through === "completed" ? "View Test Results" : "Start Test"}
+                    {cacheSessionStatus?.write_through === 100 ? "Lihat Hasil Pengujian" : "Mulai Test"}
                   </Button>
                 </Box>
               </Grid>
@@ -1124,14 +1104,14 @@ export default function TestSessionPage() {
                       Write-Behind Test
                     </Typography>
                     <Typography component={"div"} variant="caption">
-                      {cacheSessionStatus?.write_behind === "completed" ? "1" : "0"} /1
+                      {cacheSessionStatus?.write_behind === 100 ? "1" : "0"} /1
                     </Typography>
                   </Box>
                   <Box
                     component={"img"}
                     width={"100%"}
                     height={"5.5em"}
-                    src={"/future-interns-app/caches/campus4-internship-app-Write-Behind.drawio.png"}
+                    src={"/caches/campus4-internship-app-Write-Behind.drawio.png"}
                     sx={{
                       objectFit: "contain"
                     }}
@@ -1142,27 +1122,27 @@ export default function TestSessionPage() {
                       color: grey[700]
                     }}
                   >
-                    Write-Behind Test is a test scenario that follows the write-behind caching pattern, where data is first written to the cache and then asynchronously propagated to the database.
+                    Pengujian Write-Behind merupakan skenario yang menerapkan pola caching write-behind, di mana penulisan data dilakukan terlebih dahulu ke cache, lalu diteruskan secara asinkron ke database.
                   </Typography>
                   <Button
                     variant="contained"
-                    startIcon={cacheSessionStatus?.write_behind === "completed" && <LaunchRounded fontSize="small" />}
+                    startIcon={cacheSessionStatus?.write_behind === 100 && <LaunchRounded fontSize="small" />}
                     fullWidth
                     sx={{
                       marginTop: "1em",
-                      color: cacheSessionStatus?.write_behind === "completed" ? grey[800] : undefined,
-                      backgroundColor: cacheSessionStatus?.write_behind === "completed" ? grey[300] : undefined,
+                      color: cacheSessionStatus?.write_behind === 100 ? grey[800] : undefined,
+                      backgroundColor: cacheSessionStatus?.write_behind === 100 ? grey[300] : undefined,
                       "&:hover": {
-                        backgroundColor: cacheSessionStatus?.write_behind === "completed" ? grey[400] : undefined,
-                        boxShadow: cacheSessionStatus?.write_behind === "completed" ? "none" : undefined,
+                        backgroundColor: cacheSessionStatus?.write_behind === 100 ? grey[400] : undefined,
+                        boxShadow: cacheSessionStatus?.write_behind === 100 ? "none" : undefined,
                       },
-                      boxShadow: cacheSessionStatus?.write_behind === "completed" ? "none" : undefined,
+                      boxShadow: cacheSessionStatus?.write_behind === 100 ? "none" : undefined,
                     }}
                     onClick={() => {
                       navigate(location.pathname + "/write-behind")
                     }}
                   >
-                    {cacheSessionStatus?.write_behind === "completed" ? "View Test Results" : "Start Test"}
+                    {cacheSessionStatus?.write_behind === 100 ? "Lihat Hasil Pengujian" : "Mulai Test"}
                   </Button>
                 </Box>
               </Grid>
@@ -1196,14 +1176,14 @@ export default function TestSessionPage() {
                       Cache-Aside Test
                     </Typography>
                     <Typography component={"div"} variant="caption">
-                      {(cacheSessionStatus?.cache_aside === "completed" ? "1" : "0") + "/1"}
+                      {(cacheSessionStatus?.cache_aside === 100 ? "1" : "0") + "/1"}
                     </Typography>
                   </Box>
                   <Box
                     component={"img"}
                     width={"100%"}
                     height={"5.5em"}
-                    src={"/future-interns-app/caches/campus4-internship-app-Cache-Aside.drawio.png"}
+                    src={"/caches/campus4-internship-app-Cache-Aside.drawio.png"}
                     sx={{
                       objectFit: "contain"
                     }}
@@ -1214,25 +1194,25 @@ export default function TestSessionPage() {
                       color: grey[700]
                     }}
                   >
-                    Cache-Aside Test is a test scenario that follows the cache-aside pattern, where data is loaded into the cache only when requested. If the data is not found in the cache (cache miss), it is fetched from the database and then stored in the cache for future access.
+                    Pengujian Cache-Aside adalah skenario di mana data dimuat ke cache saat diminta. Jika terjadi cache miss, data diambil dari database dan disimpan di cache untuk penggunaan berikutnya.
                   </Typography>
                   <Button
                     variant="contained"
-                    startIcon={cacheSessionStatus?.cache_aside === "completed" && <LaunchRounded fontSize="small" />}
+                    startIcon={cacheSessionStatus?.cache_aside === 100 && <LaunchRounded fontSize="small" />}
                     fullWidth
                     sx={{
                       marginTop: "1em",
-                      color: cacheSessionStatus?.cache_aside === "completed" ? grey[800] : undefined,
-                      backgroundColor: cacheSessionStatus?.cache_aside === "completed" ? grey[300] : undefined,
+                      color: cacheSessionStatus?.cache_aside === 100 ? grey[800] : undefined,
+                      backgroundColor: cacheSessionStatus?.cache_aside === 100 ? grey[300] : undefined,
                       "&:hover": {
-                        backgroundColor: cacheSessionStatus?.cache_aside === "completed" ? grey[400] : undefined,
-                        boxShadow: cacheSessionStatus?.cache_aside === "completed" ? "none" : undefined,
+                        backgroundColor: cacheSessionStatus?.cache_aside === 100 ? grey[400] : undefined,
+                        boxShadow: cacheSessionStatus?.cache_aside === 100 ? "none" : undefined,
                       },
-                      boxShadow: cacheSessionStatus?.cache_aside === "completed" ? "none" : undefined,
+                      boxShadow: cacheSessionStatus?.cache_aside === 100 ? "none" : undefined,
                     }}
                     onClick={() => navigate(location.pathname + "/cache-aside")}
                   >
-                    {cacheSessionStatus?.cache_aside === "completed" ? "View Test Results" : "Start Test"}
+                    {cacheSessionStatus?.cache_aside === 100 ? "Lihat Hasil Pengujian" : "Mulai Test"}
                   </Button>
                 </Box>
               </Grid>
@@ -1266,14 +1246,14 @@ export default function TestSessionPage() {
                       Read-Through Test
                     </Typography>
                     <Typography component={"div"} variant="caption">
-                      {(cacheSessionStatus?.read_through === "completed" ? "1" : "0") + "/1"}
+                      {(cacheSessionStatus?.read_through === 100 ? "1" : "0") + "/1"}
                     </Typography>
                   </Box>
                   <Box
                     component={"img"}
                     width={"100%"}
-                    height={"5.5em"}
-                    src={"/future-interns-app/caches/campus4-internship-app-Read-Through.drawio.png"}
+                    height={"6em"}
+                    src={"/caches/campus4-internship-app-Read-Through.drawio.png"}
                     sx={{
                       objectFit: "contain"
                     }}
@@ -1284,27 +1264,27 @@ export default function TestSessionPage() {
                       color: grey[700]
                     }}
                   >
-                    Read-Through Test is a test scenario that follows the read-through caching pattern, where the application retrieves data directly from the cache, and if the data is not available (cache miss), the cache itself fetches the data from the database and stores it.
+                    Pengujian Read-Through merupakan skenario yang menerapkan pola caching read-through, di mana aplikasi mengakses data dari cache secara langsung, dan apabila terjadi cache miss, cache akan mengambil data dari database kemudian menyimpannya.
                   </Typography>
                   <Button
                     variant="contained"
-                    startIcon={cacheSessionStatus?.read_through === "completed" && <LaunchRounded fontSize="small" />}
+                    startIcon={cacheSessionStatus?.read_through === 100 && <LaunchRounded fontSize="small" />}
                     fullWidth
                     sx={{
                       marginTop: "1em",
-                      color: cacheSessionStatus?.read_through === "completed" ? grey[800] : undefined,
-                      backgroundColor: cacheSessionStatus?.read_through === "completed" ? grey[300] : undefined,
+                      color: cacheSessionStatus?.read_through === 100 ? grey[800] : undefined,
+                      backgroundColor: cacheSessionStatus?.read_through === 100 ? grey[300] : undefined,
                       "&:hover": {
-                        backgroundColor: cacheSessionStatus?.read_through === "completed" ? grey[400] : undefined,
-                        boxShadow: cacheSessionStatus?.read_through === "completed" ? "none" : undefined,
+                        backgroundColor: cacheSessionStatus?.read_through === 100 ? grey[400] : undefined,
+                        boxShadow: cacheSessionStatus?.read_through === 100 ? "none" : undefined,
                       },
-                      boxShadow: cacheSessionStatus?.read_through === "completed" ? "none" : undefined,
+                      boxShadow: cacheSessionStatus?.read_through === 100 ? "none" : undefined,
                     }}
                     onClick={() => {
                       navigate(location.pathname + "/read-through")
                     }}
                   >
-                    {cacheSessionStatus?.read_through === "completed" ? "View Test Results" : "Start Test"}
+                    {cacheSessionStatus?.read_through === 100 ? "Lihat Hasil Pengujian" : "Mulai Test"}
                   </Button>
                 </Box>
               </Grid>
@@ -1314,7 +1294,11 @@ export default function TestSessionPage() {
         {/* Alternative & Ranking Table */}
         <Box component={"div"} className="list-session-stage"
           sx={{
-            paddingBottom: "5em",
+            paddingTop: "1em",
+            paddingX: "1em",
+            paddingBottom: "1em",
+            backgroundColor: "white",
+            borderRadius: "0.5em"
           }}
         >
           <Typography component={"p"} variant="subtitle1"
@@ -1324,7 +1308,7 @@ export default function TestSessionPage() {
               color: grey[700]
             }}
           >
-            Cache-Pattern Ranking
+            Pemeringkatan Strategi Cache
           </Typography>
           <Box component={"div"}>
             <Typography component={"p"} variant="subtitle2"
@@ -1333,7 +1317,7 @@ export default function TestSessionPage() {
                 color: "#06816d",
               }}
             >
-              Settings
+              Pengaturan
             </Typography>
             <Box component={"div"}
               sx={{
@@ -1361,24 +1345,40 @@ export default function TestSessionPage() {
                   >
                     <TableHead>
                       <TableRow>
-                        <TableCell>
+                        <TableCell
+                          sx={{
+                            borderBottom: "1px solid " + grey[300] + "!important",
+                          }}
+                        >
                           <Typography component={"p"} variant="subtitle2" sx={{ color: grey[600] }}>
-                            Criteria
+                            Kriteria
                           </Typography>
                         </TableCell>
-                        <TableCell>
+                        <TableCell
+                          sx={{
+                            borderBottom: "1px solid " + grey[300] + "!important",
+                          }}
+                        >
                           <Typography component={"p"} variant="subtitle2" sx={{ color: grey[600] }}>
-                            Description
+                            Deskripsi
                           </Typography>
                         </TableCell>
-                        <TableCell>
+                        <TableCell
+                          sx={{
+                            borderBottom: "1px solid " + grey[300] + "!important",
+                          }}
+                        >
                           <Typography component={"p"} variant="subtitle2" sx={{ color: grey[600] }}>
-                            Attribute
+                            Atribut
                           </Typography>
                         </TableCell>
-                        <TableCell>
+                        <TableCell
+                          sx={{
+                            borderBottom: "1px solid " + grey[300] + "!important",
+                          }}
+                        >
                           <Typography component={"p"} variant="subtitle2" sx={{ color: grey[600] }}>
-                            Weight
+                            Bobot
                           </Typography>
                         </TableCell>
                       </TableRow>
@@ -1435,7 +1435,7 @@ export default function TestSessionPage() {
                     color: grey[600]
                   }}
                 >
-                  Set Weights
+                  Atur Bobot Kriteria
                 </Typography>
                 <Box component={"div"}
                   sx={{
@@ -1532,12 +1532,12 @@ export default function TestSessionPage() {
                   fontWeight: 550,
                 }}
               >
-                Alternatives
+                Data Alternatif
               </Typography>
               <TextField
                 name="query"
                 size="small"
-                placeholder="search by cache-pattern or name"
+                placeholder="cari berdasarkan alternatif atau cache"
                 autoComplete="off"
                 InputProps={{
                   sx: {
@@ -1587,32 +1587,32 @@ export default function TestSessionPage() {
                     }
                   }}
                   >
-                    <TableCell sx={{ width: "10%" }}>
-                      <Typography component={"p"} variant="body2" sx={{ color: grey[600] }}>Alternative</Typography>
+                    <TableCell sx={{ width: "10%", borderBottom: "1px solid " + grey[300] + "!important" }}>
+                      <Typography component={"p"} variant="body2" sx={{ color: grey[600] }}>Alternatif</Typography>
                     </TableCell>
-                    <TableCell sx={{ width: "10%" }}>
+                    <TableCell sx={{ width: "10%", borderBottom: "1px solid " + grey[300] + "!important" }}>
                       <Typography component={"p"} variant="body2" sx={{ color: grey[600] }}>
                         Cache Hit <span className="unit-saw">(R)</span>
                       </Typography>
                     </TableCell>
-                    <TableCell sx={{ width: "10%" }}>
+                    <TableCell sx={{ width: "10%", borderBottom: "1px solid " + grey[300] + "!important" }}>
                       <Typography component={"p"} variant="body2" sx={{ color: grey[600] }}>
                         Cache Miss <span className="unit-saw">(R)</span>
                       </Typography>
                     </TableCell>
-                    <TableCell sx={{ width: "20%" }}>
+                    <TableCell sx={{ width: "20%", borderBottom: "1px solid " + grey[300] + "!important" }}>
                       <Typography component={"p"} variant="body2" sx={{ color: grey[600] }}>
                         Response Time <span className="unit-saw">(R)</span>
                       </Typography>
                     </TableCell>
-                    <TableCell sx={{ width: "17%" }}>
+                    <TableCell sx={{ width: "17%", borderBottom: "1px solid " + grey[300] + "!important" }}>
                       <Typography component={"p"} variant="body2" sx={{ color: grey[600] }}>
                         Resource Utilization <span className="unit-saw">(R)</span>
                       </Typography>
                     </TableCell>
-                    <TableCell sx={{ width: "17%" }}>
+                    <TableCell sx={{ width: "17%", borderBottom: "1px solid " + grey[300] + "!important" }}>
                       <Typography component={"p"} variant="body2" sx={{ color: grey[600] }}>
-                        Cache Pattern
+                        Strategi Cache
                       </Typography>
                     </TableCell>
                   </TableRow>
@@ -1634,7 +1634,7 @@ export default function TestSessionPage() {
                             backgroundColor: amber[50]
                           }}
                         >
-                          Alternative data is empty! please store alternative data first!
+                          Data alternatif masih kosong! Silakan lakukan pengujian terlebih dahulu untuk mengumpulkan data alternatif.
                         </Typography>
                       </TableCell>
                     </TableRow>
@@ -1719,12 +1719,12 @@ export default function TestSessionPage() {
                   fontWeight: 550,
                 }}
               >
-                Final Preference Value
+                Nilai Preferensi Final
               </Typography>
               <TextField
                 name="query"
                 size="small"
-                placeholder="search by cache-pattern or preference value"
+                placeholder="cari berdasarkan preferensi atau cache"
                 autoComplete="off"
                 InputProps={{
                   sx: {
@@ -1775,35 +1775,35 @@ export default function TestSessionPage() {
                     }
                   }}
                   >
-                    <TableCell sx={{ width: "5%" }}>
+                    <TableCell sx={{ width: "5%", borderBottom: "1px solid " + grey[300] + "!important" }}>
                       <Typography component={"p"} variant="body2" sx={{ color: grey[600] }}>Rank</Typography>
                     </TableCell>
-                    <TableCell sx={{ width: "8%" }}>
+                    <TableCell sx={{ width: "8%", borderBottom: "1px solid " + grey[300] + "!important" }}>
                       <Typography component={"p"} variant="body2" sx={{ color: grey[600] }}>
                         Cache Hit <span className="unit-saw">(R)</span>
                       </Typography>
                     </TableCell>
-                    <TableCell sx={{ width: "8%" }}>
+                    <TableCell sx={{ width: "8%", borderBottom: "1px solid " + grey[300] + "!important" }}>
                       <Typography component={"p"} variant="body2" sx={{ color: grey[600] }}>
                         Cache Miss <span className="unit-saw">(R)</span>
                       </Typography>
                     </TableCell>
-                    <TableCell sx={{ width: "8%" }}>
+                    <TableCell sx={{ width: "8%", borderBottom: "1px solid " + grey[300] + "!important" }}>
                       <Typography component={"p"} variant="body2" sx={{ color: grey[600] }}>
                         Response Time <span className="unit-saw">(R)</span>
                       </Typography>
                     </TableCell>
-                    <TableCell sx={{ width: "9%" }}>
+                    <TableCell sx={{ width: "9%", borderBottom: "1px solid " + grey[300] + "!important" }}>
                       <Typography component={"p"} variant="body2" sx={{ color: grey[600] }}>
                         Resource Utilization <span className="unit-saw">(R)</span>
                       </Typography>
                     </TableCell>
-                    <TableCell sx={{ width: "8%" }}>
+                    <TableCell sx={{ width: "8%", borderBottom: "1px solid " + grey[300] + "!important" }}>
                       <Typography component={"p"} variant="body2" sx={{ color: grey[600] }}>
                         Cache Pattern
                       </Typography>
                     </TableCell>
-                    <TableCell sx={{ width: "8%" }}>
+                    <TableCell sx={{ width: "8%", borderBottom: "1px solid " + grey[300] + "!important" }}>
                       <Typography component={"p"} variant="body2" sx={{ color: grey[600] }}>
                         Preference Value <span className="unit-saw">(P)</span>
                       </Typography>
@@ -1827,7 +1827,7 @@ export default function TestSessionPage() {
                             backgroundColor: amber[50]
                           }}
                         >
-                          Ranking data is empty! please store alternative data first!
+                          Data pemeringkatan masih kosong! Silakan lakukan pengujian terlebih dahulu untuk mengumpulkan data alternatif.
                         </Typography>
                       </TableCell>
                     </TableRow>

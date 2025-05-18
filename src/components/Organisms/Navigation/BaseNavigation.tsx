@@ -123,7 +123,7 @@ export default function BaseNavigation() {
       case 'employer':
         return "/employers/profile-overview";
       case 'administrator':
-        return "/administrators"
+        return "/administrators/performance"
       default:
         return "/unmatched-pathname"
     }
@@ -218,7 +218,7 @@ export default function BaseNavigation() {
         <Stack direction={"row"} alignItems={"center"} spacing={2}>
           <Box
             component={"img"}
-            src={"/future-interns-app/Future Interns Logo.svg"}
+            src={"/Future Interns Logo.svg"}
             width={30}
             height={30}
             loading="lazy"
@@ -477,13 +477,13 @@ export default function BaseNavigation() {
                   },
                 }}
               >
-                <MenuItem component={ReactRouterLink} to="/future-interns-app">
+                <MenuItem component={ReactRouterLink} to="/">
                   <Typography variant="subtitle2">Guides</Typography>
                 </MenuItem>
-                <MenuItem component={ReactRouterLink} to="/future-interns-app">
+                <MenuItem component={ReactRouterLink} to="/">
                   <Typography variant="subtitle2">FAQs</Typography>
                 </MenuItem>
-                <MenuItem component={ReactRouterLink} to="/future-interns-app">
+                <MenuItem component={ReactRouterLink} to="/">
                   <Typography variant="subtitle2">Contact</Typography>
                 </MenuItem>
               </Menu>

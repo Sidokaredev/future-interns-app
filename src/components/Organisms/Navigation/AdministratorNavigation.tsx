@@ -74,7 +74,7 @@ export default function AdministratorNavigation() {
           >
             <Box
               component={"img"}
-              src={"/future-interns-app/Future Interns Logo.svg"}
+              src={"/Future Interns Logo.svg"}
               width={30}
               height={30}
               loading="lazy"

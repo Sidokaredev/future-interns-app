@@ -22,10 +22,13 @@ type APIHost = {
 };
 
 export const HOST: APIHost = {
-  main: "http://54.198.53.107",
-  no_cache: "http://54.198.53.107:8004",
-  write_through: "http://54.198.53.107:8002",
-  write_behind: "http://54.198.53.107:8003",
-  cache_aside: "http://54.198.53.107:8000",
-  read_through: "http://54.198.53.107:8001",
+  // main: "http://192.168.144.152:3000",
+  main: "http://103.87.67.209:3000",
+  // main: "http://localhost:3000",
+  no_cache: "http://192.168.144.152:8004",
+  write_through: "http://192.168.144.152:8002",
+  write_behind: "http://192.168.144.152:8003",
+  // cache_aside: "http://192.168.144.152:8000",
+  cache_aside: "http://103.87.67.209:8000",
+  read_through: "http://192.168.144.152:8001",
 }

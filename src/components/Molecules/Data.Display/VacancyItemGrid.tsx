@@ -13,6 +13,7 @@ import {
 } from "@mui/material";
 import { useNavigate } from "react-router-dom";
 import { VacancyType } from "../../../pages/employers/types";
+import { HOST } from "../../../pages/administrators/performance/[id]/constants";
 
 type VacancyItemSxProps = {
   gridItem: SxProps;
@@ -73,7 +74,7 @@ export default function VacancyItemGrid({
           avatar={
             <Stack spacing={1}>
               <Avatar
-                src={"http://localhost:3000" + vacancy.employer.profile_image_path}
+                src={HOST.main + vacancy.employer.profile_image_path}
                 alt="Company Logo"
               />
               <Typography

@@ -42,7 +42,7 @@ export default function PerformanceTestLayout({
   return (
     <Box component={"div"}
       sx={{
-        backgroundColor: grey[50]
+        backgroundColor: grey[100]
       }}
     >
       {/* Default Notification */}
@@ -57,7 +57,7 @@ export default function PerformanceTestLayout({
         sx={{
           width: "100%",
           height: "18em",
-          backgroundImage: "url('/future-interns-app/backgrounds/Final-AnimatedShape-3.svg')"
+          backgroundImage: "url('/backgrounds/Final-AnimatedShape-3.svg')"
         }}
       >
         <Container maxWidth="lg" disableGutters
@@ -81,7 +81,7 @@ export default function PerformanceTestLayout({
             >
               <Box
                 component={"img"}
-                src={"/future-interns-app/Future Interns Logo.svg"}
+                src={"/Future Interns Logo.svg"}
                 width={30}
                 height={30}
                 loading="lazy"

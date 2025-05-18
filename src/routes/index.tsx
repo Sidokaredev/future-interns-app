@@ -58,7 +58,7 @@ const _APPROUTERS = createBrowserRouter(
       )
     }
   ],
-  { basename: "/future-interns-app/" }
+  // { basename: "/future-interns-app/" }
 );
 
 export default _APPROUTERS;

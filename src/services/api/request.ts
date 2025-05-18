@@ -8,7 +8,7 @@ type FailRequest = {
 
 export default class RequestAPI {
   private static host: string = HOST.main
-  private static port: number = 3000
+  // private static port: number = 3000
   private static request_body: FormData | string | undefined
   constructor() {
 
@@ -34,7 +34,7 @@ export default class RequestAPI {
   }
 
   static async Send<T>(path: string, requestInit?: RequestInit): Promise<[T?, FailRequest?]> {
-    const endpoint: string = this.host + ":" + this.port + path
+    const endpoint: string = this.host + path
     try {
       // await this.DelayRequest(1000);
       let init: RequestInit

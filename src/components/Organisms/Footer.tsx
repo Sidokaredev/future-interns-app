@@ -40,7 +40,7 @@ export default function Footer() {
             justifyContent={{ xs: "start", sm: "center", md: "start" }}
           >
             <img
-              src={"/future-interns-app/Future Interns Logo.svg"}
+              src={"/Future Interns Logo.svg"}
               alt="Future Interns Logo"
               width={30}
               height={30}

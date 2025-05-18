@@ -17,6 +17,7 @@ import { GetSession } from "../../../pages/global-helpers";
 import React, { useState } from "react";
 import RequestAPI from "../../../services/api/request";
 import SimpleEmphasis from "../Texts/SimpleEmphasis";
+import { HOST } from "../../../pages/administrators/performance/[id]/constants";
 
 export default function VacancyItemList({
   appliedVacancies,
@@ -104,7 +105,7 @@ export default function VacancyItemList({
         }}
       >
         <Box borderRadius={"0.3em"}>
-          <Avatar alt="Company Logo" src={"http://localhost:3000" + vacancy.employer.profile_image_path} />
+          <Avatar alt="Company Logo" src={HOST.main + vacancy.employer.profile_image_path} />
         </Box>
         <Box component={"div"} sx={{ flexGrow: 1, paddingX: "0.5em" }}>
           <Box

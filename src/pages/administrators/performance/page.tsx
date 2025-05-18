@@ -28,6 +28,7 @@ export default function PerformanceTestPage() {
   const location = useLocation();
   /* state */
   const [cacheSessions, setCacheSessions] = useState<CacheSessionType[]>([]);
+  const [query, setQuery] = useState<string>("");
   const [pageTable, setPageTable] = useState<number>(1);
   const [openDialog, setOpenDialog] = useState<Record<string, boolean>>({});
   const [testForm, setTestForm] = useState<string>("");
@@ -37,8 +38,10 @@ export default function PerformanceTestPage() {
 
   /* constants */
   const token = GetSession("auth");
-  // const paginatedCacheSessions = cacheSessions.slice((pageTable * 10) - 10, pageTable * 10);
-  const totalPageTable = Math.ceil(cacheSessions.length / 10);
+  const filteredCacheSessions = cacheSessions.filter(val => val.label.toLowerCase().includes(query.toLowerCase()));
+  const paginatedCacheSessions = filteredCacheSessions.slice((pageTable * 10) - 10, pageTable * 10);
+
+  const totalPageTable = Math.ceil(filteredCacheSessions.length / 10);
 
   /* onCreate */
   const CreateNewTest = async () => {
@@ -115,7 +118,7 @@ export default function PerformanceTestPage() {
               color: "#06816d",
             }}
           >
-            Performance Test Results
+            Hasil Pengujian Performa
           </Typography>
           <Box component={"div"}
             sx={{
@@ -126,9 +129,13 @@ export default function PerformanceTestPage() {
             <TextField
               type="text"
               name="search_test_label"
-              placeholder="Search by Label name ..."
+              placeholder="Cari berdasarkan label"
               size="small"
               autoComplete="off"
+              value={query}
+              onChange={(event: ChangeEvent<HTMLInputElement>) => {
+                setQuery(event.target.value);
+              }}
               InputProps={{
                 startAdornment: (
                   <InputAdornment position="start">
@@ -164,7 +171,7 @@ export default function PerformanceTestPage() {
                 ))
               }}
             >
-              Start New Test
+              Mulai Pengujian Baru
             </Button>
           </Box>
         </Box>
@@ -199,7 +206,7 @@ export default function PerformanceTestPage() {
               </TableRow>
             </TableHead>
             <TableBody>
-              {cacheSessions.map((log_, index) => (
+              {paginatedCacheSessions.map((log_, index) => (
                 <TableRow hover key={index}>
                   <TableCell>
                     <Typography component={"p"} variant="body2" sx={{ color: grey[600] }}>

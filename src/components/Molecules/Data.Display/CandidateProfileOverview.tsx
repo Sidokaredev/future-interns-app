@@ -5,6 +5,7 @@ import dayjs from "dayjs";
 import SimpleEmphasis from "../Texts/SimpleEmphasis";
 import { useState } from "react";
 import { CakeRounded, DialpadRounded, FileDownloadRounded, HomeWorkRounded, LanguageRounded, LaunchRounded, LocationCityRounded, MailOutlineRounded } from "@mui/icons-material";
+import { HOST } from "../../../pages/administrators/performance/[id]/constants";
 
 export default function CandidateProfileOverview({
   candidate
@@ -94,7 +95,7 @@ export default function CandidateProfileOverview({
             <Box component={"div"} sx={{ marginY: "0.5em" }}>
               <Box
                 component={"img"}
-                src={`http://localhost:3000${candidate?.background_profile_image_path}?t=${new Date(Date.now()).getTime()}`}
+                src={`${HOST.main}${candidate?.background_profile_image_path}?t=${new Date(Date.now()).getTime()}`}
                 sx={{
                   width: "100%",
                   height: { xs: "10em", md: "15em" },
@@ -114,7 +115,7 @@ export default function CandidateProfileOverview({
               >
                 <Avatar
                   alt="candidate-profile"
-                  src={`http://localhost:3000${candidate?.profile_image_path}?t=${new Date(Date.now()).getTime()}`}
+                  src={`${HOST.main}${candidate?.profile_image_path}?t=${new Date(Date.now()).getTime()}`}
                   sx={{
                     width: "6em",
                     height: "6em",
@@ -285,7 +286,7 @@ export default function CandidateProfileOverview({
                 <Chip key={index}
                   avatar={
                     <Avatar
-                      src={`http://localhost:3000${skill.skill_icon_image_path}`}
+                      src={`${HOST.main}${skill.skill_icon_image_path}`}
                       slotProps={{
                         img: {
                           style: {
@@ -419,7 +420,7 @@ export default function CandidateProfileOverview({
                             height: embedFullHeight ? "100vh" : "30vh",
                           }}>
                             <embed
-                              src={`http://localhost:3000${experience.attachment_document_path}`}
+                              src={`${HOST.main}${experience.attachment_document_path}`}
                               width={"100%"}
                               height={"100%"}
                             />
@@ -527,7 +528,7 @@ export default function CandidateProfileOverview({
                 <Button
                   component={"a"}
                   target="_blank"
-                  href={`http://localhost:3000${candidate?.cv_document_path}`}
+                  href={`${HOST.main}${candidate?.cv_document_path}`}
                   variant="text"
                   endIcon={<LaunchRounded />}
                   fullWidth
@@ -541,7 +542,7 @@ export default function CandidateProfileOverview({
                 >
                   <Button
                     component={"a"}
-                    href={`http://localhost:3000${candidate?.cv_document_path}/download`}
+                    href={`${HOST.main}${candidate?.cv_document_path}/download`}
                     variant="contained"
                     endIcon={<FileDownloadRounded />}
                     color="primary"
@@ -600,7 +601,7 @@ export default function CandidateProfileOverview({
                     }}
                   >
                     <Box component={"img"}
-                      src={`http://localhost:3000${item.icon_image_path}`}
+                      src={`${HOST.main}${item.icon_image_path}`}
                       width={25}
                       height={25}
                       sx={{

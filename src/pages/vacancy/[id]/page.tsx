@@ -91,7 +91,7 @@ export default function VacancyDetail() {
         component={"div"}
         sx={{
           backgroundImage:
-            "url(/future-interns-app/backgrounds/Final-AnimatedShape-3.svg)", // may be required (../../../public)
+            "url(/backgrounds/Final-AnimatedShape-3.svg)", // may be required (../../../public)
           backgroundSize: "cover",
           height: { xs: "175px", md: "295px" },
           display: "flex",

@@ -11,6 +11,7 @@ import { GetSession, onCloseSnackbar } from "../../../../global-helpers";
 import dayjs from "dayjs";
 import RequestAPI from "../../../../../services/api/request";
 import { HOST } from "../constants";
+import { generate } from "random-words";
 
 ChartJS.register(
   CategoryScale,
@@ -71,10 +72,10 @@ export default function CacheAsideTestPage() {
 
   /* constants */
   const token = GetSession("auth");
-  const paginatedCacheAsideLogs = cacheAsideLogs.logs.slice((pageTableLogs * 10) - 10, pageTableLogs * 10);
-  const chunkedLabels = cacheAsideLogs.chart.resource_utils.labels?.slice((chunkNumber * 10) - 10, chunkNumber * 10);
-  const chunkedRespTime = cacheAsideLogs.chart.resource_utils.datasets[0].data.slice((chunkNumber * 10) - 10, chunkNumber * 10);
-  const chunkedResUtil = cacheAsideLogs.chart.resource_utils.datasets[1].data.slice((chunkNumber * 10) - 10, chunkNumber * 10);
+  const paginatedCacheAsideLogs = cacheAsideLogs.logs.slice((pageTableLogs * 15) - 15, pageTableLogs * 15);
+  const chunkedLabels = cacheAsideLogs.chart.resource_utils.labels?.slice((chunkNumber * 15) - 15, chunkNumber * 15);
+  const chunkedRespTime = cacheAsideLogs.chart.resource_utils.datasets[0].data.slice((chunkNumber * 15) - 15, chunkNumber * 15);
+  const chunkedResUtil = cacheAsideLogs.chart.resource_utils.datasets[1].data.slice((chunkNumber * 15) - 15, chunkNumber * 15);
 
   /**
    * 1. Generate 120 random sampling query
@@ -91,7 +92,7 @@ export default function CacheAsideTestPage() {
     setLogs(prev => prev + "\n" + `[${dayjs().format("DD/MM/YYYY HH.mm.ss")}]:\tBegin read testing` +
       "\n" + `[${dayjs().format("DD/MM/YYYY HH.mm.ss")}]:\tGenerating sampling queries`); // Logs
 
-    const TOTAL_REQUEST = 250;
+    const TOTAL_REQUEST = 100;
     setRequestStats(prev => ({ ...prev, awaiting: TOTAL_REQUEST }));
 
     const basicHeaders = new Headers({
@@ -104,7 +105,7 @@ export default function CacheAsideTestPage() {
     });
 
     const [dataSampling, failSampling] = await RequestAPI.Send<SamplingQuery[]>(
-      "/api/v1/administrators/test/generates/sampling?count=120",
+      "/api/v1/administrators/test/generates/sampling?count=30",
       { method: "GET", headers: basicHeaders }
     );
     if (failSampling) {
@@ -112,10 +113,16 @@ export default function CacheAsideTestPage() {
       return setAlert({ show: true, message: `generate sampling: ${failSampling.message}` })
     };
     if (dataSampling) {
-      setLogs(prev => prev + "\n" + `[${dayjs().format("DD/MM/YYYY HH.mm.ss")}]:\tPreparing required data`);
-      for (let idx = 0; idx < dataSampling.length; idx++) {
-        const [rawVacancies, failRaw] = await RequestAPI.JSONRequest({
-          sampling: dataSampling,
+      setLogs(prev => prev + "\n" + `${dayjs().format("DD/MM/YYYY HH.mm.ss")}: \tSampling queries is ready!` +
+        "\n" + `${dayjs().format("DD/MM/YYYY HH.mm.ss")}: \tWriting new data`);
+      /**
+       * Writing new data
+       */
+      const firstSampling = dataSampling.slice(0, 20);
+      const writtenID: Map<string, string[]> = new Map();
+      for (let idx = 0; idx < firstSampling.length; idx++) {
+        const [dataRaw, failRaw] = await RequestAPI.JSONRequest({
+          sampling: firstSampling,
           offset: idx + 1,
           total_raw_vacancies: 500
         }).Send<RawVacancies[]>(
@@ -123,29 +130,71 @@ export default function CacheAsideTestPage() {
           { method: "POST", headers: basicHeaders }
         );
         if (failRaw) {
-          console.log("raw vacancies \t:", failRaw);
-          return setAlert({ show: true, message: failRaw.message });
+          console.log("raw vacancies: ", failRaw);
+          setLogs(prev => prev + "\n" + `[${dayjs().format("DD/MM/YYYY HH.mm.ss")}]:\traw vacancies: \t${failRaw.message} ❌`);
+          return setAlert({ show: true, message: `raw vacancies: fail at index:${idx} - ${failRaw.message}` })
         };
-        if (rawVacancies) {
-          const [successStore, failStore] = await RequestAPI.JSONRequest(rawVacancies).Send<string[]>(
-            "/api/v1/administrators/test/generates/vacancies/store",
-            { method: "POST", headers: basicHeaders }
+        if (dataRaw) {
+          const reqBody = JSON.stringify(dataRaw);
+          const request = new Request(
+            HOST.cache_aside + "/api/v1/cache-aside/vacancies",
+            { method: "POST", headers: logHeaders, body: reqBody },
           );
-          if (failStore) {
-            console.log("store vacancies \t:", failStore);
-            return setAlert({ show: true, message: `at offset ${idx}: ${failStore.message}` })
+          try {
+            const response = await fetch(request);
+            if (response.status === 201) {
+              const responseJSON: { data: string[]; success: boolean; } = await response.json();
+              setRequestStats(prev => ({
+                ...prev,
+                awaiting: prev.awaiting - 1,
+                success: prev.success + 1,
+              }));
+              setLogs(prev => prev + "\n" + `[${dayjs().format("DD/MM/YYYY HH.mm.ss")}]:\twrite request #${idx} send successfully ✅`);
+              writtenID.set(`request:${idx}`, responseJSON.data); // collect written new data ID
+
+              continue;
+            };
+
+            const responseJSON: { success: boolean; error: string; message: string; } = await response.json();
+            console.log(`fail response:\t${responseJSON}`);
+            setRequestStats(prev => ({
+              ...prev,
+              awaiting: prev.awaiting - 1,
+              fail: prev.fail + 1,
+            }));
+            setLogs(prev => prev + "\n" + `[${dayjs().format("DD/MM/YYYY HH.mm.ss")}]:\tfail response: \t${responseJSON.message} ❌`,);
+
+            continue;
+          } catch (err) {
+            if (err instanceof Error) {
+              console.log(`error:\t${err}`);
+              setRequestStats(prev => ({
+                ...prev,
+                awaiting: prev.awaiting - 1,
+                fail: prev.fail + 1,
+              }));
+              setLogs(prev => prev + "\n" + `[${dayjs().format("DD/MM/YYYY HH.mm.ss")}]:\terror: \t${err.message} ❌`);
+
+              continue;
+            };
+
+            console.log(`unknown:\t${err}`);
+            setRequestStats(prev => ({
+              ...prev,
+              awaiting: prev.awaiting - 1,
+              fail: prev.fail + 1,
+            }));
+            setLogs(prev => prev + "\n" + `[${dayjs().format("DD/MM/YYYY HH.mm.ss")}]:\tunknown: \t${err} ❌`);
+
+            continue;
           };
-          if (successStore) {
-            setLogs(prev => prev + "\n" + `[${dayjs().format("DD/MM/YYYY HH.mm.ss")}]:\t${successStore.length} data stored at sampling offset ${idx}`);
-          }
         }
       }
-      setLogs(prev => prev + "\n" + `[${dayjs().format("DD/MM/YYYY HH.mm.ss")}]:\tData is ready!` +
-        "\n" + `[${dayjs().format("DD/MM/YYYY HH.mm.ss")}]:\tReading data using 50 different queries`);
+      setLogs(prev => prev + "\n" + `${dayjs().format("DD/MM/YYYY HH.mm.ss")}: \tWriting new data completed` +
+        "\n" + `${dayjs().format("DD/MM/YYYY HH.mm.ss")}: \tReading new written data`);
       /**
-       * Read using 50 different queries
+       * Read new written data
        */
-      const firstSampling = dataSampling.slice(0, 50)
       for (let idx = 0; idx < firstSampling.length; idx++) {
         const request = new Request(
           `${HOST.cache_aside}/api/v1/cache-aside/vacancies?lineIndustry=${firstSampling[idx].line_industry}&employeeType=${firstSampling[idx].employee_type}&workArrangement=${firstSampling[idx].work_arrangement}`,
@@ -198,57 +247,244 @@ export default function CacheAsideTestPage() {
           continue;
         }
       }
-      setLogs(prev => prev + "\n" + `[${dayjs().format("DD/MM/YYYY HH.mm.ss")}]:\tReading data using 50 different queries completed` +
-        "\n" + `[${dayjs().format("DD/MM/YYYY HH.mm.ss")}]:\tReading data using 25 different queries from the first sampling (x4)`);
+      setLogs(prev => prev + "\n" + `${dayjs().format("DD/MM/YYYY HH.mm.ss")}: \tReading new written data completed` +
+        "\n" + `${dayjs().format("DD/MM/YYYY HH.mm.ss")}: \tUpdating new written data`);
       /**
-       * Read using 25 random different queries from the first
+       * Update new written data
        */
-      const FisherYatesShuffleAlgorithm = (src: SamplingQuery[], take: number): SamplingQuery[] => {
-        const shuffled = [...src];
-        for (let i = shuffled.length - 1; i > 0; i--) {
-          const j = Math.floor(Math.random() * (i + 1));
-          [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]]; // Swap elemen
+      const iterator = writtenID.entries();
+      for (let idx = 0; idx < writtenID.size; idx++) {
+        const entry = iterator.next();
+        if (entry.done) {
+          break;
         }
+        const [keyMap, valueMap] = entry.value;
 
-        return shuffled.slice(0, take);
-      }
-      const secondSampling = FisherYatesShuffleAlgorithm(firstSampling, 25);
-      for (let idxTimes = 0; idxTimes < 4; idxTimes++) {
-        for (let idx = 0; idx < secondSampling.length; idx++) {
-          const request = new Request(
-            `${HOST.cache_aside}/api/v1/cache-aside/vacancies?lineIndustry=${secondSampling[idx].line_industry}&employeeType=${secondSampling[idx].employee_type}&workArrangement=${secondSampling[idx].work_arrangement}`,
-            { method: "GET", headers: logHeaders },
-          );
+        const reqBody: Record<string, number | string>[] = [];
+        valueMap.forEach(ID => {
+          reqBody.push({
+            "id": ID,
+            "description": generate({ exactly: 15, join: "" }),
+            "qualification": `
+                    - ${generate({ exactly: 10, join: "" })} \n
+                    - ${generate({ exactly: 13, join: " " })} \n
+                    - ${generate({ exactly: 17, join: " " })} \n
+                  `,
+            "responsibility": `
+                    * ${generate({ exactly: 20, join: " " })} \n
+                    * ${generate({ exactly: 11, join: " " })} \n
+                    * ${generate({ exactly: 29, join: " " })} \n
+                  `,
+          })
+        });
 
-          try {
-            const response = await fetch(request);
-            if (response.status === 200) {
-              setRequestStats(prev => ({
-                ...prev,
-                awaiting: prev.awaiting - 1,
-                success: prev.success + 1,
-              }));
-              setLogs(prev => prev + "\n" + `[${dayjs().format("DD/MM/YYYY HH.mm.ss")}]:\tread request #${idx} send successfully ✅`);
+        const request = new Request(
+          HOST.cache_aside + "/api/v1/cache-aside/vacancies",
+          { method: "PATCH", headers: logHeaders, body: JSON.stringify(reqBody) }
+        );
 
-              continue;
-            }
+        try {
+          const response = await fetch(request);
+          if (response.status === 200) {
+            setRequestStats(prev => ({
+              ...prev,
+              awaiting: prev.awaiting - 1,
+              success: prev.success + 1,
+            }));
+            setLogs(prev => prev + "\n" + `[${dayjs().format("DD/MM/YYYY HH.mm.ss")}]:\tupdate written data at #${keyMap} successfully ✅`);
 
-            console.log(`response status:\t${response.status}`);
+            continue;
+          }
+
+          console.log(`response status:\t${response.status}`);
+          setRequestStats(prev => ({
+            ...prev,
+            awaiting: prev.awaiting - 1,
+            fail: prev.fail + 1,
+          }));
+          setLogs(prev => prev + "\n" + `[${dayjs().format("DD/MM/YYYY HH.mm.ss")}]:\tresponse status: \t${response.status} ❌`);
+
+          continue;
+        } catch (err) {
+          if (err instanceof Error) {
+            console.log(`error:\t${err}`);
             setRequestStats(prev => ({
               ...prev,
               awaiting: prev.awaiting - 1,
               fail: prev.fail + 1,
             }));
-            setLogs(prev => prev + "\n" + `[${dayjs().format("DD/MM/YYYY HH.mm.ss")}]:\tresponse status: \t${response.status} ❌`);
+            setLogs(prev => prev + "\n" + `[${dayjs().format("DD/MM/YYYY HH.mm.ss")}]:\terror: \t${err.message} ❌`);
 
             continue;
+          };
+
+          console.log(`unknown:\t${err}`);
+          setRequestStats(prev => ({
+            ...prev,
+            awaiting: prev.awaiting - 1,
+            fail: prev.fail + 1,
+          }));
+          setLogs(prev => prev + "\n" + `[${dayjs().format("DD/MM/YYYY HH.mm.ss")}]:\tunknown: \t${err} ❌`);
+
+          continue;
+        }
+      }
+      setLogs(prev => prev + "\n" + `${dayjs().format("DD/MM/YYYY HH.mm.ss")}: \tUpdating new written data completed` +
+        "\n" + `${dayjs().format("DD/MM/YYYY HH.mm.ss")}: \tReading updated new written data`);
+      /**
+       * Read updated new written data
+       */
+      for (let idx = 0; idx < firstSampling.length; idx++) {
+        const request = new Request(
+          `${HOST.cache_aside}/api/v1/cache-aside/vacancies?lineIndustry=${firstSampling[idx].line_industry}&employeeType=${firstSampling[idx].employee_type}&workArrangement=${firstSampling[idx].work_arrangement}`,
+          { method: "GET", headers: logHeaders },
+        );
+
+        try {
+          const response = await fetch(request);
+          if (response.status === 200) {
+            setRequestStats(prev => ({
+              ...prev,
+              awaiting: prev.awaiting - 1,
+              success: prev.success + 1,
+            }));
+            setLogs(prev => prev + "\n" + `[${dayjs().format("DD/MM/YYYY HH.mm.ss")}]:\tread request #${idx} send successfully ✅`);
+
+            continue;
+          }
+
+          console.log(`response status:\t${response.status}`);
+          setRequestStats(prev => ({
+            ...prev,
+            awaiting: prev.awaiting - 1,
+            fail: prev.fail + 1,
+          }));
+          setLogs(prev => prev + "\n" + `[${dayjs().format("DD/MM/YYYY HH.mm.ss")}]:\tresponse status: \t${response.status} ❌`);
+
+          continue;
+        } catch (err) {
+          if (err instanceof Error) {
+            console.log(`error:\t${err}`);
+            setRequestStats(prev => ({
+              ...prev,
+              awaiting: prev.awaiting - 1,
+              fail: prev.fail + 1,
+            }));
+            setLogs(prev => prev + "\n" + `[${dayjs().format("DD/MM/YYYY HH.mm.ss")}]:\terror: \t${err.message} ❌`);
+
+            continue;
+          };
+
+          console.log(`unknown:\t${err}`);
+          setRequestStats(prev => ({
+            ...prev,
+            awaiting: prev.awaiting - 1,
+            fail: prev.fail + 1,
+          }));
+          setLogs(prev => prev + "\n" + `[${dayjs().format("DD/MM/YYYY HH.mm.ss")}]:\tunknown: \t${err} ❌`);
+
+          continue;
+        }
+      }
+      setLogs(prev => prev + "\n" + `${dayjs().format("DD/MM/YYYY HH.mm.ss")}: \tReading updated new written data completed` +
+        "\n" + `${dayjs().format("DD/MM/YYYY HH.mm.ss")}: \tExecuting combination write and read data`);
+      /**
+       * Combination write and read data
+       */
+      const combinationSampling = dataSampling.slice(20, 30);
+      for (let idx = 0; idx < combinationSampling.length; idx++) {
+        const [rawVacancies, fail] = await RequestAPI.JSONRequest({
+          sampling: combinationSampling,
+          offset: idx + 1,
+          total_raw_vacancies: 500
+        }).Send<RawVacancies[]>(
+          "/api/v1/administrators/test/generates/vacancies",
+          { method: "POST", headers: basicHeaders }
+        );
+        if (fail) {
+          console.log(`raw vacancies:\t${fail}`);
+          setRequestStats(prev => ({
+            ...prev,
+            awaiting: prev.awaiting - 1,
+            fail: prev.fail + 1,
+          }));
+          setLogs(prev => prev + "\n" + `[${dayjs().format("DD/MM/YYYY HH.mm.ss")}]:\traw vacancies: \t${fail.message} ❌`);
+
+          continue;
+        };
+        if (rawVacancies) {
+          const reqBody = JSON.stringify(rawVacancies);
+          const request = new Request(
+            HOST.cache_aside + "/api/v1/cache-aside/vacancies",
+            { method: "POST", headers: logHeaders, body: reqBody },
+          );
+          try {
+            const response = await fetch(request);
+            if (response.status === 201) {
+              setRequestStats(prev => ({
+                ...prev,
+                awaiting: prev.awaiting - 1,
+                success: prev.success + 1,
+              }));
+              setLogs(prev => prev + "\n" + `[${dayjs().format("DD/MM/YYYY HH.mm.ss")}]:\tcombination: write request #${idx} send successfully ✅`);
+
+              const requestRead = new Request(
+                `${HOST.cache_aside}/api/v1/cache-aside/vacancies?lineIndustry=${combinationSampling[idx].line_industry}&employeeType=${combinationSampling[idx].employee_type}&workArrangement=${combinationSampling[idx].work_arrangement}`,
+                { method: "GET", headers: logHeaders },
+              );
+              try {
+                const response = await fetch(requestRead);
+                if (response.status === 200) {
+                  setRequestStats(prev => ({
+                    ...prev,
+                    awaiting: prev.awaiting - 1,
+                    success: prev.success + 1,
+                  }));
+                  setLogs(prev => prev + "\n" + `[${dayjs().format("DD/MM/YYYY HH.mm.ss")}]:\tcombination: read request #${idx} send successfully ✅`);
+
+                  continue;
+                }
+
+                console.log(`response status:\t${response.status}`);
+                setRequestStats(prev => ({
+                  ...prev,
+                  awaiting: prev.awaiting - 1,
+                  fail: prev.fail + 1,
+                }));
+                setLogs(prev => prev + "\n" + `[${dayjs().format("DD/MM/YYYY HH.mm.ss")}]:\tresponse status: \t${response.status} ❌`);
+
+                continue;
+              } catch (err) {
+                if (err instanceof Error) {
+                  console.log(`error:\t${err}`);
+                  setRequestStats(prev => ({
+                    ...prev,
+                    awaiting: prev.awaiting - 1,
+                    fail: prev.fail + 1,
+                  }));
+                  setLogs(prev => prev + "\n" + `[${dayjs().format("DD/MM/YYYY HH.mm.ss")}]:\terror: \t${err.message} ❌`);
+
+                  continue;
+                };
+
+                console.log(`unknown:\t${err}`);
+                setRequestStats(prev => ({
+                  ...prev,
+                  awaiting: prev.awaiting - 1,
+                  fail: prev.fail + 1,
+                }));
+                setLogs(prev => prev + "\n" + `[${dayjs().format("DD/MM/YYYY HH.mm.ss")}]:\tunknown: \t${err} ❌`);
+
+                continue;
+              }
+            }
           } catch (err) {
             if (err instanceof Error) {
               console.log(`error:\t${err}`);
               setRequestStats(prev => ({
                 ...prev,
                 awaiting: prev.awaiting - 1,
-                fail: prev.fail + 1,
+                fail: prev.fail + 2,
               }));
               setLogs(prev => prev + "\n" + `[${dayjs().format("DD/MM/YYYY HH.mm.ss")}]:\terror: \t${err.message} ❌`);
 
@@ -259,134 +495,15 @@ export default function CacheAsideTestPage() {
             setRequestStats(prev => ({
               ...prev,
               awaiting: prev.awaiting - 1,
-              fail: prev.fail + 1,
+              fail: prev.fail + 2,
             }));
             setLogs(prev => prev + "\n" + `[${dayjs().format("DD/MM/YYYY HH.mm.ss")}]:\tunknown: \t${err} ❌`);
 
             continue;
           }
         }
-        setLogs(prev => prev + "\n" + `[${dayjs().format("DD/MM/YYYY HH.mm.ss")}]:\tread request x${idxTimes} times completed`);
       }
-      setLogs(prev => prev + "\n" + `[${dayjs().format("DD/MM/YYYY HH.mm.ss")}]:\tReading data using 25 different queries from the first sampling executed 4 times` +
-        "\n" + `[${dayjs().format("DD/MM/YYYY HH.mm.ss")}]:\tReading data using 50 different queries from the third sampling`);
-      /**
-       * Read using 50 new different queries 
-       */
-      const thirdSampling = dataSampling.slice(50, 100);
-      for (let idx = 0; idx < thirdSampling.length; idx++) {
-        const request = new Request(
-          `${HOST.cache_aside}/api/v1/cache-aside/vacancies?lineIndustry=${thirdSampling[idx].line_industry}&employeeType=${thirdSampling[idx].employee_type}&workArrangement=${thirdSampling[idx].work_arrangement}`,
-          { method: "GET", headers: logHeaders },
-        );
-
-        try {
-          const response = await fetch(request);
-          if (response.status === 200) {
-            setRequestStats(prev => ({
-              ...prev,
-              awaiting: prev.awaiting - 1,
-              success: prev.success + 1,
-            }));
-            setLogs(prev => prev + "\n" + `[${dayjs().format("DD/MM/YYYY HH.mm.ss")}]:\tread request #${idx} send successfully ✅`);
-
-            continue;
-          }
-
-          console.log(`response status:\t${response.status}`);
-          setRequestStats(prev => ({
-            ...prev,
-            awaiting: prev.awaiting - 1,
-            fail: prev.fail + 1,
-          }));
-          setLogs(prev => prev + "\n" + `[${dayjs().format("DD/MM/YYYY HH.mm.ss")}]:\tresponse status: \t${response.status} ❌`);
-
-          continue;
-        } catch (err) {
-          if (err instanceof Error) {
-            console.log(`error:\t${err}`);
-            setRequestStats(prev => ({
-              ...prev,
-              awaiting: prev.awaiting - 1,
-              fail: prev.fail + 1,
-            }));
-            setLogs(prev => prev + "\n" + `[${dayjs().format("DD/MM/YYYY HH.mm.ss")}]:\terror: \t${err.message} ❌`);
-
-            continue;
-          };
-
-          console.log(`unknown:\t${err}`);
-          setRequestStats(prev => ({
-            ...prev,
-            awaiting: prev.awaiting - 1,
-            fail: prev.fail + 1,
-          }));
-          setLogs(prev => prev + "\n" + `[${dayjs().format("DD/MM/YYYY HH.mm.ss")}]:\tunknown: \t${err} ❌`);
-
-          continue;
-        }
-      }
-      setLogs(prev => prev + "\n" + `[${dayjs().format("DD/MM/YYYY HH.mm.ss")}]:\tReading data using 50 different queries from the third sampling completed` +
-        "\n" + `[${dayjs().format("DD/MM/YYYY HH.mm.ss")}]:\tReading data using 50 different queries from 30 random sampling first, third sampling and 20 sampling never used before`);
-      /**
-       * Read 50 different queries, 30 random from combined first and third sampling, 20 new sampling
-       */
-      const randomUsedSampling = FisherYatesShuffleAlgorithm([...firstSampling, ...thirdSampling], 30);
-      const fourthSampling = dataSampling.slice(100, 120).concat(randomUsedSampling);
-      for (let idx = 0; idx < fourthSampling.length; idx++) {
-        const request = new Request(
-          `${HOST.cache_aside}/api/v1/cache-aside/vacancies?lineIndustry=${fourthSampling[idx].line_industry}&employeeType=${fourthSampling[idx].employee_type}&workArrangement=${fourthSampling[idx].work_arrangement}`,
-          { method: "GET", headers: logHeaders },
-        );
-
-        try {
-          const response = await fetch(request);
-          if (response.status === 200) {
-            setRequestStats(prev => ({
-              ...prev,
-              awaiting: prev.awaiting - 1,
-              success: prev.success + 1,
-            }));
-            setLogs(prev => prev + "\n" + `[${dayjs().format("DD/MM/YYYY HH.mm.ss")}]:\tread request #${idx} send successfully ✅`);
-
-            continue;
-          }
-
-          console.log(`response status:\t${response.status}`);
-          setRequestStats(prev => ({
-            ...prev,
-            awaiting: prev.awaiting - 1,
-            fail: prev.fail + 1,
-          }));
-          setLogs(prev => prev + "\n" + `[${dayjs().format("DD/MM/YYYY HH.mm.ss")}]:\tresponse status: \t${response.status} ❌`);
-
-          continue;
-        } catch (err) {
-          if (err instanceof Error) {
-            console.log(`error:\t${err}`);
-            setRequestStats(prev => ({
-              ...prev,
-              awaiting: prev.awaiting - 1,
-              fail: prev.fail + 1,
-            }));
-            setLogs(prev => prev + "\n" + `[${dayjs().format("DD/MM/YYYY HH.mm.ss")}]:\terror: \t${err.message} ❌`);
-
-            continue;
-          };
-
-          console.log(`unknown:\t${err}`);
-          setRequestStats(prev => ({
-            ...prev,
-            awaiting: prev.awaiting - 1,
-            fail: prev.fail + 1,
-          }));
-          setLogs(prev => prev + "\n" + `[${dayjs().format("DD/MM/YYYY HH.mm.ss")}]:\tunknown: \t${err} ❌`);
-
-          continue;
-        }
-      }
-      setLogs(prev => prev + "\n" + `[${dayjs().format("DD/MM/YYYY HH.mm.ss")}]:\tReading data using 50 different queries from 30 random sampling first, third sampling and 20 sampling never used before completed` +
-        "\n" + `[${dayjs().format("DD/MM/YYYY HH.mm.ss")}]:\tClearing generated data`);
+      setLogs(prev => prev + "\n" + `${dayjs().format("DD/MM/YYYY HH.mm.ss")}: \tCache-Aside test completed` + "\n" + `${dayjs().format("DD/MM/YYYY HH.mm.ss")}: \tClearing testing data`);
       const [successClearing, failClearing] = await RequestAPI.Send<number>(
         "/api/v1/administrators/test/generates/vacancies?count=" + (dataSampling.length * 500),
         { method: "DELETE", headers: basicHeaders }
@@ -492,7 +609,7 @@ export default function CacheAsideTestPage() {
                 color: "#c2fffb",
               }}
             >
-              Cache Aside Test
+              Pengujian Cache Aside
             </Typography>
           </Box>
           {/* Chart Container */}
@@ -675,36 +792,57 @@ export default function CacheAsideTestPage() {
               marginBottom: "1em"
             }}
           >
+            <Typography component={"p"} variant="subtitle1" fontWeight={550}
+              sx={{
+                marginBottom: "0.5em",
+                color: grey[800]
+              }}
+            >
+              Deskripsi Pengujian
+            </Typography>
             <Typography component={"p"} variant="body1"
               sx={{
                 color: grey[700],
               }}
             >
-              This test will execute 250 requests to the cache-aside service. Below are the details of the request phases:
+              Tes ini akan menjalankan 100 permintaan ke layanan cache-aside. Berikut rincian fase permintaan:
             </Typography>
             <ol style={{ color: grey[700], lineHeight: "1.5em", marginLeft: "1em", marginTop: "0.5em" }}>
               <li>
                 <Typography component={"p"} variant="body1">
-                  Execute 50 requests to read job vacancy data using 50 different queries per request, reading 500 records per request.
+                  Mengeksekusi 20 permintaan untuk menulis data lowongan kerja baru, menulis 500 record per permintaan (total: 10.000 record).
                 </Typography>
               </li>
               <li>
                 <Typography component={"p"} variant="body1">
-                  Execute 100 requests using 25 queries from the first phase, repeated 4 times, reading 500 records per request.
+                  Mengeksekusi 20 permintaan untuk membaca data lowongan kerja yang ditulis pada fase pertama, membaca 500 record per permintaan.
                 </Typography>
               </li>
               <li>
                 <Typography component={"p"} variant="body1">
-                  Execute 50 requests to read job vacancy data using 50 new, unique queries that have not been executed before, reading 500 records per request.
+                  Mengeksekusi 20 permintaan untuk memperbarui data lowongan kerja yang ditulis pada fase pertama, memperbarui 500 record per permintaan.
                 </Typography>
               </li>
               <li>
                 <Typography component={"p"} variant="body1">
-                  Execute 50 requests with a combination of reading job vacancy data, using 60% previously executed queries and 40% new queries (60:40), reading 500 records per request.
+                  Mengeksekusi 20 permintaan untuk membaca data lowongan kerja yang diperbarui pada fase ketiga, membaca 500 record per permintaan.
+                </Typography>
+              </li>
+              <li>
+                <Typography component={"p"} variant="body1">
+                  Mengeksekusi 20 permintaan dengan kombinasi membaca dan menulis data lowongan kerja dengan rasio 50:50. Menulis 500 record per permintaan (total: 5.000 record) dan membaca 500 record per permintaan.
                 </Typography>
               </li>
             </ol>
             {/* Terminal */}
+            <Typography component={"p"} variant="subtitle1" fontWeight={550}
+              sx={{
+                marginTop: "1em",
+                color: grey[800]
+              }}
+            >
+              Monitoring <span style={{ fontStyle: "italic" }}>Logs</span> Pengujian
+            </Typography>
             <Box component={"div"}
               ref={logsRef}
               sx={{
@@ -740,16 +878,16 @@ export default function CacheAsideTestPage() {
               <Button
                 startIcon={
                   loading ? <CircularProgress size={20} /> :
-                    cacheAsideLogs.logs.length == 250 ? <DoneRounded fontSize="small" /> :
+                    cacheAsideLogs.logs.length == 100 ? <DoneRounded fontSize="small" /> :
                       <PlayCircleRounded fontSize="small" />
                 }
-                disabled={loading || cacheAsideLogs.logs.length == 250}
+                disabled={loading || cacheAsideLogs.logs.length == 100}
                 variant="contained"
                 onClick={() => {
                   setOpenDialog(prev => ({ ...prev, ["confirmation"]: true }));
                 }}
               >
-                {cacheAsideLogs.logs.length == 250 ? "Completed" : "Run Read Test"}
+                {cacheAsideLogs.logs.length == 100 ? "Selesai" : "Jalankan Pengujian"}
               </Button>
             </Box>
           </Box>
@@ -763,35 +901,44 @@ export default function CacheAsideTestPage() {
                   paddingY: "0.5em",
                   color: "#06816d",
                   fontWeight: 550,
-                  textAlign: "center",
-                  borderBottom: "1px solid " + grey[300]
+                  textAlign: "start",
+                  // borderBottom: "1px solid " + grey[300]
                 }}
               >
-                Read Test Results
+                Hasil Pengujian Cache Aside
               </Typography>
               <TableContainer>
-                <Table size="small">
+                <Table size="small"
+                  sx={{
+                    borderCollapse: "unset",
+                    border: "1px solid " + grey[400],
+                    borderRadius: "0.3em",
+                    ".MuiTableCell-root": {
+                      border: "none",
+                    },
+                  }}
+                >
                   <TableHead>
                     <TableRow>
-                      <TableCell sx={{ width: "10%" }}>
-                        <Typography component={"p"} variant="body2" sx={{ color: grey[600], fontWeight: 550 }}>No. Request</Typography>
+                      <TableCell sx={{ width: "10%", borderBottom: "1px solid " + grey[400] + "!important" }}>
+                        <Typography component={"p"} variant="body2" sx={{ paddingY: "0.3em", color: grey[600], fontWeight: 550 }}>No. Request</Typography>
                       </TableCell>
-                      <TableCell sx={{ width: "10%" }}>
+                      <TableCell sx={{ width: "10%", borderBottom: "1px solid " + grey[400] + "!important" }}>
                         <Typography component={"p"} variant="body2" sx={{ color: grey[600], fontWeight: 550 }}>Cache Hit</Typography>
                       </TableCell>
-                      <TableCell sx={{ width: "10%" }}>
+                      <TableCell sx={{ width: "10%", borderBottom: "1px solid " + grey[400] + "!important" }}>
                         <Typography component={"p"} variant="body2" sx={{ color: grey[600], fontWeight: 550 }}>Cache Miss</Typography>
                       </TableCell>
-                      <TableCell sx={{ width: "20%" }}>
+                      <TableCell sx={{ width: "20%", borderBottom: "1px solid " + grey[400] + "!important" }}>
                         <Typography component={"p"} variant="body2" sx={{ color: grey[600], fontWeight: 550 }}>Response Time (ms)</Typography>
                       </TableCell>
-                      <TableCell sx={{ width: "18%" }}>
+                      <TableCell sx={{ width: "18%", borderBottom: "1px solid " + grey[400] + "!important" }}>
                         <Typography component={"p"} variant="body2" sx={{ color: grey[600], fontWeight: 550 }}>Memory Usage (MB)</Typography>
                       </TableCell>
-                      <TableCell sx={{ width: "15%" }}>
+                      <TableCell sx={{ width: "15%", borderBottom: "1px solid " + grey[400] + "!important" }}>
                         <Typography component={"p"} variant="body2" sx={{ color: grey[600], fontWeight: 550 }}>CPU Usage (%)</Typography>
                       </TableCell>
-                      <TableCell sx={{ width: "17%" }}>
+                      <TableCell sx={{ width: "17%", borderBottom: "1px solid " + grey[400] + "!important" }}>
                         <Typography component={"p"} variant="body2" sx={{ color: grey[600], fontWeight: 550 }}>Resource Utilization (%)</Typography>
                       </TableCell>
                     </TableRow>
@@ -813,7 +960,7 @@ export default function CacheAsideTestPage() {
                               backgroundColor: amber[50]
                             }}
                           >
-                            Request logs for the read test are empty. Please run the test first.
+                            Log permintaan untuk pengujian masih kosong. Silakan jalankan pengujian terlebih dahulu.
                           </Typography>
                         </TableCell>
                       </TableRow>
@@ -822,7 +969,7 @@ export default function CacheAsideTestPage() {
                       <TableRow hover key={index}>
                         <TableCell>
                           <Typography component={"p"} variant="body2" sx={{ color: grey[600] }}>
-                            Request:{(pageTableLogs * 10) - 10 + (index + 1)}
+                            Request:{(pageTableLogs * 15) - 15 + (index + 1)}
                           </Typography>
                         </TableCell>
                         <TableCell>
@@ -861,7 +1008,7 @@ export default function CacheAsideTestPage() {
                 </Table>
                 <Pagination
                   size="small"
-                  count={Math.ceil(cacheAsideLogs.logs.length / 10)}
+                  count={Math.ceil(cacheAsideLogs.logs.length / 15)}
                   page={pageTableLogs}
                   onChange={(_: ChangeEvent<unknown>, page: number) => {
                     setPageTableLogs(page)
@@ -894,7 +1041,7 @@ export default function CacheAsideTestPage() {
             color: grey[700]
           }}
         >
-          Confirm Cache-Aside Test Execution
+          Konfirmasi Pengujian
         </Typography>
         <Typography component={"p"} variant="body2"
           sx={{
@@ -902,9 +1049,9 @@ export default function CacheAsideTestPage() {
             whiteSpace: "pre-line"
           }}
         >
-          This test will execute 250 requests to the cache-aside service, performing multiple read and write operations on job vacancy data. The process involves writing, reading, updating, and a combination of both. Given the large data volume, the test may take some time to complete.
+          Pengujian ini akan menjalankan 100 permintaan ke layanan cache-aside, yang mencakup berbagai operasi baca dan tulis pada data lowongan pekerjaan.
 
-          Do you want to proceed?
+          Apakah Anda ingin melanjutkan?
         </Typography>
         <Box component={"div"}
           sx={{
@@ -922,7 +1069,7 @@ export default function CacheAsideTestPage() {
               setOpenDialog(prev => ({ ...prev, ["confirmation"]: false }));
             }}
           >
-            Cancel
+            Batal
           </Button>
           <Button
             variant="contained"
@@ -933,7 +1080,7 @@ export default function CacheAsideTestPage() {
               setOpenDialog(prev => ({ ...prev, ["confirmation"]: false }));
             }}
           >
-            Continue
+            Lanjutkan
           </Button>
         </Box>
       </Dialog>
