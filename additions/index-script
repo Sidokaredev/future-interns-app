@@ -1,0 +1,8 @@
+<script type="text/javascript">
+  (function (location) {
+    if(location.includes("/?/")) {
+      const removedQuery = location.replace("/?/", "/")
+      window.history.replaceState(null, null, removedQuery)
+    }
+  })(window.location.toString());
+</script>
