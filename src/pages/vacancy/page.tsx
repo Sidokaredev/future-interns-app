@@ -22,7 +22,7 @@ import { GetSession, onCloseSnackbar } from "../global-helpers";
 import RequestAPI from "../../services/api/request";
 import { grey } from "@mui/material/colors";
 import SimpleEmphasis from "../../components/Molecules/Texts/SimpleEmphasis";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 
 export type FiltersType = {
   keyword: string;
@@ -32,12 +32,15 @@ export type FiltersType = {
 }
 
 export default function VacancyPage() {
-  /* react-router */
+  // react-router@navigate
   const navigate = useNavigate();
-  /* breakpoints */
+  const [searchParams] = useSearchParams();
+  console.log("search params has 'cached' ? ", searchParams.has("cached"));
+  // mui@breakpoints
   const mediaSize = useMediaQuery("(max-width:900px)");
-  /* state */
+  // state@data
   const [vacancies, setVacancies] = useState<VacancyType[]>([]);
+  const [vacanciesCount, setVacanciesCount] = useState<number>(0);
   const [appliedVacancies, setAppliedVacancies] = useState<string[]>([]);
   const [filters, setFilters] = useState<FiltersType>({ keyword: "", line_industry: "", location: "", employee_type: "" });
   const [currentPage, setCurrentPage] = useState<number>(1);
@@ -46,27 +49,17 @@ export default function VacancyPage() {
   const [openDialog, setOpenDialog] = useState<Record<string, boolean>>({});
   const [dataAction, setDataAction] = useState<boolean>(false);
 
-  /* constants */
-  const searchedVacancies = vacancies.filter((vacancy) => {
-    let check = vacancy.position.toLowerCase().includes(filters.keyword.toLowerCase()) || vacancy.employer.legal_name.toLowerCase().includes(filters.keyword.toLowerCase()) || vacancy.employer.name.toLowerCase().includes(filters.keyword.toLowerCase());
-    return check;
-  }).sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
-  const filteredVacancies = searchedVacancies
-    .filter((vacancy) => vacancy.employer.location.toLowerCase().includes(filters.location.toLowerCase()))
-    .filter((vacancy) => filters.line_industry === "" || vacancy.line_industry === filters.line_industry)
-    .filter((vacancy) => filters.employee_type === "" || vacancy.employee_type === filters.employee_type);
-  const paginatedVacancies = filteredVacancies.slice((10 * currentPage) - 10, (10 * currentPage));
-  const totalPages = vacancies.length === 10 ? 10 : Math.ceil(filteredVacancies.length / 10);
-
-  /* handlers */
+  // constants
+  const totalPages = vacanciesCount === 10 ? 10 : Math.ceil(vacanciesCount / 10);
+  // handlers
   const onPageChange = (_: ChangeEvent<any>, page: number) => {
-    if (vacancies.length === 10) {
+    if (vacanciesCount === 10) {
       return setOpenDialog(prev => ({ ...prev, ["unauthenticated"]: true }));
     }
     setCurrentPage(page);
   }
 
-  /* side-effect */
+  // effect@dom
   useEffect(() => {
     window.scrollTo({
       top: 0,
@@ -81,30 +74,46 @@ export default function VacancyPage() {
       setOpenDrawer(false);
     }
   }, [filters]);
-  /* fetching */
+  // effect@fetching
   useEffect(() => {
     const token = GetSession("auth");
+    let cachedQuery
+    if (searchParams.has("cached")) {
+      cachedQuery = "&cached=" + searchParams.get("cached");
+    } else {
+      cachedQuery = "";
+    }
     (async () => {
       const headerInit = new Headers();
       if (token) {
         headerInit.append("Authorization", "Bearer " + token);
       }
-      const [data, fail] = await RequestAPI.Send<{ vacancies: VacancyType[], applied: string[] }>(
-        "/api/v1/vacancies/?limit=none",
+      const [data, fail] = await RequestAPI.Send<{
+        vacancies: VacancyType[],
+        applied: string[],
+        count: number,
+      }>(
+        "/vacancies/?limit=10&page=" + currentPage +
+        "&keyword=" + filters.keyword +
+        "&location=" + filters.location +
+        "&lineIndustry=" + filters.line_industry +
+        "&employeeType=" + filters.employee_type +
+        cachedQuery,
         {
           method: "GET",
           headers: headerInit
         }
       );
       if (fail) {
-        return setAlert({ show: true, message: fail.message });
+        return setAlert({ show: true, message: "Data lowongan pekerjan tidak ditemukan!" });
       };
       if (data) {
         setAppliedVacancies(data.applied);
+        setVacanciesCount(data.count);
         return setVacancies(data.vacancies);
       };
     })();
-  }, [dataAction]);
+  }, [dataAction, filters, currentPage]);
   return (
     <BaseLayout>
       {/* Default Notification */}
@@ -112,7 +121,7 @@ export default function VacancyPage() {
         anchorOrigin={{ vertical: "top", horizontal: "center" }}
         open={alert.show}
         message={alert.message}
-        autoHideDuration={3000}
+        autoHideDuration={5000}
         onClose={onCloseSnackbar(setAlert)}
       />
       {/* Section 1 */}
@@ -136,7 +145,7 @@ export default function VacancyPage() {
           }}
         >
           <Typography align="center" variant="h5" color={"white"}>
-            Job Vacancy
+            Lowongan Pekerjaan
           </Typography>
         </Container>
       </Box>
@@ -194,7 +203,7 @@ export default function VacancyPage() {
                 </Typography>
               </Box>
               <Typography component={"p"} variant="subtitle2" sx={{ fontWeight: 500, color: grey[500], fontStyle: "italic" }}>
-                Found <SimpleEmphasis text={" " + vacancies.length + " "} /> Job Vacancies
+                Ditemukan <SimpleEmphasis text={" " + vacanciesCount + " "} /> lowongan pekerjaan
               </Typography>
             </Box>
             <Drawer
@@ -205,7 +214,9 @@ export default function VacancyPage() {
             >
               {/* FILTER HERE */}
               <VacancyFilters
-                setFilters={setFilters} />
+                setFilters={setFilters}
+                setCurrentPage={setCurrentPage}
+              />
               <Box component={"div"} sx={{ textAlign: "center" }}>
                 <IconButton
                   color="error"
@@ -227,7 +238,9 @@ export default function VacancyPage() {
               >
                 {/* FILTER */}
                 <VacancyFilters
-                  setFilters={setFilters} />
+                  setFilters={setFilters}
+                  setCurrentPage={setCurrentPage}
+                />
               </Collapse>
             </Grid>
             <Grid
@@ -247,13 +260,13 @@ export default function VacancyPage() {
                   marginBottom: "0.5em",
                 }}>
                   <Typography component={"p"} variant="subtitle2" sx={{ fontWeight: 500, color: grey[500], fontStyle: "italic" }}>
-                    Found <SimpleEmphasis text={" " + vacancies.length + " "} /> Job Vacancies
+                    Ditemukan <SimpleEmphasis text={" " + vacanciesCount + " "} /> lowongan pekerjaan
                   </Typography>
                 </Box>
               )}
               {/* LIST OF VACANCIES */}
               <Box component={"div"}>
-                {paginatedVacancies.map((vacancy, index) => (
+                {vacancies.map((vacancy, index) => (
                   <VacancyItemList
                     key={index}
                     vacancy={vacancy}
@@ -302,10 +315,10 @@ export default function VacancyPage() {
               marginBottom: "0.5em",
             }}
           >
-            Note
+            Catatan
           </Typography>
           <Typography component={"p"} variant="body1">
-            You need to log in to view available job vacancies. Would you like to <SimpleEmphasis text={" continue "} /> to the login page now?
+            Anda perlu masuk untuk mengirim lamaran pada posisi ini. Apakah Anda ingin <SimpleEmphasis text={" melanjutkan "} /> ke halaman login sekarang?
           </Typography>
         </Box>
         <Box component={"div"}
@@ -321,7 +334,7 @@ export default function VacancyPage() {
             size="small"
             onClick={() => setOpenDialog(prev => ({ ...prev, ["unauthenticated"]: false }))}
           >
-            CANCEL
+            Batalkan
           </Button>
           <Button
             variant="contained"
@@ -331,7 +344,7 @@ export default function VacancyPage() {
               navigate("/accounts/auth")
             }}
           >
-            CONTINUE
+            Lanjutkan
           </Button>
         </Box>
       </Dialog>

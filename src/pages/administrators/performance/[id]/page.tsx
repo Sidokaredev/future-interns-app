@@ -131,7 +131,10 @@ export default function TestSessionPage() {
     weights: new Set(weightsSetValue),
   }, { withOrigin: true });
 
-  if (allRequestLogs.length > 0) {
+  const isLogRequestCacheExist = allRequestLogs.filter(log_ => log_.cache_type !== "no-cache").length > 0;
+
+  if (isLogRequestCacheExist) {
+    // saw.StoreAlternatives(allRequestLogs.filter(log_ => log_.cache_type !== "no-cache")); // without no-cache
     saw.StoreAlternatives(allRequestLogs);
     rankRequestLogs = saw.GetRanking({
       precision: 4
@@ -264,7 +267,7 @@ export default function TestSessionPage() {
   useEffect(() => {
     (async () => {
       const [data, fail] = await RequestAPI.Send<CacheSessionInfoType>(
-        "/api/v1/administrators/test/" + sessionID + "/status",
+        "/administrators/test/" + sessionID + "/status",
         {
           method: "GET",
           headers: {
@@ -284,7 +287,7 @@ export default function TestSessionPage() {
   useEffect(() => {
     (async () => {
       const [data, fail] = await RequestAPI.Send<LogType[]>(
-        "/api/v1/administrators/test/" + sessionID + "/logs/all",
+        "/administrators/test/" + sessionID + "/logs/all",
         { method: "GET", headers: { "Authorization": "Bearer " + token } },
       );
       if (fail) {
@@ -351,13 +354,6 @@ export default function TestSessionPage() {
                           borderColor: "rgba(189, 189, 189, 1)",
                           borderWidth: 2,
                         },
-                        // {
-                        //   label: "No Cache Read",
-                        //   data: [...datasetRadar["no-cache-read"]],
-                        //   backgroundColor: "rgba(255, 0, 0, 0.2)",
-                        //   borderColor: "rgba(255, 0, 0, 1)",
-                        //   borderWidth: 2,
-                        // },
                         {
                           label: "Cache Aside",
                           data: [...datasetRadar["cache-aside"]],
@@ -568,19 +564,6 @@ export default function TestSessionPage() {
                   </Typography>
                   <Box component={"div"}>
                     <FormGroup>
-                      {/* <FormControlLabel control={
-                        <Checkbox size="small"
-                          checked={datasetRadarOption["no-cache-write"]}
-                          onChange={CheckboxOnChange("no-cache-write")}
-                          sx={{ paddingY: "0.3em" }} />
-                      } label={
-                        <Typography component={"p"} variant="body2"
-                          sx={{ color: grey[600] }}
-                        >
-                          No Cache Write
-                        </Typography>
-                      }
-                        disabled={noCacheWriteLogs.length === 0} /> */}
                       <FormControlLabel control={
                         <Checkbox size="small"
                           checked={datasetRadarOption["no-cache"]}
@@ -876,9 +859,6 @@ export default function TestSessionPage() {
                                   <Typography component={"p"} variant="subtitle2">
                                     {value.origin?.resource_utilization + "%"}
                                   </Typography>
-                                  {/* <IconButton size="small">
-                                    <MoreVertRounded fontSize="small" />
-                                  </IconButton> */}
                                 </Box>
                               </TableCell>
                             </TableRow>
@@ -960,7 +940,7 @@ export default function TestSessionPage() {
                       No-Cache Test
                     </Typography>
                     <Typography component={"p"} variant="caption">
-                      {cacheSessionStatus?.no_cache == 100 ? "1" : "0" + "/1"}
+                      {cacheSessionStatus?.no_cache == 100 ? "1" : "0"}/1
                     </Typography>
                   </Box>
                   <Box
@@ -1618,7 +1598,7 @@ export default function TestSessionPage() {
                   </TableRow>
                 </TableHead>
                 <TableBody>
-                  {allRequestLogs.length === 0 && (
+                  {!isLogRequestCacheExist && (
                     <TableRow>
                       <TableCell colSpan={12}
                         sx={{

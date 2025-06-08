@@ -6,6 +6,7 @@ import {
   CloseRounded,
   CorporateFareRounded,
   DescriptionRounded,
+  DoNotDisturbOnRounded,
   DonutLargeRounded,
   DownloadRounded,
   ErrorRounded,
@@ -65,6 +66,7 @@ import { Link as RouterLink } from "react-router-dom";
 import AutoOverflowText from "../../../components/Molecules/Texts/AutoOverflowText";
 import dayjs from "dayjs";
 import { HOST } from "../../administrators/performance/[id]/constants";
+import { useDebounce } from "use-debounce";
 
 export default function ApplicationStatus() {
   /* Material UI Hooks */
@@ -82,6 +84,8 @@ export default function ApplicationStatus() {
   const [openDrawer, setOpenDrawer] = useState<boolean>(false);
   // data -> applied vacacies
   const [appliedVacancies, setAppliedVacancies] = useState<AppliedVacancy[]>([]);
+  const [appliedVacanciesCount, setAppliedVacanciesCount] = useState<number>(0);
+  const [currentOffset, setCurrentOffset] = useState<number>(1);
   const [selectedApplied, setSelectedApplied] = useState<AppliedVacancy | null>(null);
   const [appliedQuery, setAppliedQuery] = useState<string>("");
   const [alert, setAlert] = useState<{ show: boolean, message: string }>({ show: false, message: "" });
@@ -104,23 +108,18 @@ export default function ApplicationStatus() {
   const [refresh, setRefresh] = useState<Record<string, boolean>>({});
 
   /* constants */
-  const searchedAppliedVacancies = appliedVacancies.filter(applied => {
-    const byPosition = applied.vacancy.position.toLowerCase().includes(appliedQuery.toLowerCase());
-    const byEmployerName = applied.employer.name.toLowerCase().includes(appliedQuery.toLowerCase());
-    const byEmployerLegalName = applied.employer.legal_name.toLowerCase().includes(appliedQuery.toLowerCase());
-    return byPosition || byEmployerName || byEmployerLegalName;
-  });
+  const [debouncedAppliedQuery] = useDebounce(appliedQuery, 1000);
   const scoredAssessments = applicantAssessments.filter(assessment => {
     let byScoredAssessments = assessment.submission_result !== null
     return byScoredAssessments;
   });
   // pipeline -> interviews
   const columns = [
-    { prop: "schedule", label: "Schedule" },
-    { prop: "result", label: "Result" },
+    { prop: "schedule", label: "Pelaksanaan" },
+    { prop: "result", label: "Hasil" },
   ];
   const responsiveColumns = smallMedia ? [
-    { prop: "schedule", label: "Schedule" },
+    { prop: "schedule", label: "Pelaksanaan" },
   ] : columns;
   const conductedInterviews = applicantInterviews.filter(interview => interview.status === "Conducted");
   const acceptedOffer = applicantOffers.filter(offer => offer.status === "Offer Accepted");
@@ -205,7 +204,7 @@ export default function ApplicationStatus() {
       formDataRequest.append("submission_documents[]", file);
     })
     const [success, fail] = await RequestAPI.Send<{ message: string, documents_status: any }>(
-      "/api/v1/candidates/assessments/submissions/",
+      "/candidates/assessments/submissions/",
       {
         method: "POST",
         headers: {
@@ -237,7 +236,7 @@ export default function ApplicationStatus() {
     }));
     const token = GetSession("auth");
     const [success, fail] = await RequestAPI.Send<string>(
-      "/api/v1/candidates/assessments/submissions/" + documentID,
+      "/candidates/assessments/submissions/" + documentID,
       {
         method: "DELETE",
         headers: {
@@ -276,7 +275,7 @@ export default function ApplicationStatus() {
       status: offerStatus[status],
       pipeline_id: selectedApplied?.pipeline_id as string
     }).Send<string>(
-      "/api/v1/candidates/offerings/" + offeringID,
+      "/candidates/offerings/" + offeringID,
       {
         method: "PATCH",
         headers: {
@@ -305,7 +304,7 @@ export default function ApplicationStatus() {
     const token = GetSession("auth");
     (async () => {
       const [data, fail] = await RequestAPI.Send<ApplicantAssessment[]>(
-        "/api/v1/candidates/pipelines/" + selectedApplied?.pipeline_id as string + "/assessments/" + selectedApplied?.vacancy.id as string,
+        "/candidates/pipelines/" + selectedApplied?.pipeline_id as string + "/assessments/" + selectedApplied?.vacancy.id as string,
         {
           method: "GET",
           headers: {
@@ -326,8 +325,8 @@ export default function ApplicationStatus() {
   useEffect(() => {
     const token = GetSession("auth");
     (async () => {
-      const [data, fail] = await RequestAPI.Send<AppliedVacancy[]>(
-        "/api/v1/candidates/pipelines/",
+      const [data, fail] = await RequestAPI.Send<{ arr: AppliedVacancy[]; count: number; }>(
+        "/candidates/pipelines/?page=" + currentOffset + "&keyword=" + debouncedAppliedQuery,
         {
           method: "GET",
           headers: {
@@ -340,11 +339,22 @@ export default function ApplicationStatus() {
         return setAlert({ show: true, message: fail.message });
       };
       if (data) {
-        setSelectedApplied(data[0]);
-        return setAppliedVacancies(data);
+        if (currentOffset > 1) {
+          setAppliedVacancies(prev => {
+            const newArr = prev
+            return newArr.concat(data.arr);
+          })
+          setAppliedVacanciesCount(data.count);
+        } else {
+          if (appliedQuery == "") {
+            setSelectedApplied(data.arr[0]);
+          }
+          setAppliedVacancies(data.arr);
+          setAppliedVacanciesCount(data.count);
+        }
       };
     })();
-  }, []);
+  }, [currentOffset, debouncedAppliedQuery]);
 
   /* fetching -> applicant interviews */
   useEffect(() => {
@@ -354,7 +364,7 @@ export default function ApplicationStatus() {
     const token = GetSession("auth");
     (async () => {
       const [data, fail] = await RequestAPI.Send<ApplicantInterview[]>(
-        "/api/v1/candidates/pipelines/" + selectedApplied?.pipeline_id as string + "/vacancies/" + selectedApplied?.vacancy.id as string + "/interviews",
+        "/candidates/pipelines/" + selectedApplied?.pipeline_id as string + "/vacancies/" + selectedApplied?.vacancy.id as string + "/interviews",
         {
           method: "GET",
           headers: {
@@ -379,7 +389,7 @@ export default function ApplicationStatus() {
     const token = GetSession("auth");
     (async () => {
       const [data, fail] = await RequestAPI.Send<ApplicantOffer[]>(
-        "/api/v1/candidates/pipelines/" + selectedApplied.pipeline_id + "/vacancies/" + selectedApplied.vacancy.id + "/offering",
+        "/candidates/pipelines/" + selectedApplied.pipeline_id + "/vacancies/" + selectedApplied.vacancy.id + "/offering",
         {
           method: "GET",
           headers: {
@@ -414,7 +424,7 @@ export default function ApplicationStatus() {
               color: grey[800],
             }}
           >
-            Applied Detail
+            Informasi Lamaran
           </Typography>
           {/* Employer Profile */}
           <Box
@@ -429,7 +439,7 @@ export default function ApplicationStatus() {
           >
             <Avatar
               alt="company-logo"
-              src={`${HOST.main}${selectedApplied?.employer.profile_image_path}`}
+              src={`${HOST.main}${selectedApplied?.employer.profile_image_path.replace("/api/v1", "")}`}
               sx={{
                 width: smallMedia ? "4em" : "5em",
                 height: smallMedia ? "4em" : "5em",
@@ -509,7 +519,7 @@ export default function ApplicationStatus() {
                   setDisplayOn({ detail: true, pipeline: false });
                 }}
               >
-                Detail
+                Detail Posisi Pekerjaan
               </Button>
               <Button
                 variant="text"
@@ -525,7 +535,7 @@ export default function ApplicationStatus() {
                   setDisplayOn({ detail: false, pipeline: true });
                 }}
               >
-                Pipeline
+                Tahapan Seleksi
               </Button>
             </Box>
             {!largeMedia && (
@@ -540,7 +550,7 @@ export default function ApplicationStatus() {
                 }}
                 onClick={() => setOpenDrawer(true)}
               >
-                Applied List
+                Daftar Lamaran Pekerjaan
               </Button>
             )}
           </Box>
@@ -551,7 +561,7 @@ export default function ApplicationStatus() {
                 variant="subtitle2"
                 sx={{ fontWeight: 550, color: grey[800], marginY: "0.5em" }}
               >
-                Application Pipeline
+                Proses Seleksi Lamaran
               </Typography>
               <Box
                 component={"div"}
@@ -568,7 +578,7 @@ export default function ApplicationStatus() {
                     }}
                   >
                     {!xSmallMedia && (
-                      <FindInPageOutlined sx={{ color: applicantAssessments.length > 0 ? green[800] : orange[700] }} />
+                      <FindInPageOutlined sx={{ color: appliedVacancies.length == 0 ? grey[400] : applicantAssessments.length > 0 ? green[800] : orange[700] }} />
                     )}
                     <Box
                       component={"div"}
@@ -584,29 +594,29 @@ export default function ApplicationStatus() {
                           variant="subtitle2"
                           sx={{
                             fontWeight: 550,
-                            color: applicantAssessments.length > 0 ? green[800] : orange[700],
+                            color: appliedVacancies.length == 0 ? grey[400] : applicantAssessments.length > 0 ? green[800] : orange[700],
                             marginY: "0.2em",
                           }}
                         >
-                          Application Screening
+                          Proses Screening Kandidat
                         </Typography>
                         <Typography
                           variant="caption"
                           sx={{
                             minWidth: "12em",
                             fontStyle: "italic",
-                            color: applicantAssessments.length > 0 ? green[800] : orange[700],
+                            color: appliedVacancies.length == 0 ? grey[400] : applicantAssessments.length > 0 ? green[800] : orange[700],
                             textAlign: "end",
                           }}
                         >
-                          {new Date(selectedApplied?.created_at as string).toDateString()}
+                          {appliedVacancies.length == 0 ? "-" : dayjs(selectedApplied?.created_at as string).format("dddd, DD MMMM YYYY")}
                         </Typography>
                       </Box>
                       <Typography variant="body2" sx={{ color: applicantAssessments.length > 0 ? green[800] : grey[700] }}>
-                        {applicantAssessments.length > 0 ? (
-                          "Congratulations! You have passed the screening stage."
+                        {appliedVacancies.length == 0 ? "" : applicantAssessments.length > 0 ? (
+                          "Selamat! Anda berhasil lolos tahap screening."
                         ) : (
-                          "Your application is currently in the screening stage. Please make sure to regularly monitor your application status for updates."
+                          "Lamaran Anda saat ini berada pada tahap screening. Harap pastikan untuk memantau status lamaran Anda secara berkala untuk pembaruan."
                         )}
                       </Typography>
                     </Box>
@@ -629,6 +639,8 @@ export default function ApplicationStatus() {
                         sx={{
                           display: "flex",
                           justifyContent: "space-between",
+                          paddingTop: "0.2em",
+                          paddingBottom: "0.5em"
                         }}
                       >
                         <Typography
@@ -636,10 +648,9 @@ export default function ApplicationStatus() {
                           sx={{
                             fontWeight: 550,
                             color: (applicantAssessments.length !== 0 && scoredAssessments.length === applicantAssessments.length) ? green[700] : applicantAssessments.length > 0 ? orange[700] : grey[400],
-                            marginY: "0.2em",
                           }}
                         >
-                          Assessment
+                          Proses Assessment
                         </Typography>
                         <Typography
                           variant="caption"
@@ -650,12 +661,12 @@ export default function ApplicationStatus() {
                             textAlign: "end",
                           }}
                         >
-                          {(applicantAssessments.length !== 0 && scoredAssessments.length === applicantAssessments.length) ?
-                            "Assessment Completed" :
+                          {appliedVacancies.length == 0 ? "-" : (applicantAssessments.length !== 0 && scoredAssessments.length === applicantAssessments.length) ?
+                            "Penugasan selesai" :
                             scoredAssessments.length > 0 ?
-                              "submitted " + scoredAssessments.length + " of " + applicantAssessments.length :
-                              applicantAssessments.length === 0 ? "Waiting for assessment" :
-                                "Working on assessment"}
+                              "" + scoredAssessments.length + " dari " + applicantAssessments.length + "telah diselesaikan" :
+                              applicantAssessments.length === 0 ? "Menunggu untuk penugasan" :
+                                "Dalam proses pengerjaan penugasan"}
                         </Typography>
                       </Box>
                       <Box component={"div"} className="assessments-container">
@@ -709,10 +720,10 @@ export default function ApplicationStatus() {
                                     }}
                                   >
                                     {assessment.submission_result ? (
-                                      "Your submission already scored"
+                                      "Penugasan anda telah dinilai"
                                     ) : (
                                       <>
-                                        Due date on{" "}
+                                        Batas pengerjaan pada{" "}
                                         <SimpleEmphasis
                                           text={new Date(assessment.due_date).toDateString()}
                                           textColor={amber[700]}
@@ -739,9 +750,9 @@ export default function ApplicationStatus() {
                                   <Typography
                                     component={"p"}
                                     variant="caption"
-                                    sx={{ fontWeight: 550, color: grey[700] }}
+                                    sx={{ fontWeight: 550, color: grey[700], marginBottom: "0.5em" }}
                                   >
-                                    Note
+                                    Catatan Penugasan
                                   </Typography>
                                   {/* <Typography
                                     component={"p"}
@@ -770,9 +781,9 @@ export default function ApplicationStatus() {
                                   <Typography
                                     component={"div"}
                                     variant="caption"
-                                    sx={{ fontWeight: 550, color: grey[700] }}
+                                    sx={{ fontWeight: 550, color: grey[700], marginBottom: "0.5em" }}
                                   >
-                                    Assessment Link
+                                    Tautan Penugasan
                                   </Typography>
                                   <Typography
                                     component={isLinkExist ? "a" : "p"}
@@ -784,7 +795,7 @@ export default function ApplicationStatus() {
                                       ":hover": { color: isLinkExist ? blue[500] : amber[600] },
                                     }}
                                   >
-                                    {isLinkExist ? assessment.assessment_link : "no link attached"}
+                                    {isLinkExist ? assessment.assessment_link : "tidak ada tautan yang dilampirkan"}
                                   </Typography>
                                 </Box>
                               </Box>
@@ -804,9 +815,9 @@ export default function ApplicationStatus() {
                                   <Typography
                                     component={"p"}
                                     variant="caption"
-                                    sx={{ fontWeight: 550, color: grey[700] }}
+                                    sx={{ fontWeight: 550, color: grey[700], marginBottom: "0.5em" }}
                                   >
-                                    Attached Files
+                                    Dokumen Penugasan
                                   </Typography>
                                   <Box
                                     component={"div"}
@@ -838,7 +849,7 @@ export default function ApplicationStatus() {
                                         >
                                           <Typography
                                             component={RouterLink}
-                                            to={HOST.main + fileURL}
+                                            to={HOST.main + fileURL.replace("/api/v1", "")}
                                             target="_blank"
                                             variant="caption"
                                             sx={{ color: grey[600], textDecoration: "none" }}
@@ -866,15 +877,15 @@ export default function ApplicationStatus() {
                                   <Typography
                                     component={"p"}
                                     variant="caption"
-                                    sx={{ fontWeight: 550, color: grey[700] }}
+                                    sx={{ fontWeight: 550, color: grey[700], marginBottom: "0.5em" }}
                                   >
-                                    Submissions
+                                    Pengumpulan Penugasan
                                   </Typography>
                                   {(assessment.assessment_submissions.length === 0 && !onAddFiles[assessmentKey]) && (
                                     <Box component={"div"} sx={{ display: "flex", alignItems: "center", columnGap: 1 }}>
                                       <ErrorRounded fontSize="small" sx={{ color: amber[700] }} />
                                       <Typography component={"p"} variant="caption" sx={{ color: amber[700], marginTop: "0.3em" }}>
-                                        You have not submitted yet
+                                        Anda belum mengumpulkan penugasan
                                       </Typography>
                                     </Box>
                                   )}
@@ -889,7 +900,7 @@ export default function ApplicationStatus() {
                                   >
                                     {/* Existing Submissions */}
                                     {assessment.assessment_submissions.map((file, index) => {
-                                      const fileURL = file.name.includes(".pdf") ? (file.submission_document_path) : (file.submission_document_path + "/download");
+                                      const fileURL = file.name.includes(".pdf") ? (file.submission_document_path.replace("/api/v1", "")) : (file.submission_document_path.replace("/api/v1", "") + "/download");
                                       return (
                                         <Box
                                           key={index}
@@ -922,7 +933,7 @@ export default function ApplicationStatus() {
                                           >
                                             <Typography
                                               component={RouterLink}
-                                              to={HOST.main + fileURL}
+                                              to={HOST.main + fileURL.replace("/api/v1", "")}
                                               target="_blank"
                                               variant="caption"
                                               sx={{ color: grey[600], textDecoration: "none" }}
@@ -1086,7 +1097,7 @@ export default function ApplicationStatus() {
                                         }));
                                       }}
                                     >
-                                      Cancel
+                                      Batal
                                     </Button>
                                     <Button
                                       variant="contained"
@@ -1117,7 +1128,7 @@ export default function ApplicationStatus() {
                                       }))
                                     }}
                                   >
-                                    {assessment.assessment_submissions.length > 0 ? "Edit Submissions" : "Add Submissions"}
+                                    {assessment.assessment_submissions.length > 0 ? "Ubah pengumpulan" : "Tambah pengumpulan"}
                                   </Button>
                                 )}
                               </Box>
@@ -1157,7 +1168,7 @@ export default function ApplicationStatus() {
                             marginY: "0.2em",
                           }}
                         >
-                          Interview Scedule
+                          Jadwal Interview
                         </Typography>
                         <Typography
                           variant="caption"
@@ -1169,9 +1180,9 @@ export default function ApplicationStatus() {
                             textAlign: "end",
                           }}
                         >
-                          {applicantInterviews.length === 0 ? "Waiting for Interview Schedules" :
-                            (conductedInterviews.length === applicantInterviews.length) ? "All interviews have been conducted" :
-                              `${conductedInterviews.length} out of ${applicantInterviews.length} interviews conducted`}
+                          {appliedVacancies.length == 0 ? "-" : applicantInterviews.length === 0 ? "Menunggu Penjadwalan Interview" :
+                            (conductedInterviews.length === applicantInterviews.length) ? "Semua proses interview telah dilaksanakan" :
+                              `${conductedInterviews.length} dari ${applicantInterviews.length} interview telah dilaksanakan`}
                         </Typography>
                       </Box>
                       <TableContainer
@@ -1256,14 +1267,11 @@ export default function ApplicationStatus() {
                                               component={"p"}
                                               variant="caption"
                                               sx={{
-                                                color: grey[600],
-                                                ":hover": {
-                                                  color: blue[500],
-                                                  textDecoration: "underline",
-                                                },
+                                                color: blue[500],
+                                                textDecoration: "underline",
                                               }}
                                             >
-                                              Interview link here
+                                              Tautan interview disini
                                             </Typography>
                                           </Link>
                                           <Divider
@@ -1352,10 +1360,10 @@ export default function ApplicationStatus() {
                             textAlign: "end",
                           }}
                         >
-                          {acceptedOffer.length > 0 ? "Offer Accepted" :
-                            declinedOffer.length > 0 ? "Offer Declined" :
-                              applicantOffers.length > 0 ? "Waiting for Acceptance" :
-                                "Waiting for Offer"
+                          {appliedVacancies.length == 0 ? "-" : acceptedOffer.length > 0 ? "Penawaran Diterima" :
+                            declinedOffer.length > 0 ? "Penawaran Ditolak" :
+                              applicantOffers.length > 0 ? "Menunggu Konfirmasi" :
+                                "Menunggu Penawaran Pekerjaan"
                           }
                         </Typography>
                       </Box>
@@ -1460,8 +1468,8 @@ export default function ApplicationStatus() {
                                 variant="caption"
                                 sx={{ fontStyle: "italic", color: grey[600] }}
                               >
-                                Offer end on :{" "}
-                                <SimpleEmphasis text={dayjs(offer.end_on).format("dddd MMM DD, YYYY")} textColor={isExpired ? "red" : undefined} />
+                                Penawaran berakhir pada :{" "}
+                                <SimpleEmphasis text={offer.loa_document_path ? "-" : dayjs(offer.end_on).format("dddd MMM DD, YYYY")} textColor={isExpired ? "red" : undefined} />
                                 <br />
                                 {isExpired && offer.status === "Pending Acceptance" && (
                                   <span
@@ -1469,17 +1477,17 @@ export default function ApplicationStatus() {
                                       color: red[500]
                                     }}
                                   >
-                                    The offer has expired
+                                    Tawaran telah berakhir
                                   </span>
                                 )}
                                 {offer.status === "Offer Accepted" && offer.loa_document_path == null && (
                                   <span style={{ color: lightBlue[500] }}>
-                                    Please wait for the Letter of Acceptance and check it periodically for updates.
+                                    Silakan tunggu Letter of Acceptance (LoA) dan periksa secara berkala untuk pembaruan.
                                   </span>
                                 )}
                                 {offer.loa_document_path && (
                                   <span style={{ color: "#06816d" }}>
-                                    The Letter of Acceptance has been issued. Please check and download the document below.
+                                    Letter of Acceptance (LoA) telah diterbitkan. Silakan periksa dan unduh dokumen di bawah ini.
                                   </span>
                                 )}
                               </Typography>
@@ -1505,7 +1513,7 @@ export default function ApplicationStatus() {
                                         setSelectedOffer({ ...offer, status: "decline" });
                                       }}
                                     >
-                                      Dismiss
+                                      Tolak
                                     </Button>
                                     <Button
                                       variant="contained"
@@ -1515,7 +1523,7 @@ export default function ApplicationStatus() {
                                         setSelectedOffer({ ...offer, status: "accept" });
                                       }}
                                     >
-                                      Confirm
+                                      Terima
                                     </Button>
                                   </Box>
                                 )}
@@ -1533,7 +1541,7 @@ export default function ApplicationStatus() {
                               >
                                 <Button
                                   component={RouterLink}
-                                  to={`${HOST.main}${offer.loa_document_path}`}
+                                  to={`${HOST.main}${offer.loa_document_path.replace("/api/v1", "")}`}
                                   target="_blank"
                                   variant="text"
                                   size="small"
@@ -1542,11 +1550,11 @@ export default function ApplicationStatus() {
                                     minWidth: "8em"
                                   }}
                                 >
-                                  View
+                                  Lihat
                                 </Button>
                                 <Button
                                   component={RouterLink}
-                                  to={`${HOST.main}${offer.loa_document_path}/download`}
+                                  to={`${HOST.main}${offer.loa_document_path.replace("/api/v1", "")}/download`}
                                   target="_blank"
                                   variant="contained"
                                   size="small"
@@ -1555,7 +1563,7 @@ export default function ApplicationStatus() {
                                     minWidth: "8em"
                                   }}
                                 >
-                                  Download
+                                  Unduh
                                 </Button>
                               </Box>
                             )}
@@ -1570,44 +1578,46 @@ export default function ApplicationStatus() {
           </Fade>
           {/* Detail */}
           <Fade in={displayOn.detail} mountOnEnter unmountOnExit>
-            <Stack direction={"column"} spacing={2} sx={{ marginY: "0.5em" }}>
-              {/* decription */}
-              <Box component={"div"}>
-                <Typography
-                  variant="subtitle2"
-                  sx={{ fontWeight: 550, color: grey[800] }}
-                >
-                  Description
-                </Typography>
-                <Typography variant="body1" sx={{ color: grey[600], whiteSpace: "pre-line" }}>
-                  {selectedApplied?.vacancy.description}
-                </Typography>
-              </Box>
-              {/* qualification */}
-              <Box component={"div"}>
-                <Typography
-                  variant="subtitle2"
-                  sx={{ fontWeight: 550, color: grey[800] }}
-                >
-                  Qualification
-                </Typography>
-                <Typography variant="body1" sx={{ color: grey[600], whiteSpace: "pre-line" }}>
-                  {selectedApplied?.vacancy.qualification}
-                </Typography>
-              </Box>
-              {/* responsibility */}
-              <Box component={"div"}>
-                <Typography
-                  variant="subtitle2"
-                  sx={{ fontWeight: 550, color: grey[800] }}
-                >
-                  Responsibility
-                </Typography>
-                <Typography variant="body1" sx={{ color: grey[600], whiteSpace: "pre-line" }}>
-                  {selectedApplied?.vacancy.responsibility}
-                </Typography>
-              </Box>
-            </Stack>
+            {appliedVacancies.length == 0 ? <span></span> : (
+              <Stack direction={"column"} spacing={2} sx={{ marginY: "0.5em" }}>
+                {/* decription */}
+                <Box component={"div"}>
+                  <Typography
+                    variant="subtitle2"
+                    sx={{ fontWeight: 550, color: grey[700], marginBottom: "0.3em" }}
+                  >
+                    Deskripsi Pekerjaan
+                  </Typography>
+                  <Typography variant="body1" sx={{ color: grey[600], whiteSpace: "pre-line" }}>
+                    {selectedApplied?.vacancy.description}
+                  </Typography>
+                </Box>
+                {/* qualification */}
+                <Box component={"div"}>
+                  <Typography
+                    variant="subtitle2"
+                    sx={{ fontWeight: 550, color: grey[700], marginBottom: "0.3em" }}
+                  >
+                    Kualifikasi
+                  </Typography>
+                  <Typography variant="body1" sx={{ color: grey[600], whiteSpace: "pre-line" }}>
+                    {selectedApplied?.vacancy.qualification}
+                  </Typography>
+                </Box>
+                {/* responsibility */}
+                <Box component={"div"}>
+                  <Typography
+                    variant="subtitle2"
+                    sx={{ fontWeight: 550, color: grey[700], marginBottom: "0.3em" }}
+                  >
+                    Tugas dan Tanggung Jawab
+                  </Typography>
+                  <Typography variant="body1" sx={{ color: grey[600], whiteSpace: "pre-line" }}>
+                    {selectedApplied?.vacancy.responsibility}
+                  </Typography>
+                </Box>
+              </Stack>
+            )}
           </Fade>
         </Grid>
         <Grid item lg={4}>
@@ -1630,14 +1640,15 @@ export default function ApplicationStatus() {
                   sx={{
                     fontWeight: 550,
                     color: grey[800],
+                    marginBottom: "0.3em"
                   }}
                 >
-                  Applied List
+                  Daftar Lamaran Pekerjaan
                 </Typography>
                 <TextField
                   type="text"
                   name="search" // search for applicant
-                  placeholder="Search ..."
+                  placeholder="Cari posisi pekerjaan"
                   autoComplete="off"
                   size="small"
                   fullWidth
@@ -1655,6 +1666,7 @@ export default function ApplicationStatus() {
                   }}
                   value={appliedQuery}
                   onChange={(event: ChangeEvent<HTMLInputElement>) => {
+                    setCurrentOffset(1);
                     setAppliedQuery(event.target.value);
                   }}
                 />
@@ -1665,16 +1677,36 @@ export default function ApplicationStatus() {
                   overflowY: "scroll",
                   borderRadius: "0.5em",
                   "&::-webkit-scrollbar": {
-                    width: "0em",
-                    // width: "0.5em",
+                    // width: "0em",
+                    width: "0.5em",
                   },
-                  // "&::-webkit-scrollbar-thumb": {
-                  //   backgroundColor: grey[400],
-                  //   borderRadius: "0.15em",
-                  // },
+                  "&::-webkit-scrollbar-thumb": {
+                    backgroundColor: grey[400],
+                    borderRadius: "0.15em",
+                  },
                 }}
               >
-                {searchedAppliedVacancies.map((applied, index) => {
+                {appliedVacancies.length == 0 && (
+                  <Box component={"div"}
+                    sx={{
+                      width: "100%",
+                      padding: "0.5em",
+                      display: "flex",
+                      columnGap: "0.5em",
+                      alignItems: "center",
+                      borderRadius: "0.3em",
+                      backgroundColor: amber[50]
+                    }}
+                  >
+                    <DoNotDisturbOnRounded fontSize="small" sx={{ color: amber[700] }} />
+                    <Typography component={"p"} variant="caption"
+                      sx={{ color: amber[700] }}
+                    >
+                      Saat ini Anda belum mengirimkan lamaran ke lowongan mana pun.
+                    </Typography>
+                  </Box>
+                )}
+                {appliedVacancies.map((applied, index) => {
                   const lastUpdated = new Date(applied.updated_at).toDateString();
                   return (
                     <Box
@@ -1696,7 +1728,7 @@ export default function ApplicationStatus() {
                       >
                         <Avatar
                           alt="company-logo"
-                          src={`${HOST.main}${applied.employer.profile_image_path}`}
+                          src={`${HOST.main}${applied.employer.profile_image_path.replace("/api/v1", "")}`}
                           sx={{
                             width: "2.5em",
                             height: "2.5em",
@@ -1725,7 +1757,7 @@ export default function ApplicationStatus() {
                             <Box component={"div"} sx={{ display: "flex", alignItems: "center", columnGap: "0.3em" }}>
                               <WarningRounded fontSize="small" sx={{ marginTop: "-0.2em", fontSize: "small", color: "red" }} />
                               <Typography component={"p"} variant="caption" sx={{ color: "red" }}>
-                                no longer active
+                                sudah tidak aktif
                               </Typography>
                             </Box>
                           )}
@@ -1776,23 +1808,36 @@ export default function ApplicationStatus() {
                           <Box
                             sx={{
                               display: "flex",
-                              alignItems: "center",
+                              alignItems: "start",
                             }}
                           >
                             <AccessTime
                               fontSize="small"
                               sx={{ color: grey[500] }}
                             />
-                            <Typography
-                              variant="caption"
-                              sx={{
-                                marginLeft: "0.5em",
-                                fontStyle: "italic",
-                                color: grey[500],
-                              }}
-                            >
-                              {"Last updated, " + lastUpdated}
-                            </Typography>
+                            <Box sx={{ paddingTop: "0.2em" }}>
+                              <Typography
+                                variant="caption"
+                                sx={{
+                                  display: "block",
+                                  marginLeft: "0.5em",
+                                  fontStyle: "italic",
+                                  color: grey[500],
+                                }}
+                              >
+                                {"Terakhir diperbarui,"}
+                              </Typography>
+                              <Typography
+                                variant="caption"
+                                sx={{
+                                  marginLeft: "0.5em",
+                                  fontStyle: "italic",
+                                  color: grey[500],
+                                }}
+                              >
+                                {dayjs(lastUpdated).format("dddd, DD MMM YYYY")}
+                              </Typography>
+                            </Box>
                           </Box>
                           <Button variant="contained" size="small" sx={{ minWidth: "8em" }}
                             onClick={() => {
@@ -1806,6 +1851,30 @@ export default function ApplicationStatus() {
                     </Box>
                   )
                 })}
+                {appliedVacanciesCount > (appliedVacancies.length) && (
+                  <Box component={"div"}>
+                    <Typography
+                      component={"p"}
+                      align="center"
+                      fontStyle={"italic"}
+                      fontWeight={500}
+                      variant="body2"
+                      sx={{
+                        color: blue[800],
+                        cursor: "pointer",
+                        '&:hover': {
+                          textDecoration: "underline",
+                        }
+                      }}
+                      onClick={() => {
+                        setCurrentOffset(prev => prev + 1);
+                      }}
+                    >
+                      Tampilkan lebih banyak
+                      {/* <CircularProgress size={15} /> */}
+                    </Typography>
+                  </Box>
+                )}
               </Box>
             </Box>
           </Collapse>
@@ -1939,6 +2008,7 @@ export default function ApplicationStatus() {
             }}
             value={appliedQuery}
             onChange={(event: ChangeEvent<HTMLInputElement>) => {
+              setCurrentOffset(1);
               setAppliedQuery(event.target.value);
             }}
           />
@@ -1957,7 +2027,7 @@ export default function ApplicationStatus() {
               paddingBottom: "0.5em",
             }}
           >
-            {searchedAppliedVacancies.map((applied, index) => (
+            {appliedVacancies.map((applied, index) => (
               <Box
                 key={index}
                 component={"div"}

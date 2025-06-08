@@ -33,7 +33,7 @@ export default function OfficeImagesForm({
       formDataBody.append("office_images", image);
     })
     const [success, fail] = await RequestAPI.Send<any>(
-      "/api/v1/employers/office-images/",
+      "/employers/office-images/",
       {
         method: "POST",
         headers: {
@@ -63,7 +63,7 @@ export default function OfficeImagesForm({
             color: grey[600],
           }}
         >
-          Office Images
+          Galeri Kantor
         </Typography>
       </Box>
       <Box component={"div"} className="office_images_container"

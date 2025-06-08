@@ -35,9 +35,9 @@ export default function EmployerProfileOverview() {
     3: <RegistrationStep3 setCurrentStep={setCurrentStep} setAlert={setAlert} />,
   };
   const employerSteps = [
-    "Employer Profile",
-    "Headquarters",
-    "Office Images and Socials",
+    "Profil sebagai Employer",
+    "Informasi Kantor",
+    "Galeri Kantor dan Sosial Media",
   ];
   /* fetching */
   useEffect(() => {
@@ -45,7 +45,7 @@ export default function EmployerProfileOverview() {
     (async () => {
       setChecking(true);
       const [dataCheck, failCheck] = await RequestAPI.Send<EmployerProfileCheckType>(
-        "/api/v1/employers/check",
+        "/employers/check",
         {
           method: "GET",
           headers: {
@@ -84,7 +84,7 @@ export default function EmployerProfileOverview() {
             fontWeight: 500,
             color: grey[600]
           }}>
-            Checking profile completion ....
+            Memeriksa kelengkapan profil ...
           </Typography>
         </Box>
       ) : currentStep ? (
@@ -95,9 +95,9 @@ export default function EmployerProfileOverview() {
             }}
           >
             <Typography variant="h6" fontWeight={550} sx={{ color: grey[800] }}>
-              Complete
-              <SimpleEmphasis text={" your profile "} />
-              as employer
+              Lengkapi
+              <SimpleEmphasis text={" data profil "} />
+              anda sebagai employer
             </Typography>
           </Box>
           <Stepper activeStep={(currentStep - 1)} sx={{}}>

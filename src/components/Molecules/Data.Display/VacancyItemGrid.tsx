@@ -74,7 +74,7 @@ export default function VacancyItemGrid({
           avatar={
             <Stack spacing={1}>
               <Avatar
-                src={HOST.main + vacancy.employer.profile_image_path}
+                src={HOST.main + vacancy.employer.profile_image_path.replace("/api/v1", "")}
                 alt="Company Logo"
               />
               <Typography

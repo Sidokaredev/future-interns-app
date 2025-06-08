@@ -45,7 +45,7 @@ export default function RegistrationStep3({
 
     const token = GetSession("auth");
     const [successOfficeImages, failOfficeImages] = await RequestAPI.Send<any>(
-      "/api/v1/employers/office-images/",
+      "/employers/office-images/",
       {
         method: "POST",
         headers: {
@@ -56,7 +56,7 @@ export default function RegistrationStep3({
     );
 
     const [successSocials, failSocials] = await RequestAPI.JSONRequest<SocialFormType[]>(formValue).Send<any>(
-      "/api/v1/employers/socials/",
+      "/employers/socials/",
       {
         method: "POST",
         headers: {
@@ -88,7 +88,7 @@ export default function RegistrationStep3({
   /* fetching */
   useEffect(() => {
     (async () => {
-      const [data_socials, fail_socials] = await RequestAPI.Send<SocialDataType[]>("/api/v1/public/socials/", {
+      const [data_socials, fail_socials] = await RequestAPI.Send<SocialDataType[]>("/public/socials/", {
         method: "GET",
         headers: {
           "Content-Type": "application/json"
@@ -116,7 +116,7 @@ export default function RegistrationStep3({
             color: grey[600],
           }}
         >
-          Office Images
+          Galeri Kantor
         </Typography>
       </Box>
       <Box component={"div"} className="office_images_container"
@@ -244,7 +244,7 @@ export default function RegistrationStep3({
             color: grey[700],
           }}
         >
-          Socials
+          Sosial Media
         </Typography>
         <Box component={"div"} className="social-preview">
           <Grid container columnSpacing={2} rowSpacing={2}>
@@ -263,7 +263,7 @@ export default function RegistrationStep3({
                   >
                     <Box
                       component={"img"}
-                      src={`${HOST.main}${socialValue?.icon_image_path}`}
+                      src={`${HOST.main}${socialValue?.icon_image_path.replace("/api/v1", "")}`}
                       width={30}
                       height={30}
                       sx={{
@@ -335,7 +335,7 @@ export default function RegistrationStep3({
                   }
                 }}
               >
-                Social
+                Platform
               </InputLabel>
               <Select
                 labelId="social-list"
@@ -352,7 +352,7 @@ export default function RegistrationStep3({
                     disabled
                   >
                     <Typography component={"div"} variant="subtitle2">
-                      There is no socials as an option in master data.
+                      Tidak ada data media sosial yang tersedia dalam data master.
                     </Typography>
                   </MenuItem>
                 )}
@@ -382,7 +382,7 @@ export default function RegistrationStep3({
                 type="text"
                 name="url"
                 label="Url"
-                placeholder="Enter your social media URL"
+                placeholder="e.g https://www.linkedin.com/in/fatkhur-rozak-86b686237/"
                 size="small"
                 autoComplete="off"
                 fullWidth
@@ -407,7 +407,7 @@ export default function RegistrationStep3({
                   ))
                 }}
               >
-                Add
+                Tambah
               </Button>
             </Box>
           </Grid>
@@ -422,7 +422,6 @@ export default function RegistrationStep3({
         <Button
           type="button"
           variant="contained"
-          size="small"
           endIcon={loading ? (<CircularProgress color="secondary" size={15} />) : (<VerifiedUserRounded fontSize="small" />)}
           disabled={loading}
           sx={{
@@ -430,7 +429,7 @@ export default function RegistrationStep3({
           }}
           onClick={onSubmit()}
         >
-          Finish
+          Selesaikan
         </Button>
       </Box>
     </Box>

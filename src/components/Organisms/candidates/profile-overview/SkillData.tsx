@@ -44,7 +44,7 @@ export default function SkillData({
 
     const token = GetSession("auth")
     const [success, fail] = await RequestAPI.JSONRequest(formValue)
-      .Send<string>("/api/v1/candidates/skills/", {
+      .Send<string>("/candidates/skills/", {
         method: "POST",
         headers: {
           "Authorization": "Bearer " + token
@@ -67,7 +67,7 @@ export default function SkillData({
 
   const deleteSKill = (skillID: number) => async () => {
     setLoading(true)
-    const urlPath = `/api/v1/candidates/skills/${skillID}`
+    const urlPath = `/candidates/skills/${skillID}`
     const token = GetSession("auth")
     const [success, fail] = await RequestAPI.Send<string>(urlPath, {
       method: "DELETE",
@@ -96,7 +96,7 @@ export default function SkillData({
   useEffect(() => {
     const token = GetSession("auth");
     (async () => {
-      const [data_skill, fail_skill] = await RequestAPI.Send<SkillDataType[]>("/api/v1/candidates/skills/", {
+      const [data_skill, fail_skill] = await RequestAPI.Send<SkillDataType[]>("/candidates/skills/", {
         method: "GET",
         headers: {
           "Authorization": "Bearer " + token
@@ -104,6 +104,7 @@ export default function SkillData({
       })
 
       if (fail_skill) {
+        setSkillData([]);
         return setAlert({ show: true, message: fail_skill.message })
       }
 
@@ -157,23 +158,26 @@ export default function SkillData({
           >
             <AddRounded fontSize="small" />
           </IconButton>
-          <IconButton size="small"
-            onClick={() => {
-              setOnEdit(prev => !prev)
-            }}
-          >
-            {onEdit ? (
-              <Button
-                variant="text"
-                color="error"
-                size="small"
-              >
-                Cancel
-              </Button>
-            ) : (
+          {onEdit ? (
+            <Button
+              variant="text"
+              color="error"
+              size="small"
+              onClick={() => {
+                setOnEdit(prev => !prev)
+              }}
+            >
+              Batal
+            </Button>
+          ) : (
+            <IconButton size="small"
+              onClick={() => {
+                setOnEdit(prev => !prev)
+              }}
+            >
               <EditRounded fontSize="small" />
-            )}
-          </IconButton>
+            </IconButton>
+          )}
         </Box>
       </Box>
       <Box component={"div"} sx={{
@@ -185,7 +189,7 @@ export default function SkillData({
           <Chip key={index}
             avatar={
               <Avatar
-                src={`${HOST.main}${skill.skill_icon_image_path}`}
+                src={`${HOST.main}${skill.skill_icon_image_path.replace("/api/v1", "")}`}
                 slotProps={{
                   img: {
                     style: {
@@ -197,7 +201,7 @@ export default function SkillData({
             label={skill.name}
             deleteIcon={
               onEdit ? (
-                <Tooltip title={`Delete ${skill.name} skill`} placement="top">
+                <Tooltip title={`Hapus ${skill.name} skill`} placement="top">
                   {loading ? (
                     <CircularProgress size={20} />
                   ) : (
@@ -237,6 +241,6 @@ export default function SkillData({
           skillChecker={skillChecker}
         />
       </Dialog>
-    </Box>
+    </Box >
   )
 }

@@ -43,7 +43,7 @@ export default function EducationsData({
 
     const token = GetSession("auth")
     let requestMethod = onEdit ? "PATCH" : "POST"
-    const [success, fail] = await RequestAPI.JSONRequest([formValue]).Send<string>("/api/v1/candidates/educations/", {
+    const [success, fail] = await RequestAPI.JSONRequest(formValue).Send<string>("/candidates/educations/", {
       method: requestMethod,
       headers: {
         "Authorization": "Bearer " + token
@@ -67,7 +67,7 @@ export default function EducationsData({
     setLoading(true);
     const token = GetSession("auth");
     const [success, fail] = await RequestAPI.Send<string>(
-      "/api/v1/candidates/educations/" + educationId,
+      "/candidates/educations/" + educationId,
       {
         method: "DELETE",
         headers: {
@@ -93,7 +93,7 @@ export default function EducationsData({
   useEffect(() => {
     const token = GetSession("auth");
     (async () => {
-      const [data_educations, fail_educations] = await RequestAPI.Send<EducationDataType[]>("/api/v1/candidates/educations/", {
+      const [data_educations, fail_educations] = await RequestAPI.Send<EducationDataType[]>("/candidates/educations/", {
         method: "GET",
         headers: {
           "Authorization": "Bearer " + token
@@ -140,7 +140,7 @@ export default function EducationsData({
             marginBottom: "0.5em",
           }}
         >
-          Educations
+          Pendidikan
         </Typography>
         <Box component={"div"}
           sx={{
@@ -157,23 +157,26 @@ export default function EducationsData({
               <AddRounded fontSize="small" />
             </IconButton>
           )}
-          <IconButton size="small"
-            onClick={() => {
-              setonEdit(prev => !prev)
-            }}
-          >
-            {onEdit ? (
-              <Button
-                variant="text"
-                color="error"
-                size="small"
-              >
-                Cancel
-              </Button>
-            ) : (
+          {onEdit ? (
+            <Button
+              variant="text"
+              color="error"
+              size="small"
+              onClick={() => {
+                setonEdit(prev => !prev)
+              }}
+            >
+              Batal
+            </Button>
+          ) : (
+            <IconButton size="small"
+              onClick={() => {
+                setonEdit(prev => !prev)
+              }}
+            >
               <EditRounded fontSize="small" />
-            )}
-          </IconButton>
+            </IconButton>
+          )}
         </Box>
       </Box>
       <Box component={"div"} className="educations-container">
@@ -265,7 +268,7 @@ export default function EducationsData({
         onClose={() => {
           onCloseDialog("education")
         }}
-        maxWidth={"md"}
+        maxWidth={"lg"}
         PaperProps={{
           sx: {
             padding: "1em"
@@ -296,11 +299,19 @@ export default function EducationsData({
         }}
         fullWidth
       >
+        <Typography variant="subtitle1" fontWeight={550}
+          sx={{
+            color: grey[700],
+            marginBottom: "0.5em"
+          }}
+        >
+          Konfirmasi Penghapusan
+        </Typography>
         <Box component={"div"}>
-          <Typography component={"p"} variant="body1" sx={{ color: grey[600] }}>
-            Are you sure want to
+          <Typography component={"p"} variant="body2" sx={{ color: grey[600] }}>
+            Apakah anda yakin ingin
             <SimpleEmphasis text={" delete "} textColor="red" />
-            your Education data at {formValue.university} ?
+            data pendidikan anda di {formValue.university} ?
           </Typography>
         </Box>
         <Box component={"div"} sx={{
@@ -322,7 +333,7 @@ export default function EducationsData({
               onCloseDialog("delete-education")
             }}
           >
-            No
+            Tidak
           </Button>
           <Button
             variant="outlined"
@@ -339,7 +350,7 @@ export default function EducationsData({
           >
             {loading ? (
               <CircularProgress size={20} />
-            ) : "Yes"}
+            ) : "Iya"}
           </Button>
         </Box>
       </Dialog>

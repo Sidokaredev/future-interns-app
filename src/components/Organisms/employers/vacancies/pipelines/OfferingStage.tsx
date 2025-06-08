@@ -51,15 +51,15 @@ export default function OfferingStage({
   /* constants */
   const columns = [
     { prop: "row_number", label: "#" },
-    { prop: "name", label: "Name" },
-    { prop: "end_on", label: "Offer End On" },
+    { prop: "name", label: "Nama Lengkap" },
+    { prop: "end_on", label: "Batas Tawaran" },
     { prop: "status", label: "Status" },
-    { prop: "option", label: "Option" },
+    { prop: "option", label: "Opsi" },
   ];
   const responsiveColumns = smallMedia ? [
-    { prop: "name", label: "Name" },
-    { prop: "end_on", label: "Offer End On" },
-    { prop: "option", label: "Option" },
+    { prop: "name", label: "Nama Lengkap" },
+    { prop: "end_on", label: "Batas Tawaran" },
+    { prop: "option", label: "Opsi" },
   ] : columns;
   // applicants -> unoffered
   const searchedUnoffered = applicantsUnoffered.filter(applicant => {
@@ -101,7 +101,7 @@ export default function OfferingStage({
       pipeline_id: selectedUnoffered?.id as string,
       vacancy_id: vacancyID
     }).Send<string>(
-      "/api/v1/employers/offerings/",
+      "/employers/offerings/",
       {
         method: "POST",
         headers: {
@@ -129,7 +129,7 @@ export default function OfferingStage({
     const [success, fail] = await RequestAPI.FormDataRequest({
       end_on: offerEndDate
     }).Send<{ message: string; document_status: string; }>(
-      "/api/v1/employers/offerings/" + selectedOffered?.offering.id as string,
+      "/employers/offerings/" + selectedOffered?.offering.id as string,
       {
         method: "PATCH",
         headers: {
@@ -157,7 +157,7 @@ export default function OfferingStage({
     const [success, fail] = await RequestAPI.FormDataRequest({
       status: "Pending Acceptance"
     }).Send<{ message: string; document_status: string; }>(
-      "/api/v1/employers/offerings/" + selectedOffered?.offering.id as string,
+      "/employers/offerings/" + selectedOffered?.offering.id as string,
       {
         method: "PATCH",
         headers: {
@@ -186,7 +186,7 @@ export default function OfferingStage({
     const [success, fail] = await RequestAPI.FormDataRequest({
       loa_document: document[0]
     }).Send<{ message: string, document_status: string }>(
-      "/api/v1/employers/offerings/" + selectedOffered?.offering.id as string,
+      "/employers/offerings/" + selectedOffered?.offering.id as string,
       {
         method: "PATCH",
         headers: {
@@ -215,7 +215,7 @@ export default function OfferingStage({
     const token = GetSession("auth");
     (async () => {
       const [data, fail] = await RequestAPI.Send<ApplicantUnoffered[]>(
-        "/api/v1/employers/pipelines/" + vacancyID as string + "/offering?unoffered",
+        "/employers/pipelines/" + vacancyID as string + "/offering?unoffered",
         {
           method: "GET",
           headers: {
@@ -239,7 +239,7 @@ export default function OfferingStage({
     const token = GetSession("auth");
     (async () => {
       const [data, fail] = await RequestAPI.Send<ApplicantOffered[]>(
-        "/api/v1/employers/pipelines/" + vacancyID as string + "/offering",
+        "/employers/pipelines/" + vacancyID as string + "/offering",
         {
           method: "GET",
           headers: {
@@ -279,7 +279,7 @@ export default function OfferingStage({
               <Typography component={"p"} variant="caption"
                 sx={{ color: amber[700] }}
               >
-                There are no applicants currently in the offering stage
+                Saat ini belum ada pelamar yang berada di tahap offering.
               </Typography>
             </Box>
           )}
@@ -299,8 +299,9 @@ export default function OfferingStage({
               <Typography component={"p"} variant="subtitle2"
                 sx={{ color: amber[700] }}
               >
-                There are <SimpleEmphasis text={applicantsUnoffered.length} textColor={amber[700]} sx={{ fontWeight: 550 }} /> applicants waiting to be offered. Please review and take action promptly, {" "}
+                Saat ini terdapat <SimpleEmphasis text={applicantsUnoffered.length} textColor={amber[700]} sx={{ fontWeight: 550 }} /> pelamar yang menunggu offering. Mohon segera ditinjau dan ditindaklanjuti, {" "}
                 <Typography component={"span"}
+                  fontSize={"small"}
                   sx={{
                     color: blue[700],
                     fontStyle: "italic",
@@ -311,7 +312,7 @@ export default function OfferingStage({
                     setOpenDialog(prev => ({ ...prev, ["unoffered"]: true }));
                   }}
                 >
-                  view here
+                  lihat disini
                 </Typography>
               </Typography>
             </Box>
@@ -380,7 +381,7 @@ export default function OfferingStage({
                                 {!xSmallMedia && (
                                   <Avatar
                                     alt="candidate-profile"
-                                    src={`${HOST.main}${applicant.candidate.profile_image_path}`}
+                                    src={`${HOST.main}${applicant.candidate.profile_image_path.replace("/api/v1", "")}`}
                                     sx={{ width: 40, height: 40 }}
                                   />
                                 )}
@@ -413,7 +414,7 @@ export default function OfferingStage({
                               />
                               {applicant.offering.loa_document.loa_document_path !== null && (
                                 <Typography component={"p"} variant="caption" sx={{ color: lightBlue[700] }}>
-                                  Letter of Acceptance uploaded.
+                                  Letter of Acceptance telah diunggah.
                                 </Typography>
                               )}
                             </TableCell>
@@ -452,7 +453,7 @@ export default function OfferingStage({
                             <TableCell key={index} size="small">
                               <Typography variant="subtitle2">
                                 <SimpleEmphasis
-                                  text={dayjs(applicant.offering.end_on).format("dddd MMM DD, YYYY")}
+                                  text={dayjs(applicant.offering.end_on).format("dddd, DD MMMM YYYY")}
                                   textColor={isExpired && applicant.offering.status === "Pending Acceptance" ? "red" : undefined}
                                 />
                               </Typography>
@@ -460,7 +461,7 @@ export default function OfferingStage({
                                 <Typography component={"p"} variant="caption"
                                   sx={{ color: grey[500] }}
                                 >
-                                  The offer has expired
+                                  Tawaran telah berakhir
                                 </Typography>
                               )}
                               {smallMedia && (
@@ -572,7 +573,7 @@ export default function OfferingStage({
             <PublishRounded fontSize="small" />
           </ListItemIcon>
           <ListItemText
-            primary={selectedOffered?.offering.loa_document.loa_document_path !== null ? "Change LoA" : "Issue LoA"}
+            primary={selectedOffered?.offering.loa_document.loa_document_path !== null ? "Ubah LoA" : "Terbitkan LoA"}
             sx={{
               ".MuiListItemText-primary": {
                 fontSize: "small",
@@ -593,7 +594,7 @@ export default function OfferingStage({
             <EventRounded fontSize="small" />
           </ListItemIcon>
           <ListItemText
-            primary={"Change End Date"}
+            primary={"Ubah Batas Tawaran"}
             sx={{
               ".MuiListItemText-primary": {
                 fontSize: "small",
@@ -613,7 +614,7 @@ export default function OfferingStage({
             <RestartAltRounded fontSize="small" />
           </ListItemIcon>
           <ListItemText
-            primary={"Resend Offer"}
+            primary={"Kirim Ulang Tawaran"}
             sx={{
               ".MuiListItemText-primary": {
                 fontSize: "small",
@@ -649,7 +650,7 @@ export default function OfferingStage({
               color: grey[700]
             }}
           >
-            Waiting to be Offered
+            Menunggu untuk Offering
           </Typography>
           <IconButton size="small"
             onClick={() => {
@@ -667,7 +668,7 @@ export default function OfferingStage({
           <TextField
             type="text"
             name="search" // search for applicant
-            placeholder="Search applicant by name or email..."
+            placeholder="Cari berdasarkan nama atau email"
             autoComplete="off"
             size="small"
             fullWidth
@@ -710,7 +711,7 @@ export default function OfferingStage({
               >
                 <Avatar
                   alt="candidate-profile-image"
-                  src={HOST.main + applicant.candidate.profile_image_path}
+                  src={HOST.main + applicant.candidate.profile_image_path.replace("/api/v1", "")}
                   sx={{ width: 40, height: 40 }}
                 />
                 <Box component={"div"}
@@ -786,12 +787,12 @@ export default function OfferingStage({
             color: grey[700]
           }}
         >
-          Send <SimpleEmphasis text={selectedUnoffered?.candidate.user.fullname as string ?? selectedOffered?.candidate.user.fullname} /> Offer
+          Kirim <SimpleEmphasis text={selectedUnoffered?.candidate.user.fullname as string ?? selectedOffered?.candidate.user.fullname} /> tawaran untuk posisi ini?
         </Typography>
         <Box component={"div"}>
           <DatePicker
             name="end_on"
-            label="Offer End Date"
+            label="Batas Tawaran"
             disablePast
             slotProps={{
               textField: {
@@ -824,7 +825,7 @@ export default function OfferingStage({
               setOpenDialog(prev => ({ ...prev, ["send-offer-form"]: false }));
             }}
           >
-            CANCEL
+            Batalkan
           </Button>
           <Button
             variant="contained"
@@ -842,7 +843,7 @@ export default function OfferingStage({
               }
             }}
           >
-            CONTINUE
+            Lanjutkan
           </Button>
         </Box>
       </Dialog>
@@ -864,10 +865,10 @@ export default function OfferingStage({
             color: grey[700]
           }}
         >
-          Resend Offer
+          Kirim ulang Offering
         </Typography>
         <Typography component={"p"} variant="subtitle2">
-          Are you sure you want to resend the job offer to <SimpleEmphasis text={selectedOffered?.candidate.user.fullname as string} />?
+          Apakah Anda yakin ingin mengirim ulang tawaran untuk posisi ini kepada <SimpleEmphasis text={selectedOffered?.candidate.user.fullname as string} />?
         </Typography>
         <Box component={"div"}
           sx={{
@@ -888,7 +889,7 @@ export default function OfferingStage({
               setOpenDialog(prev => ({ ...prev, ["resend-offer"]: false }));
             }}
           >
-            CANCEL
+            Batalkan
           </Button>
           <Button
             variant="contained"
@@ -903,7 +904,7 @@ export default function OfferingStage({
               resendOffer();
             }}
           >
-            CONTINUE
+            Lanjutkan
           </Button>
         </Box>
       </Dialog>
@@ -925,7 +926,7 @@ export default function OfferingStage({
             color: grey[700]
           }}
         >
-          Issue <SimpleEmphasis text={selectedOffered?.candidate.user.fullname.split(" ")[0] as string + "'s "} /> Letter of Acceptance
+          Terbitkan <SimpleEmphasis text={selectedOffered?.candidate.user.fullname.split(" ")[0] as string + "'s "} /> Letter of Acceptance
         </Typography>
         <Box component={"div"}>
           {document.map((file, index) => (
@@ -1018,7 +1019,7 @@ export default function OfferingStage({
             fontWeight: 500,
             color: Boolean(errMsg) ? "red" : grey[500]
           }}>
-            {errMsg ? errMsg : "Select the Letter of Acceptance document"}
+            {errMsg ? errMsg : "Pilih dokumen Letter of Acceptance (LoA)"}
           </FormHelperText>
         </Box>
         <Box component={"div"}
@@ -1041,7 +1042,7 @@ export default function OfferingStage({
               setOpenDialog(prev => ({ ...prev, ["issue-loa"]: false }));
             }}
           >
-            CANCEL
+            Batalkan
           </Button>
           <Button
             variant="contained"
@@ -1055,7 +1056,7 @@ export default function OfferingStage({
               issueLoA();
             }}
           >
-            CONTINUE
+            Lanjutkan
           </Button>
         </Box>
       </Dialog>

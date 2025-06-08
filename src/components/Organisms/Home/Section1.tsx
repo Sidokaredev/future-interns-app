@@ -25,20 +25,20 @@ export default function HomeSection1({
     <Container disableGutters maxWidth="md">
       <Stack sx={{ textAlign: "center", color: "#ffffff" }}>
         <Typography
-          variant={isMobile ? "h4" : "h3"}
+          variant={isMobile ? "h5" : "h4"}
           sx={{
             fontWeight: "bolder",
           }}
         >
-          Got Talent ?
+          Punya Talenta ?
         </Typography>
         <Typography
-          variant={isMobile ? "h4" : "h3"}
+          variant={isMobile ? "h5" : "h4"}
           sx={{
             fontWeight: "bolder",
           }}
         >
-          Meet Opportunity
+          Raih Kesempatanmu Sekarang
         </Typography>
         <Box
           display={"flex"}
@@ -48,11 +48,10 @@ export default function HomeSection1({
         >
           <Typography
             variant="subtitle1"
-            maxWidth={"35rem"}
+            maxWidth={"36rem"}
             sx={{ color: "#d9d9d9" }}
           >
-            Find Jobs, Employment & Career Opportunities. Some of the companies
-            we've helped recruit excellent applicants over the years.
+            Temukan pekerjaan dan peluang karir terbaik. Kami telah membantu berbagai perusahaan menemukan talenta unggulan selama beberapa tahun terakhir.
           </Typography>
         </Box>
       </Stack>
@@ -100,7 +99,7 @@ export default function HomeSection1({
               <InputBase
                 id="search-by-keywords"
                 name="keyword"
-                placeholder="Search your keywords"
+                placeholder="Cari berdasarkan kata kunci"
                 size="small"
                 sx={{
                   paddingX: "0.3em",
@@ -134,7 +133,7 @@ export default function HomeSection1({
               <InputBase
                 id="search-by-location"
                 name="location"
-                placeholder="Enter location by City or Province"
+                placeholder="Cari berdasarkan kota atau provinsi"
                 size="small"
                 sx={{
                   paddingX: "0.3em",
@@ -182,7 +181,7 @@ export default function HomeSection1({
               }}
             >
               <Button type="submit" fullWidth size="large" variant="contained">
-                Search
+                Cari
               </Button>
             </Box>
           </Box>
@@ -195,7 +194,7 @@ export default function HomeSection1({
         color={"#d9d9d9"}
       >
         <Typography variant="body1" textAlign={"center"} fontWeight={"bold"}>
-          Popular Searches:
+          Pencarian Populer:
         </Typography>
         <Typography
           variant="body1"

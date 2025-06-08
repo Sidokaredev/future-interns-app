@@ -58,7 +58,7 @@ export default function ProfileData({
 
     const token = GetSession("auth")
     const [success, fail] = await RequestAPI.FormDataRequest(body)
-      .Send<{ updated_status: string }>("/api/v1/candidates/", {
+      .Send<{ updated_status: string }>("/candidates/", {
         method: "PATCH",
         headers: {
           "Authorization": "Bearer " + token
@@ -81,7 +81,7 @@ export default function ProfileData({
   useEffect(() => {
     const token = GetSession("auth");
     (async () => {
-      const [data_candidate, fail_candidate] = await RequestAPI.Send<CandidateProfileDataType>("/api/v1/candidates/", {
+      const [data_candidate, fail_candidate] = await RequestAPI.Send<CandidateProfileDataType>("/candidates/", {
         method: "GET",
         headers: {
           "Authorization": "Bearer " + token
@@ -97,7 +97,7 @@ export default function ProfileData({
       }
     })();
     (async () => {
-      const [data_user, fail_user] = await RequestAPI.Send<UserDataType>("/api/v1/candidates/user", {
+      const [data_user, fail_user] = await RequestAPI.Send<UserDataType>("/candidates/user", {
         method: "GET",
         headers: {
           "Authorization": "Bearer " + token
@@ -132,7 +132,7 @@ export default function ProfileData({
       <Box component={"div"} sx={{ marginY: "0.5em" }}>
         <Box
           component={"img"}
-          src={`${HOST.main}${profileData?.background_profile_image_path}?t=${new Date(Date.now()).getTime()}`}
+          src={`${HOST.main}${profileData?.background_profile_image_path.replace("/api/v1", "")}`}
           sx={{
             width: "100%",
             height: { xs: "10em", md: "15em" },
@@ -152,7 +152,7 @@ export default function ProfileData({
         >
           <Avatar
             alt="candidate-profile"
-            src={`${HOST.main}${profileData?.profile_image_path}?t=${new Date(Date.now()).getTime()}`}
+            src={`${HOST.main}${profileData?.profile_image_path.replace("/api/v1", "")}`}
             sx={{
               width: "6em",
               height: "6em",
@@ -209,7 +209,7 @@ export default function ProfileData({
             color: grey[800],
           }}
         >
-          About Me
+          Tentang Saya
         </Typography>
         <Typography variant="body1">
           {profileData?.about_me}

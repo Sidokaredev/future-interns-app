@@ -45,7 +45,7 @@ export default function HeadquarterData({
     };
 
     const token = GetSession("auth");
-    const endpoint = onEdit ? "/api/v1/employers/headquarters/" + formValue.id : "/api/v1/employers/headquarters/";
+    const endpoint = onEdit ? "/employers/headquarters/" + formValue.id : "/employers/headquarters/";
     const [success, fail] = await RequestAPI.FormDataRequest<HeadquarterFormType>(formValue).Send<string>(
       endpoint,
       {
@@ -72,7 +72,7 @@ export default function HeadquarterData({
     setLoading(true);
     const token = GetSession("auth");
     const [success, fail] = await RequestAPI.Send<string>(
-      "/api/v1/employers/headquarters/" + addressID,
+      "/employers/headquarters/" + addressID,
       {
         method: "DELETE",
         headers: {
@@ -97,7 +97,7 @@ export default function HeadquarterData({
     const token = GetSession("auth");
     (async () => {
       const [data, fail] = await RequestAPI.Send<HeadquarterType[]>(
-        "/api/v1/employers/headquarters/",
+        "/employers/headquarters/",
         {
           method: "GET",
           headers: {
@@ -130,7 +130,7 @@ export default function HeadquarterData({
             color: grey[800]
           }}
         >
-          Headquarter Information
+          Informasi Kantor Perusahaan
         </Typography>
         <Box component={"div"}>
           {!onEdit && (
@@ -158,7 +158,7 @@ export default function HeadquarterData({
               size="small"
               onClick={() => setOnEdit(false)}
             >
-              cancel
+              Batal
             </Button>
           )}
         </Box>
@@ -391,9 +391,9 @@ export default function HeadquarterData({
       >
         <Box component={"div"}>
           <Typography component={"p"} variant="body1" sx={{ color: grey[600] }}>
-            Are you sure want to
-            <SimpleEmphasis text={" delete "} textColor="red" />
-            your Headquarter {formValue.type + " : " + formValue.name} ?
+            Apakah anda yakin ingin
+            <SimpleEmphasis text={" menghapus "} textColor="red" />
+            informasi kantor {formValue.type + " : " + formValue.name} ?
           </Typography>
         </Box>
         <Box component={"div"} sx={{
@@ -415,7 +415,7 @@ export default function HeadquarterData({
               onCloseDialog("delete-headquarter")
             }}
           >
-            No
+            Tidak
           </Button>
           <Button
             variant="outlined"
@@ -432,7 +432,7 @@ export default function HeadquarterData({
           >
             {loading ? (
               <CircularProgress size={20} />
-            ) : "Yes"}
+            ) : "Iya"}
           </Button>
         </Box>
       </Dialog>

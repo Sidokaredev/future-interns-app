@@ -30,7 +30,7 @@ export default function HeadquarterForm({
             color: grey[800]
           }}
         >
-          Headquarter Data
+          Data Kantor Perusahaan
         </Typography>
       </Box>
       <Grid container
@@ -46,8 +46,8 @@ export default function HeadquarterForm({
           <TextField
             type="text"
             name="name"
-            label="Headquarter Name*"
-            placeholder="Enter headquarter name"
+            label="Nama Kantor*"
+            placeholder="Masukkan nama kantor"
             size="small"
             fullWidth
             autoComplete="off"
@@ -65,8 +65,8 @@ export default function HeadquarterForm({
           <TextField
             type="text"
             name="street"
-            label="Street*"
-            placeholder="Your street address"
+            label="Alamat Jalan*"
+            placeholder="e.g Jl. Sudirman No. 45"
             size="small"
             multiline
             fullWidth
@@ -84,8 +84,8 @@ export default function HeadquarterForm({
           <TextField
             type="text"
             name="neighborhood"
-            label="Neighborhood"
-            placeholder="e.g RT 0x/RW 0x"
+            label="Lingkungan / RT-RW"
+            placeholder="e.g RT 01/RW 05"
             size="small"
             fullWidth
             autoComplete="off"
@@ -106,8 +106,8 @@ export default function HeadquarterForm({
           <TextField
             type="text"
             name="rural_area"
-            label="Rural Area"
-            placeholder="e.g Jerukgamping"
+            label="Kelurahan / Desa"
+            placeholder="e.g Maphar, Glodok etc"
             size="small"
             fullWidth
             autoComplete="off"
@@ -128,8 +128,8 @@ export default function HeadquarterForm({
           <TextField
             type="text"
             name="sub_district"
-            label="Sub District*"
-            placeholder="e.g Kec. Krian"
+            label="Kecamatan*"
+            placeholder="e.g Kec. Grogol Petamburan"
             size="small"
             fullWidth
             autoComplete="off"
@@ -150,8 +150,8 @@ export default function HeadquarterForm({
           <TextField
             type="text"
             name="city"
-            label="City*"
-            placeholder="e.g Kab. Sidoarjo or Kota Surabaya"
+            label="Kota / Kabupaten*"
+            placeholder="e.g Kota Surabaya"
             size="small"
             fullWidth
             autoComplete="off"
@@ -176,7 +176,7 @@ export default function HeadquarterForm({
             onOpen={AutoCompleteOnOpen("province", setOpen)}
             onClose={AutoCompleteOnClose("province", setOpen)}
             size="small"
-            renderInput={(params) => <TextField {...params} label="Province*" error={Boolean(errMsg["province"]) ? true : false}
+            renderInput={(params) => <TextField {...params} label="Provinsi*" error={Boolean(errMsg["province"]) ? true : false}
               helperText={errMsg["province"] ?? ""} />}
             slotProps={{
               paper: {
@@ -231,7 +231,7 @@ export default function HeadquarterForm({
                 </Box>
               );
             }}
-            renderInput={(params) => <TextField {...params} label="Country*" error={Boolean(errMsg["country"]) ? true : false}
+            renderInput={(params) => <TextField {...params} label="Negara*" error={Boolean(errMsg["country"]) ? true : false}
               helperText={errMsg["country"] ?? ""} />}
             disableClearable
             fullWidth
@@ -250,8 +250,8 @@ export default function HeadquarterForm({
           <TextField
             type="text"
             name="postal_code"
-            label="Postal Code*"
-            placeholder="Your 5 number of postal code"
+            label="Kode Pos*"
+            placeholder="5 Digit angka"
             size="small"
             fullWidth
             autoComplete="off"
@@ -276,12 +276,12 @@ export default function HeadquarterForm({
                 }
               }}
             >
-              Headquarter Type*
+              Jenis Kantor*
             </InputLabel>
             <Select
               labelId="type_label"
               name="type"
-              label="Headquarter Type*"
+              label="Jenis Kantor*"
               size="small"
               value={formValue.type}
               onChange={SelectOnChange(setFormValue, undefined, { coerceToNumber: false })}
@@ -291,14 +291,14 @@ export default function HeadquarterForm({
                 value={"Branch Office"}
               >
                 <Typography variant="subtitle2">
-                  Branch Office
+                  Kantor Cabang
                 </Typography>
               </MenuItem>
               <MenuItem
                 value={"Head Office"}
               >
                 <Typography variant="subtitle2">
-                  Head Office
+                  Kantor Pusat
                 </Typography>
               </MenuItem>
             </Select>

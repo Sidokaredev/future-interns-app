@@ -1,7 +1,6 @@
 import {
   Avatar,
   Box,
-  Breadcrumbs,
   Button,
   Checkbox,
   Chip,
@@ -12,7 +11,6 @@ import {
   Grid,
   IconButton,
   InputAdornment,
-  Link,
   ListItemIcon,
   ListItemText,
   Menu,
@@ -35,7 +33,6 @@ import {
   DeleteRounded,
   FiberManualRecordRounded,
   FoundationRounded,
-  HomeRounded,
   LinearScaleRounded,
   LocationOnRounded,
   MeetingRoomRounded,
@@ -53,32 +50,41 @@ import { ChangeEvent, FormEvent, MouseEvent, useEffect, useState } from "react";
 import {
   useLocation,
   useNavigate,
-  useParams,
-  Link as ReactRouterLink,
 } from "react-router-dom";
-import BreadcrumbsCreator, { EmployerTypeStyler, SLAConverter, SLADaysRemaining } from "../helpers";
+import { EmployerTypeStyler, SLAConverter, SLADaysRemaining } from "../helpers";
 import { GetSession, onCloseSnackbar } from "../../global-helpers";
 import { VacancyFormSchema, VacancyFormType, VacancyType } from "../types";
 import RequestAPI from "../../../services/api/request";
 import { DEFAULT_VACANCY_FORM, EMPLOYEE_TYPE, LINE_INDUSTRY, MIN_EXPERIENCE, WORK_ARRANGEMENT } from "../constants";
 import VacancyForm from "../../../components/Organisms/employers/vacancies/VacancyForm";
 import { HOST } from "../../administrators/performance/[id]/constants";
+import dayjs from "dayjs";
+import "dayjs/locale/id"
+import { useDebounce } from "use-debounce";
+
+dayjs.locale("id")
 
 export default function EmployerVacancies() {
   /* react-router */
   const navigate = useNavigate();
   const URLLocation = useLocation();
-  const URLParams = useParams();
   /* breakpoint */
   const xsmall = useMediaQuery("(max-width: 600px)");
   const small = useMediaQuery("(max-width: 900px)");
   /* state */
   const [vacancies, setVacancies] = useState<VacancyType[]>([]);
+  const [vacanciesCount, setVacanciesCount] = useState<number>(0);
   const [currentPage, setCurrentPage] = useState<number>(1);
   const [viewedVacancy, setViewedVacancy] = useState<VacancyType | null>(null);
   const [selectedVacancyID, setSelectedVacancyID] = useState<{ id: string; is_inactive?: boolean }>({ id: "" });
   const [search, setSearch] = useState<string>("");
-  const [filterCheck, setFilterCheck] = useState<Record<string, string>>({});
+  const [debouncedSearch] = useDebounce(search, 1000);
+  const [filterCheck, setFilterCheck] = useState<Record<string, string>>({
+    "line_industry": "",
+    "employee_type": "",
+    "min_experience": "",
+    "work_arrangement": ""
+  });
   const [anchorEl, setAnchorEl] = useState<Record<string, HTMLElement | null>>({});
   const [openDialog, setOpenDialog] = useState<Record<string, boolean>>({});
   const [alert, setAlert] = useState<{ show: boolean, message: string }>({ show: false, message: "" });
@@ -116,7 +122,7 @@ export default function EmployerVacancies() {
 
     const token = GetSession("auth");
     const [success, fail] = await RequestAPI.FormDataRequest(formValue).Send<string>(
-      "/api/v1/employers/vacancies/" + selectedVacancyID.id,
+      "/employers/vacancies/" + selectedVacancyID.id,
       {
         method: "PATCH",
         headers: {
@@ -144,7 +150,7 @@ export default function EmployerVacancies() {
       is_inactive: value,
       sla: value ? 0 : 168,
     }).Send<string>(
-      "/api/v1/employers/vacancies/" + selectedVacancyID.id,
+      "/employers/vacancies/" + selectedVacancyID.id,
       {
         method: "PATCH",
         headers: {
@@ -168,7 +174,7 @@ export default function EmployerVacancies() {
     const token = GetSession("auth");
 
     const [success, fail] = await RequestAPI.Send<string>(
-      "/api/v1/employers/vacancies/" + selectedVacancyID.id,
+      "/employers/vacancies/" + selectedVacancyID.id,
       {
         method: "DELETE",
         headers: {
@@ -190,17 +196,19 @@ export default function EmployerVacancies() {
   };
 
   /* constants */
-  const searchedVacancies = vacancies.filter((value) => value.position.toLowerCase().includes(search.toLowerCase()));
-  const filteredVacancies = searchedVacancies.filter((vacancy) => Object.entries(filterCheck).every(([key, value]) => value === undefined || value === "" || vacancy[key as keyof VacancyType] === value)).sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
-  const managedVacancies = filteredVacancies.slice((currentPage * 5) - 5, currentPage * 5)
-  const totalPage = search === "" ? Math.ceil(filteredVacancies.length / 5) : Math.ceil(filteredVacancies.length / 5);
+  const totalPage = Math.ceil(vacanciesCount / 10);
 
   /* fetching */
   useEffect(() => {
     const token = GetSession("auth");
     (async () => {
-      const [data, fail] = await RequestAPI.Send<VacancyType[]>(
-        "/api/v1/employers/vacancies/",
+      const [data, fail] = await RequestAPI.Send<{ arr: VacancyType[]; count: number; }>(
+        "/employers/vacancies/?page=" + currentPage +
+        "&keyword=" + debouncedSearch +
+        "&line_industry=" + filterCheck["line_industry"] +
+        "&employee_type=" + filterCheck["employee_type"] +
+        "&min_experience=" + filterCheck["min_experience"] +
+        "&work_arrangement=" + filterCheck["work_arrangement"],
         {
           method: "GET",
           headers: {
@@ -212,10 +220,11 @@ export default function EmployerVacancies() {
         return setAlert({ show: true, message: fail.message });
       };
       if (data) {
-        return setVacancies(data);
+        setVacancies(data.arr);
+        setVacanciesCount(data.count);
       };
     })();
-  }, [dataAction]);
+  }, [dataAction, debouncedSearch, filterCheck, currentPage]);
   return (
     <DashboardLayout isFor="employer">
       {/* Default Notification */}
@@ -226,31 +235,6 @@ export default function EmployerVacancies() {
         autoHideDuration={3000}
         onClose={onCloseSnackbar(setAlert)}
       />
-      {/* Breadcrumbs */}
-      <Breadcrumbs aria-label="breadcrumb" sx={{ marginBottom: "1em" }}>
-        {BreadcrumbsCreator(
-          URLParams as Record<string, string>,
-          URLLocation.pathname
-        ).map((data, index) => (
-          <Link
-            key={index}
-            component={ReactRouterLink}
-            to={data.pathname}
-            underline="hover"
-            color="inherit"
-            aria-current={
-              data.pathname === URLLocation.pathname ? "page" : undefined
-            }
-            sx={{ display: "flex", alignItems: "center" }}
-          >
-            {data.label === "Vacancies" ? (
-              <HomeRounded sx={{ mr: 0.5 }} fontSize="inherit" />
-            ) : (
-              data.label
-            )}
-          </Link>
-        ))}
-      </Breadcrumbs>
       {/* Search Panel */}
       <Box
         component={"div"}
@@ -271,7 +255,7 @@ export default function EmployerVacancies() {
           variant="subtitle1"
           sx={{ fontWeight: 550, color: grey[800] }}
         >
-          Manage Vacancies
+          Kelola Lowongan Pekerjaan
         </Typography>
         <Box
           component={"div"}
@@ -285,7 +269,7 @@ export default function EmployerVacancies() {
           <TextField
             type="text"
             name="vacancies-search"
-            placeholder="Search vacancy ..."
+            placeholder="Cari lowongan pekerjaan"
             size="small"
             InputProps={{
               startAdornment: (
@@ -303,10 +287,10 @@ export default function EmployerVacancies() {
             }}
             value={search}
             onChange={(event: ChangeEvent<HTMLInputElement>) => {
-              setSearch(event.target.value);
-              if (currentPage > totalPage) {
+              (() => {
                 setCurrentPage(1);
-              };
+                setSearch(event.target.value);
+              })();
             }}
           />
           <Button
@@ -326,17 +310,16 @@ export default function EmployerVacancies() {
             startIcon={!small && <AddRounded />}
             sx={{ fontSize: "small" }}
             onClick={() => {
-              console.info("Add vacancy ...");
               navigate(location.pathname.replace("/future-interns-app", "") + "/create")
             }}
           >
-            {small ? <AddRounded /> : "Vacancy"}
+            {small ? <AddRounded /> : "Lowongan Pekerjaan"}
           </Button>
         </Box>
       </Box>
       <Box component={"div"} sx={{ marginTop: "1em" }}>
         {small ? (
-          managedVacancies.map((vacancy, index) => (
+          vacancies.map((vacancy, index) => (
             <Box
               key={index}
               component={"div"}
@@ -440,7 +423,7 @@ export default function EmployerVacancies() {
                   variant="subtitle2"
                   sx={{ fontWeight: 550, color: grey[500] }}
                 >
-                  Position
+                  Posisi Pekerjaan
                 </Typography>
               </Box>
               <Box
@@ -452,7 +435,7 @@ export default function EmployerVacancies() {
                   variant="subtitle2"
                   sx={{ fontWeight: 550, color: grey[500] }}
                 >
-                  Posted
+                  Tanggal dibuat
                 </Typography>
               </Box>
               <Box
@@ -464,7 +447,7 @@ export default function EmployerVacancies() {
                   variant="subtitle2"
                   sx={{ fontWeight: 550, color: grey[500] }}
                 >
-                  Inactive
+                  Berakhir dalam
                 </Typography>
               </Box>
               <Box
@@ -476,7 +459,7 @@ export default function EmployerVacancies() {
                   variant="subtitle2"
                   sx={{ fontWeight: 550, color: grey[500] }}
                 >
-                  Employee Type
+                  Jenis Kepegawaian
                 </Typography>
               </Box>
               <Box
@@ -488,7 +471,7 @@ export default function EmployerVacancies() {
                   variant="subtitle2"
                   sx={{ fontWeight: 550, color: grey[500] }}
                 >
-                  Options
+                  Opsi
                 </Typography>
               </Box>
             </Box>
@@ -502,7 +485,7 @@ export default function EmployerVacancies() {
                 marginTop: "0.5em",
               }}
             >
-              {managedVacancies.map((vacancy, index) => (
+              {vacancies.map((vacancy, index) => (
                 <Box
                   key={index}
                   component={"div"}
@@ -527,7 +510,7 @@ export default function EmployerVacancies() {
                       {vacancy.position}
                     </Typography>
                     {vacancy.is_inactive && (
-                      <Chip label="No longer active" color="error" size="small" sx={{ fontSize: "x-small" }} />
+                      <Chip label="Tidak lagi aktif" color="error" size="small" sx={{ fontSize: "x-small" }} />
                     )}
                   </Box>
                   <Box component={"div"} sx={{ flexBasis: "20%" }}>
@@ -539,7 +522,7 @@ export default function EmployerVacancies() {
                         fontWeight: 550,
                       }}
                     >
-                      {new Date(vacancy.created_at).toDateString()}
+                      {dayjs(vacancy.created_at).format("dddd, D MMMM YYYY")}
                     </Typography>
                   </Box>
                   <Box component={"div"} sx={{ flexBasis: "20%" }}>
@@ -582,7 +565,7 @@ export default function EmployerVacancies() {
                         setOpenDialog(prev => ({ ...prev, ["view-detail"]: true }));
                       }}
                     >
-                      View
+                      Lihat
                     </Button>
                     <IconButton size="small" onClick={(event: MouseEvent<HTMLButtonElement>) => {
                       optionsOnClick("vacancy-option", event);
@@ -629,7 +612,7 @@ export default function EmployerVacancies() {
       >
         <Box component={"div"} sx={{ display: { xs: "block", md: "flex" } }}>
           <Box component={"div"}>
-            <Typography component={"p"} variant="subtitle2" sx={{ fontWeight: 550, color: grey[700], paddingX: "0.5em" }}>Line Industry</Typography>
+            <Typography component={"p"} variant="subtitle2" sx={{ fontWeight: 550, color: grey[700], paddingX: "0.5em" }}>Sektor Industri</Typography>
             {LINE_INDUSTRY.map((value, index) => {
               return (
                 <MenuItem key={index} dense>
@@ -644,7 +627,7 @@ export default function EmployerVacancies() {
             })}
           </Box>
           <Box component={"div"}>
-            <Typography component={"p"} variant="subtitle2" sx={{ fontWeight: 550, color: grey[700], paddingX: "0.5em" }}>Employee Type</Typography>
+            <Typography component={"p"} variant="subtitle2" sx={{ fontWeight: 550, color: grey[700], paddingX: "0.5em" }}>Status Kepegawaian</Typography>
             {EMPLOYEE_TYPE.map((value, index) => {
               return (
                 <MenuItem key={index} dense>
@@ -659,7 +642,7 @@ export default function EmployerVacancies() {
             })}
           </Box>
           <Box component={"div"}>
-            <Typography component={"p"} variant="subtitle2" sx={{ fontWeight: 550, color: grey[700], paddingX: "0.5em" }}>Min Experience</Typography>
+            <Typography component={"p"} variant="subtitle2" sx={{ fontWeight: 550, color: grey[700], paddingX: "0.5em" }}>Pengalaman Kerja Minimum</Typography>
             {MIN_EXPERIENCE.map((value, index) => {
               return (
                 <MenuItem key={index} dense>
@@ -674,7 +657,7 @@ export default function EmployerVacancies() {
             })}
           </Box>
           <Box component={"div"}>
-            <Typography component={"p"} variant="subtitle2" sx={{ fontWeight: 550, color: grey[700], paddingX: "0.5em" }}>Work Arrangement</Typography>
+            <Typography component={"p"} variant="subtitle2" sx={{ fontWeight: 550, color: grey[700], paddingX: "0.5em" }}>Pengaturan Kerja</Typography>
             {WORK_ARRANGEMENT.map((value, index) => {
               return (
                 <MenuItem key={index} dense>
@@ -690,7 +673,12 @@ export default function EmployerVacancies() {
           </Box>
         </Box>
         <Box component={"div"}>
-          <Button variant="text" color="error" fullWidth onClick={() => setFilterCheck({})}>Reset Filters</Button>
+          <Button variant="text" color="error" fullWidth onClick={() => setFilterCheck({
+            "line_industry": "",
+            "employee_type": "",
+            "min_experience": "",
+            "work_arrangement": ""
+          })}>Atur ulang filter</Button>
         </Box>
       </Menu>
       {/* Vacancy Menu Options */}
@@ -744,7 +732,7 @@ export default function EmployerVacancies() {
             <LinearScaleRounded fontSize="small" />
           </ListItemIcon>
           <ListItemText
-            primary="Pipeline"
+            primary="Tahapan Seleksi"
             sx={{
               ".MuiListItemText-primary": {
                 fontSize: "small",
@@ -763,7 +751,7 @@ export default function EmployerVacancies() {
             <UpdateRounded fontSize="small" />
           </ListItemIcon>
           <ListItemText
-            primary="Update"
+            primary="Ubah Data"
             sx={{
               ".MuiListItemText-primary": {
                 fontSize: "small",
@@ -783,7 +771,7 @@ export default function EmployerVacancies() {
             {selectedVacancyID?.is_inactive ? (<FiberManualRecordRounded fontSize="small" />) : (<BlockRounded fontSize="small" />)}
           </ListItemIcon>
           <ListItemText
-            primary={selectedVacancyID?.is_inactive ? "Enable" : "Disable"}
+            primary={selectedVacancyID?.is_inactive ? "Reaktivasi" : "Nonaktifkan"}
             sx={{
               ".MuiListItemText-primary": {
                 fontSize: "small",
@@ -800,7 +788,7 @@ export default function EmployerVacancies() {
             <DeleteRounded fontSize="small" />
           </ListItemIcon>
           <ListItemText
-            primary="Delete"
+            primary="Hapus Data"
             sx={{
               ".MuiListItemText-primary": {
                 fontSize: "small",
@@ -847,7 +835,7 @@ export default function EmployerVacancies() {
               >
                 <Avatar
                   alt="company-logo"
-                  src={`${HOST.main}${viewedVacancy?.employer.profile_image_path}`}
+                  src={`${HOST.main}${viewedVacancy?.employer.profile_image_path.replace("/api/v1", "")}`}
                   sx={{
                     width: small ? "4em" : "5em",
                     height: small ? "4em" : "5em",
@@ -899,7 +887,7 @@ export default function EmployerVacancies() {
                           marginLeft: "0.5em",
                         }}
                       >
-                        {viewedVacancy?.employer.location}, Indonesia (INA)
+                        {viewedVacancy?.employer.location}, Indonesia
                       </Typography>
                     </Box>
                   </Box>
@@ -917,7 +905,7 @@ export default function EmployerVacancies() {
                       variant="subtitle2"
                       sx={{ fontWeight: 550, color: grey[800] }}
                     >
-                      Description
+                      Tentang Perusahaan
                     </Typography>
                     <Typography variant="body1" sx={{ color: grey[600], whiteSpace: "pre-line" }}>
                       {viewedVacancy?.description}
@@ -929,7 +917,7 @@ export default function EmployerVacancies() {
                       variant="subtitle2"
                       sx={{ fontWeight: 550, color: grey[800] }}
                     >
-                      Qualification
+                      Kualifikasi
                     </Typography>
                     <Typography variant="body1" sx={{ color: grey[600], whiteSpace: "pre-line" }}>
                       {viewedVacancy?.qualification}
@@ -941,7 +929,7 @@ export default function EmployerVacancies() {
                       variant="subtitle2"
                       sx={{ fontWeight: 550, color: grey[800] }}
                     >
-                      Responsibility
+                      Tugas dan Tanggung Jawab
                     </Typography>
                     <Typography variant="body1" sx={{ color: grey[600], whiteSpace: "pre-line" }}>
                       {viewedVacancy?.responsibility}
@@ -962,11 +950,10 @@ export default function EmployerVacancies() {
                 variant="subtitle1"
                 sx={{
                   fontWeight: 550,
-                  marginBottom: "1em",
-                  paddingLeft: "1em",
+                  marginBottom: "0.5em",
                 }}
               >
-                Job Information
+                Informasi Posisi Pekerjaan
               </Typography>
               <Stack
                 direction={"column"}
@@ -984,7 +971,7 @@ export default function EmployerVacancies() {
                   <FoundationRounded />
                   <Box component={"div"}>
                     <Typography variant="subtitle2" sx={{ fontWeight: 550 }}>
-                      Line Industry
+                      Sektor Industri
                     </Typography>
                     <Typography variant="caption">
                       {viewedVacancy?.line_industry}
@@ -998,7 +985,7 @@ export default function EmployerVacancies() {
                   <LocationOnRounded />
                   <Box component={"div"}>
                     <Typography variant="subtitle2" sx={{ fontWeight: 550 }}>
-                      Location
+                      Lokasi Perusahaan
                     </Typography>
                     <Typography variant="caption">
                       {viewedVacancy?.employer.location}
@@ -1012,7 +999,7 @@ export default function EmployerVacancies() {
                   <BadgeRounded />
                   <Box component={"div"}>
                     <Typography variant="subtitle2" sx={{ fontWeight: 550 }}>
-                      Employee Type
+                      Status Kepegawaian
                     </Typography>
                     <Typography variant="caption">
                       {viewedVacancy?.employee_type}
@@ -1026,7 +1013,7 @@ export default function EmployerVacancies() {
                   <WorkspacePremiumRounded />
                   <Box component={"div"}>
                     <Typography variant="subtitle2" sx={{ fontWeight: 550 }}>
-                      Experience
+                      Pengalaman Kerja Minimum
                     </Typography>
                     <Typography variant="caption">
                       {viewedVacancy?.min_experience}
@@ -1040,7 +1027,7 @@ export default function EmployerVacancies() {
                   <MonetizationOnRounded />
                   <Box component={"div"}>
                     <Typography variant="subtitle2" sx={{ fontWeight: 550 }}>
-                      Salary
+                      Gaji
                     </Typography>
                     <Typography variant="caption">
                       {Intl.NumberFormat("id-ID", {
@@ -1057,7 +1044,7 @@ export default function EmployerVacancies() {
                   <MeetingRoomRounded />
                   <Box component={"div"}>
                     <Typography variant="subtitle2" sx={{ fontWeight: 550 }}>
-                      Work Arrangement
+                      Pengaturan Kerja
                     </Typography>
                     <Typography variant="caption">
                       {viewedVacancy?.work_arrangement}
@@ -1095,7 +1082,7 @@ export default function EmployerVacancies() {
               color: grey[700]
             }}
           >
-            Update Vacancy Data
+            Ubah Data Lowongan Pekerjaan
           </Typography>
           <IconButton size="small"
             onClick={() => {
@@ -1134,16 +1121,16 @@ export default function EmployerVacancies() {
               color: "#06816d"
             }}
           >
-            Note
+            Catatan
           </Typography>
           <Typography component={"div"} variant="subtitle2">
             {selectedVacancyID?.is_inactive ? (
               <>
-                Once <SimpleEmphasis text={" enabled"} />, this job will be visible and accessible to candidates on the main page and search results.
+                Setelah <SimpleEmphasis text={" diaktifkan"} />, lowongan ini akan terlihat dan dapat diakses oleh kandidat pada halaman utama dan hasil pencarian.
               </>
             ) : (
               <>
-                Once <SimpleEmphasis text={" disabled"} textColor="red" />, this job will no longer be visible or accessible to candidates on the main page or search results.
+                Setelah <SimpleEmphasis text={" dinonaktifkan"} textColor="red" />, lowongan ini tidak akan lagi terlihat atau dapat diakses oleh kandidat pada halaman utama maupun hasil pencarian.
               </>
             )}
           </Typography>
@@ -1164,7 +1151,7 @@ export default function EmployerVacancies() {
               setOpenDialog(prev => ({ ...prev, ["vacancy-disable"]: false }));
             }}
           >
-            DISAGREE
+            Batalkan
           </Button>
           <Button
             variant="contained"
@@ -1176,7 +1163,7 @@ export default function EmployerVacancies() {
               onDisable();
             }}
           >
-            AGREE
+            Setuju dan lanjutkan
           </Button>
         </Box>
       </Dialog>
@@ -1200,10 +1187,10 @@ export default function EmployerVacancies() {
               color: "#06816d"
             }}
           >
-            Note
+            Catatan
           </Typography>
           <Typography component={"div"} variant="subtitle2">
-            Deleting this job will <SimpleEmphasis text={" permanently remove "} textColor="red" /> all related data, including pipelines, screenings, assessments, interviews, and offerings associated with it.
+            Menghapus lowongan ini akan <SimpleEmphasis text={" secara permanen menghapus "} textColor="red" /> semua data terkait, termasuk proses seleksi, <span style={{ fontStyle: "italic" }}>screening</span>, <span style={{ fontStyle: "italic" }}>assessments</span>, <span style={{ fontStyle: "italic" }}>interviews</span>, dan <span style={{ fontStyle: "italic" }}>offering</span> yang terhubung dengannya.
           </Typography>
         </Box>
         <Box component={"div"}
@@ -1222,7 +1209,7 @@ export default function EmployerVacancies() {
               setOpenDialog(prev => ({ ...prev, ["vacancy-delete"]: false }));
             }}
           >
-            DISAGREE
+            Batalkan
           </Button>
           <Button
             variant="contained"
@@ -1234,7 +1221,7 @@ export default function EmployerVacancies() {
               onDelete();
             }}
           >
-            AGREE
+            Setuju dan lanjutkan
           </Button>
         </Box>
       </Dialog>

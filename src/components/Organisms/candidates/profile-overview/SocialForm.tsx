@@ -55,7 +55,7 @@ export default function SocialForm({
   useEffect(() => {
     (async () => {
       setSocialOption([{ id: 0, name: "Loading...", icon_image_path: "", url: "" }])
-      const [data, fail] = await RequestAPI.Send<SocialDataType[]>("/api/v1/public/socials/", {
+      const [data, fail] = await RequestAPI.Send<SocialDataType[]>("/public/socials/", {
         method: "GET",
       })
       if (fail) {
@@ -76,7 +76,7 @@ export default function SocialForm({
           color: grey[700],
         }}
       >
-        Socials
+        Data Sosial Media
       </Typography>
       <Box component={"div"} className="social-preview">
         <Grid container columnSpacing={2} rowSpacing={2}>
@@ -98,16 +98,20 @@ export default function SocialForm({
                 >
                   <Box
                     component={"img"}
-                    src={`${HOST.main}${socialValue?.icon_image_path}`}
-                    width={30}
-                    height={30}
+                    src={`${HOST.main}${socialValue?.icon_image_path.replace("/api/v1", "")}`}
+                    width={35}
+                    height={35}
                     sx={{
-                      borderRadius: "0.5em"
+                      borderRadius: "0.5em",
+                      objectFit: "contain",
                     }}
                   />
                   <Box component={"div"}
                     sx={{
-                      flexGrow: 1
+                      flexGrow: 1,
+                      overflow: "hidden",
+                      whiteSpace: "wrap",
+                      textOverflow: "ellipsis"
                     }}
                   >
                     <Typography component={"p"}
@@ -120,11 +124,11 @@ export default function SocialForm({
                       href={social.url}
                       target="_blank"
                       sx={{
-                        whiteSpace: "initial",
-                        overflow: "hidden",
-                        display: "-webkit-box",
-                        WebkitLineClamp: "1",
-                        WebkitBoxOrient: "vertical",
+                        // whiteSpace: "initial",
+                        // overflow: "hidden",
+                        // display: "-webkit-box",
+                        // WebkitLineClamp: "1",
+                        // WebkitBoxOrient: "vertical",
                       }}
                     >
                       {social.url}
@@ -169,12 +173,12 @@ export default function SocialForm({
                 }
               }}
             >
-              Social
+              Platform
             </InputLabel>
             <Select
               labelId="social-list"
               name="social_id"
-              label="Social"
+              label="Platform"
               size="small"
               disabled={onEdit}
               value={!onEdit ? String(socialFormValue.social_id) : String(formValue[0].social_id)}
@@ -207,7 +211,7 @@ export default function SocialForm({
               type="text"
               name="url"
               label="Url"
-              placeholder="Enter your social media URL"
+              placeholder="e.g https://www.linkedin.com/in/fatkhur-rozak-86b686237/"
               size="small"
               autoComplete="off"
               fullWidth
@@ -231,7 +235,7 @@ export default function SocialForm({
                   setSocialFormValue(DEFAULT_SOCIAL_FORM)
                 }}
               >
-                Add
+                Tambah
               </Button>
             )}
           </Box>

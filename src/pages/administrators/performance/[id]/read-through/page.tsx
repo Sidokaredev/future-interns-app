@@ -88,8 +88,8 @@ export default function ReadThroughTestPage() {
   const RunReadThroughScenario = async () => {
     setLoading(true);
     setDisplayLogs(true);
-    setLogs(prev => prev + "\n" + `[${dayjs().format("DD/MM/YYYY HH.mm.ss")}]:\tBegin read testing` +
-      "\n" + `[${dayjs().format("DD/MM/YYYY HH.mm.ss")}]:\tGenerating sampling queries`); // Logs
+    setLogs(prev => prev + "\n" + `[${dayjs().format("DD/MM/YYYY HH.mm.ss")}]:\tBegin Read-Through testing` +
+      "\n" + `[${dayjs().format("DD/MM/YYYY HH.mm.ss")}]:\tGenerating sampling search queries`); // Logs
 
     const TOTAL_REQUEST = 100;
     setRequestStats(prev => ({ ...prev, awaiting: TOTAL_REQUEST }));
@@ -104,7 +104,7 @@ export default function ReadThroughTestPage() {
     });
 
     const [dataSampling, failSampling] = await RequestAPI.Send<SamplingQuery[]>(
-      "/api/v1/administrators/test/generates/sampling?count=30",
+      "/administrators/test/generates/sampling?count=30",
       { method: "GET", headers: basicHeaders }
     );
     if (failSampling) {
@@ -112,7 +112,7 @@ export default function ReadThroughTestPage() {
       return setAlert({ show: true, message: `generate sampling: ${failSampling.message}` })
     };
     if (dataSampling) {
-      setLogs(prev => prev + "\n" + `${dayjs().format("DD/MM/YYYY HH.mm.ss")}: \tSampling queries is ready!` +
+      setLogs(prev => prev + "\n" + `${dayjs().format("DD/MM/YYYY HH.mm.ss")}: \tSampling search queries is ready!` +
         "\n" + `${dayjs().format("DD/MM/YYYY HH.mm.ss")}: \tWriting new data`);
       /**
        * Writing new data
@@ -125,7 +125,7 @@ export default function ReadThroughTestPage() {
           offset: idx + 1,
           total_raw_vacancies: 500
         }).Send<RawVacancies[]>(
-          "/api/v1/administrators/test/generates/vacancies",
+          "/administrators/test/generates/vacancies",
           { method: "POST", headers: basicHeaders }
         );
         if (failRaw) {
@@ -136,7 +136,7 @@ export default function ReadThroughTestPage() {
         if (dataRaw) {
           const reqBody = JSON.stringify(dataRaw);
           const request = new Request(
-            HOST.read_through + "/api/v1/read-through/vacancies",
+            HOST.read_through + "/vacancies",
             { method: "POST", headers: logHeaders, body: reqBody },
           );
           try {
@@ -196,7 +196,7 @@ export default function ReadThroughTestPage() {
        */
       for (let idx = 0; idx < firstSampling.length; idx++) {
         const request = new Request(
-          `${HOST.read_through}/api/v1/read-through/vacancies?lineIndustry=${firstSampling[idx].line_industry}&employeeType=${firstSampling[idx].employee_type}&workArrangement=${firstSampling[idx].work_arrangement}`,
+          `${HOST.read_through}/vacancies?lineIndustry=${firstSampling[idx].line_industry}&employeeType=${firstSampling[idx].employee_type}&workArrangement=${firstSampling[idx].work_arrangement}`,
           { method: "GET", headers: logHeaders },
         );
 
@@ -278,7 +278,7 @@ export default function ReadThroughTestPage() {
         });
 
         const request = new Request(
-          HOST.read_through + "/api/v1/read-through/vacancies",
+          HOST.read_through + "/vacancies",
           { method: "PATCH", headers: logHeaders, body: JSON.stringify(reqBody) }
         );
 
@@ -335,7 +335,7 @@ export default function ReadThroughTestPage() {
        */
       for (let idx = 0; idx < firstSampling.length; idx++) {
         const request = new Request(
-          `${HOST.read_through}/api/v1/read-through/vacancies?lineIndustry=${firstSampling[idx].line_industry}&employeeType=${firstSampling[idx].employee_type}&workArrangement=${firstSampling[idx].work_arrangement}`,
+          `${HOST.read_through}/vacancies?lineIndustry=${firstSampling[idx].line_industry}&employeeType=${firstSampling[idx].employee_type}&workArrangement=${firstSampling[idx].work_arrangement}`,
           { method: "GET", headers: logHeaders },
         );
 
@@ -397,7 +397,7 @@ export default function ReadThroughTestPage() {
           offset: idx + 1,
           total_raw_vacancies: 500
         }).Send<RawVacancies[]>(
-          "/api/v1/administrators/test/generates/vacancies",
+          "/administrators/test/generates/vacancies",
           { method: "POST", headers: basicHeaders }
         );
         if (fail) {
@@ -414,7 +414,7 @@ export default function ReadThroughTestPage() {
         if (rawVacancies) {
           const reqBody = JSON.stringify(rawVacancies);
           const request = new Request(
-            HOST.read_through + "/api/v1/read-through/vacancies",
+            HOST.read_through + "/vacancies",
             { method: "POST", headers: logHeaders, body: reqBody },
           );
           try {
@@ -428,7 +428,7 @@ export default function ReadThroughTestPage() {
               setLogs(prev => prev + "\n" + `[${dayjs().format("DD/MM/YYYY HH.mm.ss")}]:\tcombination: write request #${idx} send successfully ✅`);
 
               const requestRead = new Request(
-                `${HOST.read_through}/api/v1/read-through/vacancies?lineIndustry=${combinationSampling[idx].line_industry}&employeeType=${combinationSampling[idx].employee_type}&workArrangement=${combinationSampling[idx].work_arrangement}`,
+                `${HOST.read_through}/vacancies?lineIndustry=${combinationSampling[idx].line_industry}&employeeType=${combinationSampling[idx].employee_type}&workArrangement=${combinationSampling[idx].work_arrangement}`,
                 { method: "GET", headers: logHeaders },
               );
               try {
@@ -502,10 +502,10 @@ export default function ReadThroughTestPage() {
           }
         }
       }
-      setLogs(prev => prev + "\n" + `${dayjs().format("DD/MM/YYYY HH.mm.ss")}: \tCache-Aside test completed` + "\n" + `${dayjs().format("DD/MM/YYYY HH.mm.ss")}: \tClearing testing data`);
+      setLogs(prev => prev + "\n" + `${dayjs().format("DD/MM/YYYY HH.mm.ss")}: \tRead-Through test completed` + "\n" + `${dayjs().format("DD/MM/YYYY HH.mm.ss")}: \tClearing all testing data`);
 
       const [successClearing, failClearing] = await RequestAPI.Send<number>(
-        "/api/v1/administrators/test/generates/vacancies?count=" + (dataSampling.length * 500),
+        "/administrators/test/generates/vacancies?count=" + (dataSampling.length * 500),
         { method: "DELETE", headers: basicHeaders }
       );
       if (failClearing) {
@@ -552,7 +552,7 @@ export default function ReadThroughTestPage() {
         };
         logs: LogType[];
       }>(
-        "/api/v1/administrators/test/" + sessionID + "/logs?pattern=read-through",
+        "/administrators/test/" + sessionID + "/logs?pattern=read-through",
         {
           method: "GET",
           headers: {
@@ -907,7 +907,7 @@ export default function ReadThroughTestPage() {
                 // borderBottom: "1px solid " + grey[300]
               }}
             >
-              Hasil Pengujian Write Through
+              Hasil Pengujian Read Through
             </Typography>
             <TableContainer>
               <Table size="small"
@@ -971,7 +971,7 @@ export default function ReadThroughTestPage() {
                     <TableRow hover>
                       <TableCell>
                         <Typography component={"p"} variant="body2" sx={{ color: grey[600] }}>
-                          Request:{(pageTableLogs * 10) - 10 + (index + 1)}
+                          Request:{(pageTableLogs * 15) - 15 + (index + 1)}
                         </Typography>
                       </TableCell>
                       <TableCell>

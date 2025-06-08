@@ -31,7 +31,7 @@ export default function VacancyDetail() {
 
     const token = GetSession("auth");
     const [success, fail] = await RequestAPI.FormDataRequest({ vacancy_id: id }).Send<string>(
-      "/api/v1/candidates/pipelines/",
+      "/candidates/pipelines/",
       {
         method: "POST",
         headers: {
@@ -61,7 +61,7 @@ export default function VacancyDetail() {
         headerInit.append("Authorization", "Bearer " + token);
       }
       const [data, fail] = await RequestAPI.Send<{ vacancy: VacancyType, applied: boolean }>(
-        "/api/v1/vacancies/" + id,
+        "/vacancies/" + id,
         {
           method: "GET",
           headers: headerInit,
@@ -100,7 +100,7 @@ export default function VacancyDetail() {
         }}
       >
         <Typography align="center" variant="h5" color={"white"} sx={{ marginTop: "1.5em", fontSize: { xs: "medium", md: "x-large" } }}>
-          Vacancy Detail
+          Detail Lowongan Pekerjaan
         </Typography>
       </Box>
       <Box component={"div"} className="container-wrapper">
@@ -134,7 +134,7 @@ export default function VacancyDetail() {
               >
                 <Avatar
                   alt="company-logo"
-                  src={`${HOST.main}${vacancy?.employer?.profile_image_path}`}
+                  src={`${HOST.main}${vacancy?.employer?.profile_image_path.replace("/api/v1", "")}`}
                   sx={{
                     width: {
                       xs: "3em",
@@ -248,7 +248,7 @@ export default function VacancyDetail() {
                   variant="subtitle2"
                   sx={{ fontWeight: 550, color: grey[800] }}
                 >
-                  Description
+                  Deskripsi Pekerjaan
                 </Typography>
                 <Typography variant="body1" sx={{ color: grey[600], whiteSpace: "pre-line" }}>
                   {vacancy?.description}
@@ -264,7 +264,7 @@ export default function VacancyDetail() {
                   variant="subtitle2"
                   sx={{ fontWeight: 550, color: grey[800] }}
                 >
-                  Qualification
+                  Kualifikasi
                 </Typography>
                 <Typography variant="body1" sx={{ color: grey[600], whiteSpace: "pre-line" }}>
                   {vacancy?.qualification}
@@ -276,7 +276,7 @@ export default function VacancyDetail() {
                   variant="subtitle2"
                   sx={{ fontWeight: 550, color: grey[800] }}
                 >
-                  Responsibility
+                  Tugas dan Tanggung Jawab
                 </Typography>
                 <Typography variant="body1" sx={{ color: grey[600], whiteSpace: "pre-line" }}>
                   {vacancy?.responsibility}
@@ -304,7 +304,7 @@ export default function VacancyDetail() {
                     <FoundationRounded sx={{ color: grey[600] }} />
                     <Box component={"div"}>
                       <Typography variant="subtitle2" sx={{ fontWeight: 550 }}>
-                        Line Industry
+                        Sektor Industri
                       </Typography>
                       <Typography variant="caption" sx={{ color: grey[600] }}>
                         {vacancy?.line_industry}
@@ -318,7 +318,7 @@ export default function VacancyDetail() {
                     <LocationOnRounded sx={{ color: grey[600] }} />
                     <Box component={"div"}>
                       <Typography variant="subtitle2" sx={{ fontWeight: 550 }}>
-                        Location
+                        Lokasi
                       </Typography>
                       <Typography variant="caption" sx={{ color: grey[600] }}>
                         {vacancy?.employer.location}
@@ -332,7 +332,7 @@ export default function VacancyDetail() {
                     <BadgeRounded sx={{ color: grey[600] }} />
                     <Box component={"div"}>
                       <Typography variant="subtitle2" sx={{ fontWeight: 550 }}>
-                        Employee Type
+                        Status Kepegawaian
                       </Typography>
                       <Typography variant="caption" sx={{ color: grey[600] }}>
                         {vacancy?.employee_type}
@@ -346,7 +346,7 @@ export default function VacancyDetail() {
                     <WorkspacePremiumRounded sx={{ color: grey[600] }} />
                     <Box component={"div"}>
                       <Typography variant="subtitle2" sx={{ fontWeight: 550 }}>
-                        Experience
+                        Pengalaman Kerja Minimum
                       </Typography>
                       <Typography variant="caption" sx={{ color: grey[600] }}>
                         {vacancy?.min_experience}
@@ -360,7 +360,7 @@ export default function VacancyDetail() {
                     <MonetizationOnRounded sx={{ color: grey[600] }} />
                     <Box component={"div"}>
                       <Typography variant="subtitle2" sx={{ fontWeight: 550 }}>
-                        Salary
+                        Gaji
                       </Typography>
                       <Typography variant="caption" sx={{ color: grey[600] }}>
                         {Intl.NumberFormat("id-ID", {
@@ -377,7 +377,7 @@ export default function VacancyDetail() {
                     <MeetingRoomRounded sx={{ color: grey[600] }} />
                     <Box component={"div"}>
                       <Typography variant="subtitle2" sx={{ fontWeight: 550 }}>
-                        Work Arrangement
+                        Pengaturan Kerja
                       </Typography>
                       <Typography variant="caption" sx={{ color: grey[600] }}>
                         {vacancy?.work_arrangement}
@@ -410,7 +410,7 @@ export default function VacancyDetail() {
                       setOpenDialog(prev => ({ ...prev, ["confirmation"]: true }));
                     }}
                   >
-                    {applied ? "Applied" : "Apply"}
+                    {applied ? "Lamaran telah dikirim" : "Kirim lamaran"}
                   </Button>
                 </Box>
               </Box>
@@ -441,10 +441,10 @@ export default function VacancyDetail() {
               marginBottom: "0.5em",
             }}
           >
-            Are you sure you want to <SimpleEmphasis text={" apply"} /> ?
+            Apakah anda yakin ingin <SimpleEmphasis text={" mengirim lamaran"} /> untuk posisi ini ?
           </Typography>
           <Typography component={"p"} variant="body1">
-            Please ensure your profile is complete. If you want to update or completing your profile,
+            Harap pastikan profil Anda sudah lengkap. Jika Anda ingin memperbarui atau melengkapi profil Anda,
             <Typography component={"a"} variant="body1"
               sx={{
                 color: blue[500],
@@ -453,7 +453,7 @@ export default function VacancyDetail() {
               }}
               onClick={() => navigate("/candidates/profile-overview")}
             >
-              {" click here"}
+              {" klik disini"}
             </Typography>
           </Typography>
         </Box>
@@ -469,7 +469,7 @@ export default function VacancyDetail() {
             color="error"
             onClick={() => setOpenDialog(prev => ({ ...prev, ["confirmation"]: false }))}
           >
-            Cancel
+            Batalkan
           </Button>
           <Button
             type="button"
@@ -481,7 +481,7 @@ export default function VacancyDetail() {
               onApply();
             }}
           >
-            Apply Now
+            Kirim lamaran sekarang
           </Button>
         </Box>
       </Dialog>
@@ -508,10 +508,10 @@ export default function VacancyDetail() {
               marginBottom: "0.5em",
             }}
           >
-            Note
+            Catatan
           </Typography>
           <Typography component={"p"} variant="body1">
-            You need to log in to view available job vacancies. Would you like to <SimpleEmphasis text={" continue "} /> to the login page now?
+            Anda perlu masuk untuk mengirim lamaran pada posisi ini. Apakah Anda ingin <SimpleEmphasis text={" melanjutkan "} /> ke halaman login sekarang?
           </Typography>
         </Box>
         <Box component={"div"}
@@ -527,7 +527,7 @@ export default function VacancyDetail() {
             size="small"
             onClick={() => setOpenDialog(prev => ({ ...prev, ["unauthenticated"]: false }))}
           >
-            CANCEL
+            Batalkan
           </Button>
           <Button
             variant="contained"
@@ -537,7 +537,7 @@ export default function VacancyDetail() {
               navigate("/accounts/auth")
             }}
           >
-            CONTINUE
+            Lanjutkan
           </Button>
         </Box>
       </Dialog>

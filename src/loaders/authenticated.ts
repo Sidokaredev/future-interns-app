@@ -15,7 +15,7 @@ export const Authenticated: LoaderFunction = async ({ request }) => {
     }
 
     const [role, fail] = await RequestAPI.Send<string>(
-      "/api/v1/accounts/user-role",
+      "/accounts/user-role",
       {
         method: "GET",
         headers: {

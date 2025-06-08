@@ -1,9 +1,9 @@
-import { Box, Button, CircularProgress, Container, Dialog, Grid, IconButton, Pagination, Snackbar, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Typography } from "@mui/material";
+import { Box, Button, CircularProgress, Container, Dialog, Grid, IconButton, Pagination, Snackbar, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Tooltip, Typography } from "@mui/material";
 import PerformanceTestLayout from "../../../../../components/Templates/PerformanceTestLayout";
-import { Chart as ChartJS, CategoryScale, LinearScale, PointElement, LineElement, Title, Legend, Tooltip, BarElement, TooltipItem, ChartData } from "chart.js";
-import { Bar } from "react-chartjs-2";
-import { amber, blue, grey } from "@mui/material/colors";
-import { DoneRounded, KeyboardBackspaceRounded, PlayCircleRounded } from "@mui/icons-material";
+import { Chart as ChartJS, CategoryScale, LinearScale, PointElement, LineElement, Title, Legend, Tooltip as ChartTooltip, BarElement, TooltipItem, ChartData } from "chart.js";
+import { Bar, Line } from "react-chartjs-2";
+import { amber, blue, green, grey } from "@mui/material/colors";
+import { DoneRounded, KeyboardArrowLeftRounded, KeyboardArrowRightRounded, KeyboardBackspaceRounded, PlayCircleRounded } from "@mui/icons-material";
 import JsonView from "@uiw/react-json-view";
 import { nordTheme } from "@uiw/react-json-view/nord"
 import { useLocation, useNavigate, useParams } from "react-router-dom";
@@ -23,10 +23,10 @@ ChartJS.register(
   BarElement,
   Title,
   Legend,
-  Tooltip,
+  ChartTooltip,
 )
 
-type ChartDataType = {
+export type ChartDataType = {
   labels: string[];
   datasets: {
     label: string;
@@ -43,37 +43,63 @@ export default function NoCacheTest() {
   const { id: sessionID } = useParams();
 
   /* state */
-  const [writeLogs, setWriteLogs] = useState<{ chart: ChartDataType, logs: LogType[] }>({ chart: { labels: [], datasets: [] }, logs: [] });
-  const [pageWriteLogs, setPageWriteLogs] = useState<number>(1);
-  const [readLogs, setReadLogs] = useState<{ chart: ChartDataType, logs: LogType[] }>({ chart: { labels: [], datasets: [] }, logs: [] });
-  const [pageReadLogs, setPageReadLogs] = useState<number>(1);
+  const [noCacheLogs, setNoCacheLogs] = useState<{
+    chart: {
+      cache_status: ChartData<"bar", { x: number; y: string }[], unknown>;
+      resource_utils: ChartData<"line", number[], string>;
+    };
+    logs: LogType[];
+  }>({
+    chart: {
+      cache_status: {
+        datasets: []
+      },
+      resource_utils: {
+        datasets: [
+          { data: [] },
+          { data: [] },
+        ]
+      }
+    },
+    logs: []
+  });
+  const [pageTableLogs, setPageTableLogs] = useState<number>(1);
+  // const [writeLogs, setWriteLogs] = useState<{ chart: ChartDataType, logs: LogType[] }>({ chart: { labels: [], datasets: [] }, logs: [] });
+  // const [pageWriteLogs, setPageWriteLogs] = useState<number>(1);
+  // const [readLogs, setReadLogs] = useState<{ chart: ChartDataType, logs: LogType[] }>({ chart: { labels: [], datasets: [] }, logs: [] });
+  // const [pageReadLogs, setPageReadLogs] = useState<number>(1);
   const [openDialog, setOpenDialog] = useState<Record<string, boolean>>({});
   const [vacanciesRaw, setVacanciesRaw] = useState<RawVacancies[]>([]);
-  const [requestStats, setRequestStats] = useState<Record<string, { awaiting: number; fail: number; success: number; }>>({});
-  const [logTest, setLogTest] = useState<Record<string, string>>({ ["write-test"]: "", ["read-test"]: "" });
-  const [displayLogs, setDisplayLogs] = useState<Record<string, boolean>>({});
+  const [requestStats, setRequestStats] = useState<{ awaiting: number; fail: number; success: number; }>({
+    awaiting: 0,
+    success: 0,
+    fail: 0
+  });
+  const [logs, setLogs] = useState<string>("");
+  const [displayLogs, setDisplayLogs] = useState<boolean>(false);
   const [dots, setDots] = useState<string>("");
-  const [startDots, setStartDots] = useState<boolean>(false);
+  const [chunkNumber, setChunkNumber] = useState<number>(1);
 
   const [alert, setAlert] = useState<{ show: boolean; message: string; }>({ show: false, message: "" });
   const [loading, setLoading] = useState<Record<string, boolean>>({});
-  const [refetch, setRefetch] = useState<Record<string, boolean>>({});
+  const [refetch, setRefetch] = useState<boolean>(false);
 
   /* ref */
-  const writeLogsRef = useRef<HTMLDivElement | null>(null);
-  const readLogsRef = useRef<HTMLDivElement | null>(null);;
+  const logsRef = useRef<HTMLDivElement | null>(null);
 
   /* constants */
   const token = GetSession("auth");
-  const paginatedWriteLogs = writeLogs.logs.slice((pageWriteLogs * 15) - 15, pageWriteLogs * 15);
-  const paginatedReadLogs = readLogs.logs.slice((pageReadLogs * 10) - 10, pageReadLogs * 10);
+  const paginatedNoCacheLogs = noCacheLogs.logs.slice((pageTableLogs * 15) - 15, pageTableLogs * 15);
+  const chunkedLabels = noCacheLogs.chart.resource_utils.labels?.slice((chunkNumber * 10) - 10, chunkNumber * 10);
+  const chunkedRespTime = noCacheLogs.chart.resource_utils.datasets[0].data.slice((chunkNumber * 10) - 10, chunkNumber * 10);
+  const chunkedResUtil = noCacheLogs.chart.resource_utils.datasets[1].data.slice((chunkNumber * 10) - 10, chunkNumber * 10);
 
   /* GetSampleJSON */
   const GetSampleJSON = async () => {
     setLoading(prev => ({ ...prev, ["sample-request"]: true }));
 
     const [sampling, failSampling] = await RequestAPI.Send<SamplingQuery[]>(
-      "/api/v1/administrators/test/generates/sampling?count=10",
+      "/administrators/test/generates/sampling?count=10",
       { method: "GET", headers: { "Authorization": "Bearer " + token } }
     );
     if (failSampling) {
@@ -88,7 +114,7 @@ export default function NoCacheTest() {
         total_raw_vacancies: 500
       });
       const [data, fail] = await RequestAPI.Send<RawVacancies[]>(
-        "/api/v1/administrators/test/generates/vacancies",
+        "/administrators/test/generates/vacancies",
         { method: "POST", headers: { "Authorization": "Bearer " + token }, body: reqBody, }
       );
       if (fail) {
@@ -104,101 +130,68 @@ export default function NoCacheTest() {
   };
 
   /**
-   * 1. Execute 50 requests, write 500 data per request
-   * 2. Execute 50 requests, read 500 data per request
-   * 3. Execute 50 requests, update written data at the first step, update 500 data per request
-   * 4. Execute 50 requests, read updated data at the third step, read 500 data per request
-   * 5. Execute 50 requests, combination write 500 data then read 500 data, total 25 write and 25 read ops
+   * 1. Generate 120 random sampling query
+   * 2. Creating 500 data vacancies per sampling (60000 data)
+   * 2. Execute 50 requests, read 500 data per request - .slice(0, 50)
+   * 3. Execute 1000 requests, read 500 data per request using 25 random sampling query at the previous step (execute 4 times)
+   * 4. Execute 50 requests, read 500 data per request with new 50 sampling query - .slice(50, 100)
+   * 5. Execute 50 requests, read 500 data per request with random 30 sampling query in range .slice(0, 100) and read 500 data per request with new sampling query .slice(100, 120)
    * @returns void
    */
-  const RunWriteTestScenario = async () => {
-    setStartDots(true);
-    setLoading(prev => ({
-      ...prev,
-      ["write-test"]: true
-    }));
-    setDisplayLogs(prev => ({
-      ...prev,
-      ["write-test"]: true
-    }));
-    setLogTest(prev => ({
-      ...prev,
-      ["write-test"]: prev["write-test"] + "\n" + `[${dayjs().format("DD/MM/YYYY HH.mm.ss")}]:\tBegin write testing` +
-        "\n" + `[${dayjs().format("DD/MM/YYYY HH.mm.ss")}]:\tGenerating sampling queries`
-    })); // Logs
+  const RunTestScenario = async () => {
+    setLoading(prev => ({ ...prev, ["test"]: true }));
+    setDisplayLogs(true);
+    setLogs(prev => prev + "\n" + `[${dayjs().format("DD/MM/YYYY HH.mm.ss")}]:\tBegin No-Cache testing` +
+      "\n" + `[${dayjs().format("DD/MM/YYYY HH.mm.ss")}]:\tGenerating sampling search queries`); // Logs
 
-    const TOTAL_REQUEST = 250;
-    setRequestStats(prev => ({
-      ...prev,
-      ["write-test"]: {
-        ...prev["write-test"],
-        awaiting: TOTAL_REQUEST,
-        success: 0,
-        fail: 0,
-      }
-    }));
+    const TOTAL_REQUEST = 100;
+    setRequestStats(prev => ({ ...prev, awaiting: TOTAL_REQUEST }));
 
-    const [sampling, fail] = await RequestAPI.Send<SamplingQuery[]>(
-      "/api/v1/administrators/test/generates/sampling?count=80", // exected count is 75 combinations, cause the math.round() count 75 became 70
-      {
-        method: "GET",
-        headers: {
-          "Authorization": "Bearer " + token
-        }
-      }
+    const basicHeaders = new Headers({
+      "Authorization": "Bearer " + token
+    });
+    const logHeaders = new Headers({
+      "Authorization": "Bearer " + token,
+      "X-Measure-Cache-Request-Logs": "no-cache",
+      "X-Cache-Session": sessionID as string,
+    });
+
+    const [dataSampling, failSampling] = await RequestAPI.Send<SamplingQuery[]>(
+      "/administrators/test/generates/sampling?count=30",
+      { method: "GET", headers: basicHeaders }
     );
-    if (fail) {
-      console.log("sampling: \t", fail);
-      return setAlert({ show: true, message: `sampling: ${fail.message}` });
+    if (failSampling) {
+      console.log("generate sampling: \t", failSampling);
+      return setAlert({ show: true, message: `generate sampling: ${failSampling.message}` })
     };
-    if (sampling) {
-      setLogTest(prev => ({
-        ...prev,
-        ["write-test"]: prev["write-test"] + "\n" + `[${dayjs().format("DD/MM/YYYY HH.mm.ss")}]:\tWriting new data`,
-      }));
-
-      const writeSampling = sampling.slice(0, 50);
-      const writtenID: Map<string, string[]> = new Map();
+    if (dataSampling) {
+      setLogs(prev => prev + "\n" + `${dayjs().format("DD/MM/YYYY HH.mm.ss")}: \tSampling search queries is ready!` +
+        "\n" + `${dayjs().format("DD/MM/YYYY HH.mm.ss")}: \tWriting new data`);
       /**
-       * Write new data
+       * Writing new data
        */
-      for (let idx = 0; idx < writeSampling.length; idx++) {
-        const [rawVacancies, fail] = await RequestAPI.JSONRequest({
-          sampling: writeSampling,
+      const firstSampling = dataSampling.slice(0, 20);
+      const writtenID: Map<string, string[]> = new Map();
+      for (let idx = 0; idx < firstSampling.length; idx++) {
+        const [dataRaw, failRaw] = await RequestAPI.JSONRequest({
+          sampling: firstSampling,
           offset: idx + 1,
           total_raw_vacancies: 500
         }).Send<RawVacancies[]>(
-          "/api/v1/administrators/test/generates/vacancies",
-          { method: "POST", headers: { "Authorization": "Bearer " + token } }
+          "/administrators/test/generates/vacancies",
+          { method: "POST", headers: basicHeaders }
         );
-        if (fail) {
-          console.log(`raw vacancies:\t${fail}`);
-          setRequestStats(prev => ({
-            ...prev,
-            ["write-test"]: {
-              ...prev["write-test"],
-              awaiting: prev["write-test"].awaiting - 1,
-              fail: prev["write-test"].fail + 1,
-            }
-          }));
-          setLogTest(prev => ({
-            ...prev,
-            ["write-test"]: prev["write-test"] + "\n" + `[${dayjs().format("DD/MM/YYYY HH.mm.ss")}]:\traw vacancies: \t${fail.message} ❌`,
-          }));
-
-          continue;
+        if (failRaw) {
+          console.log("raw vacancies: ", failRaw);
+          setLoading(prev => ({ ...prev, ["test"]: false }));
+          setLogs(prev => prev + "\n" + `[${dayjs().format("DD/MM/YYYY HH.mm.ss")}]:\traw vacancies: \t${failRaw.message} ❌`);
+          return setAlert({ show: true, message: `raw vacancies: fail at index:${idx} - ${failRaw.message}` })
         };
-        if (rawVacancies) {
-          const reqHeaders = new Headers({
-            "Authorization": "Bearer " + token,
-            "Content-Type": "application/json",
-            "X-Measure-Cache-Request-Logs": "no-cache",
-            "X-Cache-Session": sessionID as string,
-          });
-          const reqBody = JSON.stringify(rawVacancies);
+        if (dataRaw) {
+          const reqBody = JSON.stringify(dataRaw);
           const request = new Request(
-            HOST.no_cache + "/api/v1/no-cache/vacancies",
-            { method: "POST", headers: reqHeaders, body: reqBody },
+            HOST.no_cache + "/vacancies",
+            { method: "POST", headers: logHeaders, body: reqBody },
           );
           try {
             const response = await fetch(request);
@@ -206,16 +199,10 @@ export default function NoCacheTest() {
               const responseJSON: { data: string[]; success: boolean; } = await response.json();
               setRequestStats(prev => ({
                 ...prev,
-                ["write-test"]: {
-                  ...prev["write-test"],
-                  awaiting: prev["write-test"].awaiting - 1,
-                  success: prev["write-test"].success + 1,
-                }
+                awaiting: prev.awaiting - 1,
+                success: prev.success + 1,
               }));
-              setLogTest(prev => ({
-                ...prev,
-                ["write-test"]: prev["write-test"] + "\n" + `[${dayjs().format("DD/MM/YYYY HH.mm.ss")}]:\twrite request #${idx} send successfully ✅`,
-              }));
+              setLogs(prev => prev + "\n" + `[${dayjs().format("DD/MM/YYYY HH.mm.ss")}]:\twrite request #${idx} send successfully ✅`);
               writtenID.set(`request:${idx}`, responseJSON.data); // collect written new data ID
 
               continue;
@@ -225,16 +212,10 @@ export default function NoCacheTest() {
             console.log(`fail response:\t${responseJSON}`);
             setRequestStats(prev => ({
               ...prev,
-              ["write-test"]: {
-                ...prev["write-test"],
-                awaiting: prev["write-test"].awaiting - 1,
-                fail: prev["write-test"].fail + 1,
-              }
+              awaiting: prev.awaiting - 1,
+              fail: prev.fail + 1,
             }));
-            setLogTest(prev => ({
-              ...prev,
-              ["write-test"]: prev["write-test"] + "\n" + `[${dayjs().format("DD/MM/YYYY HH.mm.ss")}]:\tfail response: \t${responseJSON.message} ❌`,
-            }));
+            setLogs(prev => prev + "\n" + `[${dayjs().format("DD/MM/YYYY HH.mm.ss")}]:\tfail response: \t${responseJSON.message} ❌`,);
 
             continue;
           } catch (err) {
@@ -242,16 +223,10 @@ export default function NoCacheTest() {
               console.log(`error:\t${err}`);
               setRequestStats(prev => ({
                 ...prev,
-                ["write-test"]: {
-                  ...prev["write-test"],
-                  awaiting: prev["write-test"].awaiting - 1,
-                  fail: prev["write-test"].fail + 1,
-                }
+                awaiting: prev.awaiting - 1,
+                fail: prev.fail + 1,
               }));
-              setLogTest(prev => ({
-                ...prev,
-                ["write-test"]: prev["write-test"] + "\n" + `[${dayjs().format("DD/MM/YYYY HH.mm.ss")}]:\terror: \t${err.message} ❌`,
-              }));
+              setLogs(prev => prev + "\n" + `[${dayjs().format("DD/MM/YYYY HH.mm.ss")}]:\terror: \t${err.message} ❌`);
 
               continue;
             };
@@ -259,76 +234,46 @@ export default function NoCacheTest() {
             console.log(`unknown:\t${err}`);
             setRequestStats(prev => ({
               ...prev,
-              ["write-test"]: {
-                ...prev["write-test"],
-                awaiting: prev["write-test"].awaiting - 1,
-                fail: prev["write-test"].fail + 1,
-              }
+              awaiting: prev.awaiting - 1,
+              fail: prev.fail + 1,
             }));
-            setLogTest(prev => ({
-              ...prev,
-              ["write-test"]: prev["write-test"] + "\n" + `[${dayjs().format("DD/MM/YYYY HH.mm.ss")}]:\tunknown: \t${err} ❌`,
-            }));
+            setLogs(prev => prev + "\n" + `[${dayjs().format("DD/MM/YYYY HH.mm.ss")}]:\tunknown: \t${err} ❌`);
 
             continue;
           };
-        };
-      };
-      setLogTest(prev => ({
-        ...prev,
-        ["write-test"]: prev["write-test"] + "\n" + `[${dayjs().format("DD/MM/YYYY HH.mm.ss")}]:\tWriting new data completed` +
-          "\n" + `[${dayjs().format("DD/MM/YYYY HH.mm.ss")}]:\tReading written new data`,
-      }));
+        }
+      }
+      setLogs(prev => prev + "\n" + `${dayjs().format("DD/MM/YYYY HH.mm.ss")}: \tWriting new data completed` +
+        "\n" + `${dayjs().format("DD/MM/YYYY HH.mm.ss")}: \tReading new written data`);
       /**
-       * Read written data
+       * Read new written data
        */
-      for (let idx = 0; idx < writeSampling.length; idx++) {
-        const reqHeaders = new Headers({
-          "Authorization": "Bearer " + token,
-          "Content-Type": "application/json",
-          "X-Measure-Cache-Request-Logs": "no-cache",
-          "X-Cache-Session": sessionID as string,
-        });
+      for (let idx = 0; idx < firstSampling.length; idx++) {
         const request = new Request(
-          `${HOST.no_cache}/api/v1/no-cache/vacancies/write-ops?lineIndustry=${writeSampling[idx].line_industry}&employeeType=${writeSampling[idx].employee_type}&workArrangement=${writeSampling[idx].work_arrangement}`,
-          { method: "GET", headers: reqHeaders },
+          `${HOST.no_cache}/vacancies?lineIndustry=${firstSampling[idx].line_industry}&employeeType=${firstSampling[idx].employee_type}&workArrangement=${firstSampling[idx].work_arrangement}`,
+          { method: "GET", headers: logHeaders },
         );
+
         try {
           const response = await fetch(request);
           if (response.status === 200) {
-            if (idx === (writeSampling.length - 1)) {
-              const responseJSON = await response.json();
-              console.log("data before update \t:", responseJSON["data"]);
-            }
             setRequestStats(prev => ({
               ...prev,
-              ["write-test"]: {
-                ...prev["write-test"],
-                awaiting: prev["write-test"].awaiting - 1,
-                success: prev["write-test"].success + 1,
-              }
+              awaiting: prev.awaiting - 1,
+              success: prev.success + 1,
             }));
-            setLogTest(prev => ({
-              ...prev,
-              ["write-test"]: prev["write-test"] + "\n" + `[${dayjs().format("DD/MM/YYYY HH.mm.ss")}]:\tread request #${idx} send successfully ✅`,
-            }));
+            setLogs(prev => prev + "\n" + `[${dayjs().format("DD/MM/YYYY HH.mm.ss")}]:\tread request #${idx} send successfully ✅`);
 
             continue;
-          };
+          }
 
           console.log(`response status:\t${response.status}`);
           setRequestStats(prev => ({
             ...prev,
-            ["write-test"]: {
-              ...prev["write-test"],
-              awaiting: prev["write-test"].awaiting - 1,
-              fail: prev["write-test"].fail + 1,
-            }
+            awaiting: prev.awaiting - 1,
+            fail: prev.fail + 1,
           }));
-          setLogTest(prev => ({
-            ...prev,
-            ["write-test"]: prev["write-test"] + "\n" + `[${dayjs().format("DD/MM/YYYY HH.mm.ss")}]:\tresponse status: \t${response.status} ❌`,
-          }));
+          setLogs(prev => prev + "\n" + `[${dayjs().format("DD/MM/YYYY HH.mm.ss")}]:\tresponse status: \t${response.status} ❌`);
 
           continue;
         } catch (err) {
@@ -336,16 +281,10 @@ export default function NoCacheTest() {
             console.log(`error:\t${err}`);
             setRequestStats(prev => ({
               ...prev,
-              ["write-test"]: {
-                ...prev["write-test"],
-                awaiting: prev["write-test"].awaiting - 1,
-                fail: prev["write-test"].fail + 1,
-              }
+              awaiting: prev.awaiting - 1,
+              fail: prev.fail + 1,
             }));
-            setLogTest(prev => ({
-              ...prev,
-              ["write-test"]: prev["write-test"] + "\n" + `[${dayjs().format("DD/MM/YYYY HH.mm.ss")}]:\terror: \t${err.message} ❌`,
-            }));
+            setLogs(prev => prev + "\n" + `[${dayjs().format("DD/MM/YYYY HH.mm.ss")}]:\terror: \t${err.message} ❌`);
 
             continue;
           };
@@ -353,25 +292,16 @@ export default function NoCacheTest() {
           console.log(`unknown:\t${err}`);
           setRequestStats(prev => ({
             ...prev,
-            ["write-test"]: {
-              ...prev["write-test"],
-              awaiting: prev["write-test"].awaiting - 1,
-              fail: prev["write-test"].fail + 1,
-            }
+            awaiting: prev.awaiting - 1,
+            fail: prev.fail + 1,
           }));
-          setLogTest(prev => ({
-            ...prev,
-            ["write-test"]: prev["write-test"] + "\n" + `[${dayjs().format("DD/MM/YYYY HH.mm.ss")}]:\tunknown: \t${err} ❌`,
-          }));
+          setLogs(prev => prev + "\n" + `[${dayjs().format("DD/MM/YYYY HH.mm.ss")}]:\tunknown: \t${err} ❌`);
 
           continue;
         }
       }
-      setLogTest(prev => ({
-        ...prev,
-        ["write-test"]: prev["write-test"] + "\n" + `[${dayjs().format("DD/MM/YYYY HH.mm.ss")}]:\tRead written data completed` +
-          "\n" + `[${dayjs().format("DD/MM/YYYY HH.mm.ss")}]:\tUpdating new written data`,
-      }));
+      setLogs(prev => prev + "\n" + `${dayjs().format("DD/MM/YYYY HH.mm.ss")}: \tReading new written data completed` +
+        "\n" + `${dayjs().format("DD/MM/YYYY HH.mm.ss")}: \tUpdating new written data`);
       /**
        * Update new written data
        */
@@ -389,26 +319,21 @@ export default function NoCacheTest() {
             "id": ID,
             "description": generate({ exactly: 15, join: "" }),
             "qualification": `
-              - ${generate({ exactly: 10, join: "" })} \n
-              - ${generate({ exactly: 13, join: " " })} \n
-              - ${generate({ exactly: 17, join: " " })} \n
-            `,
+                        - ${generate({ exactly: 10, join: "" })} \n
+                        - ${generate({ exactly: 13, join: " " })} \n
+                        - ${generate({ exactly: 17, join: " " })} \n
+                      `,
             "responsibility": `
-              * ${generate({ exactly: 20, join: " " })} \n
-              * ${generate({ exactly: 11, join: " " })} \n
-              * ${generate({ exactly: 29, join: " " })} \n
-            `,
+                        * ${generate({ exactly: 20, join: " " })} \n
+                        * ${generate({ exactly: 11, join: " " })} \n
+                        * ${generate({ exactly: 29, join: " " })} \n
+                      `,
           })
         });
-        const reqHeaders = new Headers({
-          "Authorization": "Bearer " + token,
-          "Content-Type": "application/json",
-          "X-Measure-Cache-Request-Logs": "no-cache",
-          "X-Cache-Session": sessionID as string,
-        });
+
         const request = new Request(
-          HOST.no_cache + "/api/v1/no-cache/vacancies",
-          { method: "PATCH", headers: reqHeaders, body: JSON.stringify(reqBody) }
+          HOST.no_cache + "/vacancies",
+          { method: "PATCH", headers: logHeaders, body: JSON.stringify(reqBody) }
         );
 
         try {
@@ -416,16 +341,10 @@ export default function NoCacheTest() {
           if (response.status === 200) {
             setRequestStats(prev => ({
               ...prev,
-              ["write-test"]: {
-                ...prev["write-test"],
-                awaiting: prev["write-test"].awaiting - 1,
-                success: prev["write-test"].success + 1,
-              }
+              awaiting: prev.awaiting - 1,
+              success: prev.success + 1,
             }));
-            setLogTest(prev => ({
-              ...prev,
-              ["write-test"]: prev["write-test"] + "\n" + `[${dayjs().format("DD/MM/YYYY HH.mm.ss")}]:\tupdate written data at #${keyMap} successfully ✅`,
-            }));
+            setLogs(prev => prev + "\n" + `[${dayjs().format("DD/MM/YYYY HH.mm.ss")}]:\tupdate written data at #${keyMap} successfully ✅`);
 
             continue;
           }
@@ -433,16 +352,10 @@ export default function NoCacheTest() {
           console.log(`response status:\t${response.status}`);
           setRequestStats(prev => ({
             ...prev,
-            ["write-test"]: {
-              ...prev["write-test"],
-              awaiting: prev["write-test"].awaiting - 1,
-              fail: prev["write-test"].fail + 1,
-            }
+            awaiting: prev.awaiting - 1,
+            fail: prev.fail + 1,
           }));
-          setLogTest(prev => ({
-            ...prev,
-            ["write-test"]: prev["write-test"] + "\n" + `[${dayjs().format("DD/MM/YYYY HH.mm.ss")}]:\tresponse status: \t${response.status} ❌`,
-          }));
+          setLogs(prev => prev + "\n" + `[${dayjs().format("DD/MM/YYYY HH.mm.ss")}]:\tresponse status: \t${response.status} ❌`);
 
           continue;
         } catch (err) {
@@ -450,16 +363,10 @@ export default function NoCacheTest() {
             console.log(`error:\t${err}`);
             setRequestStats(prev => ({
               ...prev,
-              ["write-test"]: {
-                ...prev["write-test"],
-                awaiting: prev["write-test"].awaiting - 1,
-                fail: prev["write-test"].fail + 1,
-              }
+              awaiting: prev.awaiting - 1,
+              fail: prev.fail + 1,
             }));
-            setLogTest(prev => ({
-              ...prev,
-              ["write-test"]: prev["write-test"] + "\n" + `[${dayjs().format("DD/MM/YYYY HH.mm.ss")}]:\terror: \t${err.message} ❌`,
-            }));
+            setLogs(prev => prev + "\n" + `[${dayjs().format("DD/MM/YYYY HH.mm.ss")}]:\terror: \t${err.message} ❌`);
 
             continue;
           };
@@ -467,195 +374,126 @@ export default function NoCacheTest() {
           console.log(`unknown:\t${err}`);
           setRequestStats(prev => ({
             ...prev,
-            ["write-test"]: {
-              ...prev["write-test"],
-              awaiting: prev["write-test"].awaiting - 1,
-              fail: prev["write-test"].fail + 1,
-            }
+            awaiting: prev.awaiting - 1,
+            fail: prev.fail + 1,
           }));
-          setLogTest(prev => ({
-            ...prev,
-            ["write-test"]: prev["write-test"] + "\n" + `[${dayjs().format("DD/MM/YYYY HH.mm.ss")}]:\tunknown: \t${err} ❌`,
-          }));
-
-          continue;
-        }
-      };
-      setLogTest(prev => ({
-        ...prev,
-        ["write-test"]: prev["write-test"] + "\n" + `[${dayjs().format("DD/MM/YYYY HH.mm.ss")}]:\tUpdating new written data completed` +
-          "\n" + `[${dayjs().format("DD/MM/YYYY HH.mm.ss")}]:\Reading updated new written data`,
-      }));
-      /**
-       * Read updated new written data
-       */
-      for (let idx = 0; idx < writeSampling.length; idx++) {
-        const reqHeaders = new Headers({
-          "Authorization": "Bearer " + token,
-          "Content-Type": "application/json",
-          "X-Measure-Cache-Request-Logs": "no-cache",
-          "X-Cache-Session": sessionID as string,
-        })
-        const request = new Request(
-          `${HOST.no_cache}/api/v1/no-cache/vacancies/write-ops?lineIndustry=${writeSampling[idx].line_industry}&employeeType=${writeSampling[idx].employee_type}&workArrangement=${writeSampling[idx].work_arrangement}`,
-          { method: "GET", headers: reqHeaders },
-        );
-        try {
-          const response = await fetch(request);
-          if (response.status === 200) {
-            if (idx === (writeSampling.length - 1)) {
-              const responseJSON = await response.json();
-              console.log("data after update \t:", responseJSON["data"]);
-            }
-            setRequestStats(prev => ({
-              ...prev,
-              ["write-test"]: {
-                ...prev["write-test"],
-                awaiting: prev["write-test"].awaiting - 1,
-                success: prev["write-test"].success + 1,
-              }
-            }));
-            setLogTest(prev => ({
-              ...prev,
-              ["write-test"]: prev["write-test"] + "\n" + `[${dayjs().format("DD/MM/YYYY HH.mm.ss")}]:\tread request #${idx} send successfully ✅`,
-            }));
-
-            continue;
-          };
-
-          console.log(`response status:\t${response.status}`);
-          setRequestStats(prev => ({
-            ...prev,
-            ["write-test"]: {
-              ...prev["write-test"],
-              awaiting: prev["write-test"].awaiting - 1,
-              fail: prev["write-test"].fail + 1,
-            }
-          }));
-          setLogTest(prev => ({
-            ...prev,
-            ["write-test"]: prev["write-test"] + "\n" + `[${dayjs().format("DD/MM/YYYY HH.mm.ss")}]:\tresponse status: \t${response.status} ❌`,
-          }));
-
-          continue;
-        } catch (err) {
-          if (err instanceof Error) {
-            console.log(`error:\t${err}`);
-            setRequestStats(prev => ({
-              ...prev,
-              ["write-test"]: {
-                ...prev["write-test"],
-                awaiting: prev["write-test"].awaiting - 1,
-                fail: prev["write-test"].fail + 1,
-              }
-            }));
-            setLogTest(prev => ({
-              ...prev,
-              ["write-test"]: prev["write-test"] + "\n" + `[${dayjs().format("DD/MM/YYYY HH.mm.ss")}]:\terror: \t${err.message} ❌`,
-            }));
-
-            continue;
-          };
-
-          console.log(`unknown:\t${err}`);
-          setRequestStats(prev => ({
-            ...prev,
-            ["write-test"]: {
-              ...prev["write-test"],
-              awaiting: prev["write-test"].awaiting - 1,
-              fail: prev["write-test"].fail + 1,
-            }
-          }));
-          setLogTest(prev => ({
-            ...prev,
-            ["write-test"]: prev["write-test"] + "\n" + `[${dayjs().format("DD/MM/YYYY HH.mm.ss")}]:\tunknown: \t${err} ❌`,
-          }));
+          setLogs(prev => prev + "\n" + `[${dayjs().format("DD/MM/YYYY HH.mm.ss")}]:\tunknown: \t${err} ❌`);
 
           continue;
         }
       }
-      setLogTest(prev => ({
-        ...prev,
-        ["write-test"]: prev["write-test"] + "\n" + `[${dayjs().format("DD/MM/YYYY HH.mm.ss")}]:\tRead updated new written data completed` +
-          "\n" + `[${dayjs().format("DD/MM/YYYY HH.mm.ss")}]:\tCombination writing dan reading data`,
-      }));
+      setLogs(prev => prev + "\n" + `${dayjs().format("DD/MM/YYYY HH.mm.ss")}: \tUpdating new written data completed` +
+        "\n" + `${dayjs().format("DD/MM/YYYY HH.mm.ss")}: \tReading updated new written data`);
+      /**
+       * Read updated new written data
+       */
+      for (let idx = 0; idx < firstSampling.length; idx++) {
+        const request = new Request(
+          `${HOST.no_cache}/vacancies?lineIndustry=${firstSampling[idx].line_industry}&employeeType=${firstSampling[idx].employee_type}&workArrangement=${firstSampling[idx].work_arrangement}`,
+          { method: "GET", headers: logHeaders },
+        );
+
+        try {
+          const response = await fetch(request);
+          if (response.status === 200) {
+            setRequestStats(prev => ({
+              ...prev,
+              awaiting: prev.awaiting - 1,
+              success: prev.success + 1,
+            }));
+            setLogs(prev => prev + "\n" + `[${dayjs().format("DD/MM/YYYY HH.mm.ss")}]:\tread request #${idx} send successfully ✅`);
+
+            continue;
+          }
+
+          console.log(`response status:\t${response.status}`);
+          setRequestStats(prev => ({
+            ...prev,
+            awaiting: prev.awaiting - 1,
+            fail: prev.fail + 1,
+          }));
+          setLogs(prev => prev + "\n" + `[${dayjs().format("DD/MM/YYYY HH.mm.ss")}]:\tresponse status: \t${response.status} ❌`);
+
+          continue;
+        } catch (err) {
+          if (err instanceof Error) {
+            console.log(`error:\t${err}`);
+            setRequestStats(prev => ({
+              ...prev,
+              awaiting: prev.awaiting - 1,
+              fail: prev.fail + 1,
+            }));
+            setLogs(prev => prev + "\n" + `[${dayjs().format("DD/MM/YYYY HH.mm.ss")}]:\terror: \t${err.message} ❌`);
+
+            continue;
+          };
+
+          console.log(`unknown:\t${err}`);
+          setRequestStats(prev => ({
+            ...prev,
+            awaiting: prev.awaiting - 1,
+            fail: prev.fail + 1,
+          }));
+          setLogs(prev => prev + "\n" + `[${dayjs().format("DD/MM/YYYY HH.mm.ss")}]:\tunknown: \t${err} ❌`);
+
+          continue;
+        }
+      }
+      setLogs(prev => prev + "\n" + `${dayjs().format("DD/MM/YYYY HH.mm.ss")}: \tReading updated new written data completed` +
+        "\n" + `${dayjs().format("DD/MM/YYYY HH.mm.ss")}: \tExecuting combination write and read data`);
       /**
        * Combination write and read data
        */
-      const combinationSampling = sampling.slice(50, 75);
+      const combinationSampling = dataSampling.slice(20, 30);
       for (let idx = 0; idx < combinationSampling.length; idx++) {
         const [rawVacancies, fail] = await RequestAPI.JSONRequest({
           sampling: combinationSampling,
           offset: idx + 1,
           total_raw_vacancies: 500
         }).Send<RawVacancies[]>(
-          "/api/v1/administrators/test/generates/vacancies",
-          { method: "POST", headers: { "Authorization": "Bearer " + token } }
+          "/administrators/test/generates/vacancies",
+          { method: "POST", headers: basicHeaders }
         );
         if (fail) {
           console.log(`raw vacancies:\t${fail}`);
           setRequestStats(prev => ({
             ...prev,
-            ["write-test"]: {
-              ...prev["write-test"],
-              awaiting: prev["write-test"].awaiting - 1,
-              fail: prev["write-test"].fail + 1,
-            }
+            awaiting: prev.awaiting - 1,
+            fail: prev.fail + 1,
           }));
-          setLogTest(prev => ({
-            ...prev,
-            ["write-test"]: prev["write-test"] + "\n" + `[${dayjs().format("DD/MM/YYYY HH.mm.ss")}]:\traw vacancies: \t${fail.message} ❌`,
-          }));
+          setLogs(prev => prev + "\n" + `[${dayjs().format("DD/MM/YYYY HH.mm.ss")}]:\traw vacancies: \t${fail.message} ❌`);
 
           continue;
         };
         if (rawVacancies) {
-          const reqHeaders = new Headers({
-            "Authorization": "Bearer " + token,
-            "Content-Type": "application/json",
-            "X-Measure-Cache-Request-Logs": "no-cache",
-            "X-Cache-Session": sessionID as string,
-          });
           const reqBody = JSON.stringify(rawVacancies);
           const request = new Request(
-            HOST.no_cache + "/api/v1/no-cache/vacancies",
-            { method: "POST", headers: reqHeaders, body: reqBody },
+            HOST.no_cache + "/vacancies",
+            { method: "POST", headers: logHeaders, body: reqBody },
           );
           try {
             const response = await fetch(request);
             if (response.status === 201) {
               setRequestStats(prev => ({
                 ...prev,
-                ["write-test"]: {
-                  ...prev["write-test"],
-                  awaiting: prev["write-test"].awaiting - 1,
-                  success: prev["write-test"].success + 1,
-                }
+                awaiting: prev.awaiting - 1,
+                success: prev.success + 1,
               }));
-              setLogTest(prev => ({
-                ...prev,
-                ["write-test"]: prev["write-test"] + "\n" + `[${dayjs().format("DD/MM/YYYY HH.mm.ss")}]:\tcombination: write request #${idx} send successfully ✅`,
-              }));
+              setLogs(prev => prev + "\n" + `[${dayjs().format("DD/MM/YYYY HH.mm.ss")}]:\tcombination: write request #${idx} send successfully ✅`);
 
               const requestRead = new Request(
-                `${HOST.no_cache}/api/v1/no-cache/vacancies/write-ops?lineIndustry=${combinationSampling[idx].line_industry}&employeeType=${combinationSampling[idx].employee_type}&workArrangement=${combinationSampling[idx].work_arrangement}`,
-                { method: "GET", headers: reqHeaders },
+                `${HOST.no_cache}/vacancies?lineIndustry=${combinationSampling[idx].line_industry}&employeeType=${combinationSampling[idx].employee_type}&workArrangement=${combinationSampling[idx].work_arrangement}`,
+                { method: "GET", headers: logHeaders },
               );
               try {
                 const response = await fetch(requestRead);
                 if (response.status === 200) {
                   setRequestStats(prev => ({
                     ...prev,
-                    ["write-test"]: {
-                      ...prev["write-test"],
-                      awaiting: prev["write-test"].awaiting - 1,
-                      success: prev["write-test"].success + 1,
-                    }
+                    awaiting: prev.awaiting - 1,
+                    success: prev.success + 1,
                   }));
-                  setLogTest(prev => ({
-                    ...prev,
-                    ["write-test"]: prev["write-test"] + "\n" + `[${dayjs().format("DD/MM/YYYY HH.mm.ss")}]:\tcombination: read request #${idx} send successfully ✅`,
-                  }));
+                  setLogs(prev => prev + "\n" + `[${dayjs().format("DD/MM/YYYY HH.mm.ss")}]:\tcombination: read request #${idx} send successfully ✅`);
 
                   continue;
                 }
@@ -663,16 +501,10 @@ export default function NoCacheTest() {
                 console.log(`response status:\t${response.status}`);
                 setRequestStats(prev => ({
                   ...prev,
-                  ["write-test"]: {
-                    ...prev["write-test"],
-                    awaiting: prev["write-test"].awaiting - 1,
-                    fail: prev["write-test"].fail + 1,
-                  }
+                  awaiting: prev.awaiting - 1,
+                  fail: prev.fail + 1,
                 }));
-                setLogTest(prev => ({
-                  ...prev,
-                  ["write-test"]: prev["write-test"] + "\n" + `[${dayjs().format("DD/MM/YYYY HH.mm.ss")}]:\tresponse status: \t${response.status} ❌`,
-                }));
+                setLogs(prev => prev + "\n" + `[${dayjs().format("DD/MM/YYYY HH.mm.ss")}]:\tresponse status: \t${response.status} ❌`);
 
                 continue;
               } catch (err) {
@@ -680,16 +512,10 @@ export default function NoCacheTest() {
                   console.log(`error:\t${err}`);
                   setRequestStats(prev => ({
                     ...prev,
-                    ["write-test"]: {
-                      ...prev["write-test"],
-                      awaiting: prev["write-test"].awaiting - 1,
-                      fail: prev["write-test"].fail + 1,
-                    }
+                    awaiting: prev.awaiting - 1,
+                    fail: prev.fail + 1,
                   }));
-                  setLogTest(prev => ({
-                    ...prev,
-                    ["write-test"]: prev["write-test"] + "\n" + `[${dayjs().format("DD/MM/YYYY HH.mm.ss")}]:\terror: \t${err.message} ❌`,
-                  }));
+                  setLogs(prev => prev + "\n" + `[${dayjs().format("DD/MM/YYYY HH.mm.ss")}]:\terror: \t${err.message} ❌`);
 
                   continue;
                 };
@@ -697,16 +523,10 @@ export default function NoCacheTest() {
                 console.log(`unknown:\t${err}`);
                 setRequestStats(prev => ({
                   ...prev,
-                  ["write-test"]: {
-                    ...prev["write-test"],
-                    awaiting: prev["write-test"].awaiting - 1,
-                    fail: prev["write-test"].fail + 1,
-                  }
+                  awaiting: prev.awaiting - 1,
+                  fail: prev.fail + 1,
                 }));
-                setLogTest(prev => ({
-                  ...prev,
-                  ["write-test"]: prev["write-test"] + "\n" + `[${dayjs().format("DD/MM/YYYY HH.mm.ss")}]:\tunknown: \t${err} ❌`,
-                }));
+                setLogs(prev => prev + "\n" + `[${dayjs().format("DD/MM/YYYY HH.mm.ss")}]:\tunknown: \t${err} ❌`);
 
                 continue;
               }
@@ -716,16 +536,10 @@ export default function NoCacheTest() {
               console.log(`error:\t${err}`);
               setRequestStats(prev => ({
                 ...prev,
-                ["write-test"]: {
-                  ...prev["write-test"],
-                  awaiting: prev["write-test"].awaiting - 1,
-                  fail: prev["write-test"].fail + 2,
-                }
+                awaiting: prev.awaiting - 1,
+                fail: prev.fail + 2,
               }));
-              setLogTest(prev => ({
-                ...prev,
-                ["write-test"]: prev["write-test"] + "\n" + `[${dayjs().format("DD/MM/YYYY HH.mm.ss")}]:\terror: \t${err.message} ❌`,
-              }));
+              setLogs(prev => prev + "\n" + `[${dayjs().format("DD/MM/YYYY HH.mm.ss")}]:\terror: \t${err.message} ❌`);
 
               continue;
             };
@@ -733,526 +547,32 @@ export default function NoCacheTest() {
             console.log(`unknown:\t${err}`);
             setRequestStats(prev => ({
               ...prev,
-              ["write-test"]: {
-                ...prev["write-test"],
-                awaiting: prev["write-test"].awaiting - 1,
-                fail: prev["write-test"].fail + 2,
-              }
+              awaiting: prev.awaiting - 1,
+              fail: prev.fail + 2,
             }));
-            setLogTest(prev => ({
-              ...prev,
-              ["write-test"]: prev["write-test"] + "\n" + `[${dayjs().format("DD/MM/YYYY HH.mm.ss")}]:\tunknown: \t${err} ❌`,
-            }));
+            setLogs(prev => prev + "\n" + `[${dayjs().format("DD/MM/YYYY HH.mm.ss")}]:\tunknown: \t${err} ❌`);
 
             continue;
           }
         }
       }
-      setLogTest(prev => ({
-        ...prev,
-        ["write-test"]: prev["write-test"] + "\n" + `[${dayjs().format("DD/MM/YYYY HH.mm.ss")}]:\tCombination writing and reading data completed` + "\n" + `[${dayjs().format("DD/MM/YYYY HH.mm.ss")}]:\tClearing testing data`,
-      }));
+      setLogs(prev => prev + "\n" + `${dayjs().format("DD/MM/YYYY HH.mm.ss")}: \tNo-Cache test completed` + "\n" + `${dayjs().format("DD/MM/YYYY HH.mm.ss")}: \tClearing testing data`);
       const [successClearing, failClearing] = await RequestAPI.Send<number>(
-        "/api/v1/administrators/test/generates/vacancies?count=" + ((writeSampling.length + combinationSampling.length) * 500),
-        { method: "DELETE", headers: { "Authorization": "Bearer " + token } }
+        "/administrators/test/generates/vacancies?count=" + (dataSampling.length * 500),
+        { method: "DELETE", headers: basicHeaders }
       );
       if (failClearing) {
         console.log("clearing \t:", failClearing);
         setAlert({ show: false, message: failClearing.message });
       };
       if (successClearing) {
-        setLogTest(prev => ({
-          ...prev,
-          ["write-test"]: prev["write-test"] + "\n" + `[${dayjs().format("DD/MM/YYYY HH.mm.ss")}]:\tTesting data cleared successfully`,
-        }));
+        setLogs(prev => prev + "\n" + `[${dayjs().format("DD/MM/YYYY HH.mm.ss")}]:\tGenerated data cleared successfully`);
       }
-      setStartDots(false);
-      setLoading(prev => ({
-        ...prev,
-        ["write-test"]: false,
-      }));
-      setRefetch(prev => ({ ...prev, ["write-logs"]: !prev["write-logs"] }));
-    };
+      setLoading(prev => ({ ...prev, ["test"]: false }));
+      setRefetch(prev => !prev);
+    }
   };
 
-  /**
-   * 1. Generate 120 random sampling query
-   * 2. Creating 500 data vacancies per sampling (60000 data)
-   * 2. Execute 50 requests, read 500 data per request - .slice(0, 50)
-   * 3. Execute 1000 requests, read 500 data per request using 25 random sampling query at the previous step (execute 4 times)
-   * 4. Execute 50 requests, read 500 data per request with new 50 sampling query - .slice(50, 100)
-   * 5. Execute 50 requests, read 500 data per request with random 30 sampling query in range .slice(0, 100) and read 500 data per request with new sampling query .slice(100, 120)
-   * @returns void
-   */
-  const RunReadTestScenario = async () => {
-    setStartDots(true);
-    setLoading(prev => ({
-      ...prev,
-      ["read-test"]: true
-    }));
-    setDisplayLogs(prev => ({
-      ...prev,
-      ["read-test"]: true
-    }));
-    setLogTest(prev => ({
-      ...prev,
-      ["read-test"]: prev["read-test"] + "\n" + `[${dayjs().format("DD/MM/YYYY HH.mm.ss")}]:\tBegin read testing` +
-        "\n" + `[${dayjs().format("DD/MM/YYYY HH.mm.ss")}]:\tGenerating sampling queries`
-    })); // Logs
-
-    const TOTAL_REQUEST = 250;
-    setRequestStats(prev => ({
-      ...prev,
-      ["read-test"]: {
-        ...prev["read-test"],
-        awaiting: TOTAL_REQUEST,
-        success: 0,
-        fail: 0,
-      }
-    }));
-
-    const [sampling, fail] = await RequestAPI.Send<SamplingQuery[]>(
-      "/api/v1/administrators/test/generates/sampling?count=120", // exected count is 75 combinations, cause the math.round() count 75 became 70
-      {
-        method: "GET",
-        headers: {
-          "Authorization": "Bearer " + token
-        }
-      }
-    );
-    if (fail) {
-      console.log("sampling: \t", fail);
-      return setAlert({ show: true, message: `sampling: ${fail.message}` });
-    };
-    if (sampling) {
-      setLogTest(prev => ({
-        ...prev,
-        ["read-test"]: prev["read-test"] + "\n" + `[${dayjs().format("DD/MM/YYYY HH.mm.ss")}]:\tPreparing required data`,
-      }));
-      for (let idx = 0; idx < sampling.length; idx++) {
-        const [rawVacancies, failRaw] = await RequestAPI.JSONRequest({
-          sampling: sampling,
-          offset: idx + 1,
-          total_raw_vacancies: 500
-        }).Send<RawVacancies[]>(
-          "/api/v1/administrators/test/generates/vacancies",
-          { method: "POST", headers: { "Authorization": "Bearer " + token } }
-        );
-        if (failRaw) {
-          console.log("raw vacancies \t:", failRaw);
-          return setAlert({ show: true, message: failRaw.message });
-        };
-        if (rawVacancies) {
-          const [successStore, failStore] = await RequestAPI.JSONRequest(rawVacancies).Send<string[]>(
-            "/api/v1/administrators/test/generates/vacancies/store",
-            { method: "POST", headers: { "Authorization": "Bearer " + token } }
-          );
-          if (failStore) {
-            console.log("store vacancies \t:", failStore);
-            return setAlert({ show: true, message: `at offset ${idx}: ${failStore.message}` })
-          };
-          if (successStore) {
-            setLogTest(prev => ({
-              ...prev,
-              ["read-test"]: prev["read-test"] + "\n" + `[${dayjs().format("DD/MM/YYYY HH.mm.ss")}]:\t${successStore.length} data stored at sampling offset ${idx}`,
-            }));
-          }
-        }
-      }
-      setLogTest(prev => ({
-        ...prev,
-        ["read-test"]: prev["read-test"] + "\n" + `[${dayjs().format("DD/MM/YYYY HH.mm.ss")}]:\tData is ready!` +
-          "\n" + `[${dayjs().format("DD/MM/YYYY HH.mm.ss")}]:\tReading data using 50 different queries`,
-      }));
-
-      const reqHeaders = new Headers({
-        "Authorization": "Bearer " + token,
-        "Content-Type": "application/json",
-        "X-Measure-Cache-Request-Logs": "no-cache",
-        "X-Cache-Session": sessionID as string,
-      });
-      /**
-       * Read 50 different query
-       */
-      const firstSampling = sampling.slice(0, 50)
-      for (let idx = 0; idx < firstSampling.length; idx++) {
-        const request = new Request(
-          `${HOST.no_cache}/api/v1/no-cache/vacancies?lineIndustry=${firstSampling[idx].line_industry}&employeeType=${firstSampling[idx].employee_type}&workArrangement=${firstSampling[idx].work_arrangement}`,
-          { method: "GET", headers: reqHeaders },
-        );
-
-        try {
-          const response = await fetch(request);
-          if (response.status === 200) {
-            setRequestStats(prev => ({
-              ...prev,
-              ["read-test"]: {
-                ...prev["read-test"],
-                awaiting: prev["read-test"].awaiting - 1,
-                success: prev["read-test"].success + 1,
-              }
-            }));
-            setLogTest(prev => ({
-              ...prev,
-              ["read-test"]: prev["read-test"] + "\n" + `[${dayjs().format("DD/MM/YYYY HH.mm.ss")}]:\tread request #${idx} send successfully ✅`,
-            }));
-
-            continue;
-          }
-
-          console.log(`response status:\t${response.status}`);
-          setRequestStats(prev => ({
-            ...prev,
-            ["read-test"]: {
-              ...prev["read-test"],
-              awaiting: prev["read-test"].awaiting - 1,
-              fail: prev["read-test"].fail + 1,
-            }
-          }));
-          setLogTest(prev => ({
-            ...prev,
-            ["read-test"]: prev["read-test"] + "\n" + `[${dayjs().format("DD/MM/YYYY HH.mm.ss")}]:\tresponse status: \t${response.status} ❌`,
-          }));
-
-          continue;
-        } catch (err) {
-          if (err instanceof Error) {
-            console.log(`error:\t${err}`);
-            setRequestStats(prev => ({
-              ...prev,
-              ["read-test"]: {
-                ...prev["read-test"],
-                awaiting: prev["read-test"].awaiting - 1,
-                fail: prev["read-test"].fail + 1,
-              }
-            }));
-            setLogTest(prev => ({
-              ...prev,
-              ["read-test"]: prev["read-test"] + "\n" + `[${dayjs().format("DD/MM/YYYY HH.mm.ss")}]:\terror: \t${err.message} ❌`,
-            }));
-
-            continue;
-          };
-
-          console.log(`unknown:\t${err}`);
-          setRequestStats(prev => ({
-            ...prev,
-            ["read-test"]: {
-              ...prev["read-test"],
-              awaiting: prev["read-test"].awaiting - 1,
-              fail: prev["read-test"].fail + 1,
-            }
-          }));
-          setLogTest(prev => ({
-            ...prev,
-            ["read-test"]: prev["read-test"] + "\n" + `[${dayjs().format("DD/MM/YYYY HH.mm.ss")}]:\tunknown: \t${err} ❌`,
-          }));
-
-          continue;
-        }
-      }
-      setLogTest(prev => ({
-        ...prev,
-        ["read-test"]: prev["read-test"] + "\n" + `[${dayjs().format("DD/MM/YYYY HH.mm.ss")}]:\tReading data using 50 different queries completed` +
-          "\n" + `[${dayjs().format("DD/MM/YYYY HH.mm.ss")}]:\tReading data using 25 different queries from the first sampling (x4)`,
-      }));
-      /**
-       * Read 25 random different query from firstSampling
-       */
-      const FisherYatesShuffleAlgorithm = (src: SamplingQuery[], take: number): SamplingQuery[] => {
-        const shuffled = [...src];
-        for (let i = shuffled.length - 1; i > 0; i--) {
-          const j = Math.floor(Math.random() * (i + 1));
-          [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]]; // Swap elemen
-        }
-
-        return shuffled.slice(0, take);
-      }
-      const secondSampling = FisherYatesShuffleAlgorithm(firstSampling, 25);
-      for (let idxTimes = 0; idxTimes < 4; idxTimes++) {
-        for (let idx = 0; idx < secondSampling.length; idx++) {
-          const request = new Request(
-            `${HOST.no_cache}/api/v1/no-cache/vacancies?lineIndustry=${secondSampling[idx].line_industry}&employeeType=${secondSampling[idx].employee_type}&workArrangement=${secondSampling[idx].work_arrangement}`,
-            { method: "GET", headers: reqHeaders },
-          );
-
-          try {
-            const response = await fetch(request);
-            if (response.status === 200) {
-              setRequestStats(prev => ({
-                ...prev,
-                ["read-test"]: {
-                  ...prev["read-test"],
-                  awaiting: prev["read-test"].awaiting - 1,
-                  success: prev["read-test"].success + 1,
-                }
-              }));
-              setLogTest(prev => ({
-                ...prev,
-                ["read-test"]: prev["read-test"] + "\n" + `[${dayjs().format("DD/MM/YYYY HH.mm.ss")}]:\tread request #${idx} send successfully ✅`,
-              }));
-
-              continue;
-            }
-
-            console.log(`response status:\t${response.status}`);
-            setRequestStats(prev => ({
-              ...prev,
-              ["read-test"]: {
-                ...prev["read-test"],
-                awaiting: prev["read-test"].awaiting - 1,
-                fail: prev["read-test"].fail + 1,
-              }
-            }));
-            setLogTest(prev => ({
-              ...prev,
-              ["read-test"]: prev["read-test"] + "\n" + `[${dayjs().format("DD/MM/YYYY HH.mm.ss")}]:\tresponse status: \t${response.status} ❌`,
-            }));
-
-            continue;
-          } catch (err) {
-            if (err instanceof Error) {
-              console.log(`error:\t${err}`);
-              setRequestStats(prev => ({
-                ...prev,
-                ["read-test"]: {
-                  ...prev["read-test"],
-                  awaiting: prev["read-test"].awaiting - 1,
-                  fail: prev["read-test"].fail + 1,
-                }
-              }));
-              setLogTest(prev => ({
-                ...prev,
-                ["read-test"]: prev["read-test"] + "\n" + `[${dayjs().format("DD/MM/YYYY HH.mm.ss")}]:\terror: \t${err.message} ❌`,
-              }));
-
-              continue;
-            };
-
-            console.log(`unknown:\t${err}`);
-            setRequestStats(prev => ({
-              ...prev,
-              ["read-test"]: {
-                ...prev["read-test"],
-                awaiting: prev["read-test"].awaiting - 1,
-                fail: prev["read-test"].fail + 1,
-              }
-            }));
-            setLogTest(prev => ({
-              ...prev,
-              ["read-test"]: prev["read-test"] + "\n" + `[${dayjs().format("DD/MM/YYYY HH.mm.ss")}]:\tunknown: \t${err} ❌`,
-            }));
-
-            continue;
-          }
-        }
-        setLogTest(prev => ({
-          ...prev,
-          ["read-test"]: prev["read-test"] + "\n" + `[${dayjs().format("DD/MM/YYYY HH.mm.ss")}]:\tread request x${idxTimes} times completed`,
-        }));
-      }
-      setLogTest(prev => ({
-        ...prev,
-        ["read-test"]: prev["read-test"] + "\n" + `[${dayjs().format("DD/MM/YYYY HH.mm.ss")}]:\tReading data using 25 different queries from the first sampling executed 4 times` +
-          "\n" + `[${dayjs().format("DD/MM/YYYY HH.mm.ss")}]:\tReading data using 50 different queries from the third sampling`,
-      }));
-      /**
-       * Read 50 different queries and never used before
-       */
-      const thirdSampling = sampling.slice(50, 100);
-      for (let idx = 0; idx < thirdSampling.length; idx++) {
-        const request = new Request(
-          `${HOST.no_cache}/api/v1/no-cache/vacancies?lineIndustry=${thirdSampling[idx].line_industry}&employeeType=${thirdSampling[idx].employee_type}&workArrangement=${thirdSampling[idx].work_arrangement}`,
-          { method: "GET", headers: reqHeaders },
-        );
-
-        try {
-          const response = await fetch(request);
-          if (response.status === 200) {
-            setRequestStats(prev => ({
-              ...prev,
-              ["read-test"]: {
-                ...prev["read-test"],
-                awaiting: prev["read-test"].awaiting - 1,
-                success: prev["read-test"].success + 1,
-              }
-            }));
-            setLogTest(prev => ({
-              ...prev,
-              ["read-test"]: prev["read-test"] + "\n" + `[${dayjs().format("DD/MM/YYYY HH.mm.ss")}]:\tread request #${idx} send successfully ✅`,
-            }));
-
-            continue;
-          }
-
-          console.log(`response status:\t${response.status}`);
-          setRequestStats(prev => ({
-            ...prev,
-            ["read-test"]: {
-              ...prev["read-test"],
-              awaiting: prev["read-test"].awaiting - 1,
-              fail: prev["read-test"].fail + 1,
-            }
-          }));
-          setLogTest(prev => ({
-            ...prev,
-            ["read-test"]: prev["read-test"] + "\n" + `[${dayjs().format("DD/MM/YYYY HH.mm.ss")}]:\tresponse status: \t${response.status} ❌`,
-          }));
-
-          continue;
-        } catch (err) {
-          if (err instanceof Error) {
-            console.log(`error:\t${err}`);
-            setRequestStats(prev => ({
-              ...prev,
-              ["read-test"]: {
-                ...prev["read-test"],
-                awaiting: prev["read-test"].awaiting - 1,
-                fail: prev["read-test"].fail + 1,
-              }
-            }));
-            setLogTest(prev => ({
-              ...prev,
-              ["read-test"]: prev["read-test"] + "\n" + `[${dayjs().format("DD/MM/YYYY HH.mm.ss")}]:\terror: \t${err.message} ❌`,
-            }));
-
-            continue;
-          };
-
-          console.log(`unknown:\t${err}`);
-          setRequestStats(prev => ({
-            ...prev,
-            ["read-test"]: {
-              ...prev["read-test"],
-              awaiting: prev["read-test"].awaiting - 1,
-              fail: prev["read-test"].fail + 1,
-            }
-          }));
-          setLogTest(prev => ({
-            ...prev,
-            ["read-test"]: prev["read-test"] + "\n" + `[${dayjs().format("DD/MM/YYYY HH.mm.ss")}]:\tunknown: \t${err} ❌`,
-          }));
-
-          continue;
-        }
-      }
-      setLogTest(prev => ({
-        ...prev,
-        ["read-test"]: prev["read-test"] + "\n" + `[${dayjs().format("DD/MM/YYYY HH.mm.ss")}]:\tReading data using 50 different queries from the third sampling completed` +
-          "\n" + `[${dayjs().format("DD/MM/YYYY HH.mm.ss")}]:\tReading data using 50 different queries from 30 random sampling first, third sampling and 20 sampling never used before`,
-      }));
-      /**
-       * Read 50 different queries, 30 random from combined first and third sampling, 20 new sampling
-       */
-      const randomUsedSampling = FisherYatesShuffleAlgorithm([...firstSampling, ...thirdSampling], 30);
-      const fourthSampling = sampling.slice(100, 120).concat(randomUsedSampling);
-      for (let idx = 0; idx < fourthSampling.length; idx++) {
-        const request = new Request(
-          `${HOST.no_cache}/api/v1/no-cache/vacancies?lineIndustry=${fourthSampling[idx].line_industry}&employeeType=${fourthSampling[idx].employee_type}&workArrangement=${fourthSampling[idx].work_arrangement}`,
-          { method: "GET", headers: reqHeaders },
-        );
-
-        try {
-          const response = await fetch(request);
-          if (response.status === 200) {
-            setRequestStats(prev => ({
-              ...prev,
-              ["read-test"]: {
-                ...prev["read-test"],
-                awaiting: prev["read-test"].awaiting - 1,
-                success: prev["read-test"].success + 1,
-              }
-            }));
-            setLogTest(prev => ({
-              ...prev,
-              ["read-test"]: prev["read-test"] + "\n" + `[${dayjs().format("DD/MM/YYYY HH.mm.ss")}]:\tread request #${idx} send successfully ✅`,
-            }));
-
-            continue;
-          }
-
-          console.log(`response status:\t${response.status}`);
-          setRequestStats(prev => ({
-            ...prev,
-            ["read-test"]: {
-              ...prev["read-test"],
-              awaiting: prev["read-test"].awaiting - 1,
-              fail: prev["read-test"].fail + 1,
-            }
-          }));
-          setLogTest(prev => ({
-            ...prev,
-            ["read-test"]: prev["read-test"] + "\n" + `[${dayjs().format("DD/MM/YYYY HH.mm.ss")}]:\tresponse status: \t${response.status} ❌`,
-          }));
-
-          continue;
-        } catch (err) {
-          if (err instanceof Error) {
-            console.log(`error:\t${err}`);
-            setRequestStats(prev => ({
-              ...prev,
-              ["read-test"]: {
-                ...prev["read-test"],
-                awaiting: prev["read-test"].awaiting - 1,
-                fail: prev["read-test"].fail + 1,
-              }
-            }));
-            setLogTest(prev => ({
-              ...prev,
-              ["read-test"]: prev["read-test"] + "\n" + `[${dayjs().format("DD/MM/YYYY HH.mm.ss")}]:\terror: \t${err.message} ❌`,
-            }));
-
-            continue;
-          };
-
-          console.log(`unknown:\t${err}`);
-          setRequestStats(prev => ({
-            ...prev,
-            ["read-test"]: {
-              ...prev["read-test"],
-              awaiting: prev["read-test"].awaiting - 1,
-              fail: prev["read-test"].fail + 1,
-            }
-          }));
-          setLogTest(prev => ({
-            ...prev,
-            ["read-test"]: prev["read-test"] + "\n" + `[${dayjs().format("DD/MM/YYYY HH.mm.ss")}]:\tunknown: \t${err} ❌`,
-          }));
-
-          continue;
-        }
-      }
-      setLogTest(prev => ({
-        ...prev,
-        ["read-test"]: prev["read-test"] + "\n" + `[${dayjs().format("DD/MM/YYYY HH.mm.ss")}]:\tReading data using 50 different queries from 30 random sampling first, third sampling and 20 sampling never used before completed` +
-          "\n" + `[${dayjs().format("DD/MM/YYYY HH.mm.ss")}]:\tClearing generated data`,
-      }));
-      const [successClearing, failClearing] = await RequestAPI.Send<number>(
-        "/api/v1/administrators/test/generates/vacancies?count=" + (sampling.length * 500),
-        { method: "DELETE", headers: { "Authorization": "Bearer " + token } }
-      );
-      if (failClearing) {
-        console.log("clearing \t:", failClearing);
-        setAlert({ show: false, message: failClearing.message });
-      };
-      if (successClearing) {
-        setLogTest(prev => ({
-          ...prev,
-          ["read-test"]: prev["read-test"] + "\n" + `[${dayjs().format("DD/MM/YYYY HH.mm.ss")}]:\tGenerated data cleared successfully`,
-        }));
-      }
-      setStartDots(false);
-      setLoading(prev => ({
-        ...prev,
-        ["read-test"]: false,
-      }));
-      setRefetch(prev => ({ ...prev, ["read-logs"]: !prev["read-logs"] }));
-    };
-  };
-
-  const HEADERS = new Headers({
-    "Authorization": "Bearer " + token,
-  })
   /* side-effect */
   useEffect(() => {
     window.scrollTo({
@@ -1261,29 +581,38 @@ export default function NoCacheTest() {
     })
   }, []);
   useEffect(() => {
-    if (writeLogsRef.current) {
-      writeLogsRef.current.scrollTop = writeLogsRef.current.scrollHeight;
+    if (logsRef.current) {
+      logsRef.current.scrollTop = logsRef.current.scrollHeight;
     };
-    if (readLogsRef.current) {
-      readLogsRef.current.scrollTop = readLogsRef.current.scrollHeight;
-    };
-  }, [logTest["write-test"], logTest["read-test"]]);
+    // if (readLogsRef.current) {
+    //   readLogsRef.current.scrollTop = readLogsRef.current.scrollHeight;
+    // };
+  }, [logs]);
   useEffect(() => {
     const interval = setInterval(() => {
       setDots(prev => (prev.length < 5 ? prev + "." : "."));
     }, 1000);
 
-    if (!startDots) { // FIX HERE
+    if (!loading["test"]) {
       return clearInterval(interval);
     }
 
-    return () => clearInterval(interval); // Cleanup saat unmount
-  }, [loading["write-test"], loading["read-test"]]);
+    return () => clearInterval(interval);
+  }, [loading["test"]]);
   /* logs fetching */
   useEffect(() => {
     (async () => {
-      const [data, fail] = await RequestAPI.Send<{ chart: ChartDataType; logs: LogType[] }>(
-        "/api/v1/administrators/test/no-cache/" + sessionID + "/logs?type=write",
+      const HEADERS = new Headers({
+        "Authorization": "Bearer " + token,
+      });
+      const [data, fail] = await RequestAPI.Send<{
+        chart: {
+          cache_status: ChartData<"bar", { x: number; y: string }[], unknown>;
+          resource_utils: ChartData<"line", number[], string>;
+        };
+        logs: LogType[];
+      }>(
+        "/administrators/test/" + sessionID + "/logs?pattern=no-cache",
         {
           method: "GET",
           headers: HEADERS,
@@ -1294,28 +623,10 @@ export default function NoCacheTest() {
         return setAlert({ show: true, message: fail.message });
       };
       if (data) {
-        return setWriteLogs(data);
+        return setNoCacheLogs(data);
       };
     })();
-  }, [refetch["write-logs"]]);
-  useEffect(() => {
-    (async () => {
-      const [data, fail] = await RequestAPI.Send<{ chart: ChartDataType; logs: LogType[] }>(
-        "/api/v1/administrators/test/no-cache/" + sessionID + "/logs?type=read",
-        {
-          method: "GET",
-          headers: HEADERS,
-        }
-      );
-      if (fail) {
-        console.info("fail read logs request \t:", fail);
-        return setAlert({ show: true, message: fail.message });
-      };
-      if (data) {
-        return setReadLogs(data);
-      };
-    })();
-  }, [refetch["read-logs"]]);
+  }, [refetch]);
   return (
     <PerformanceTestLayout>
       {/* Default Notification */}
@@ -1355,7 +666,7 @@ export default function NoCacheTest() {
                 color: "#c2fffb",
               }}
             >
-              No Cache Test
+              Pengujian Tanpa Cache
             </Typography>
           </Box>
           <Grid container spacing={2}
@@ -1374,7 +685,7 @@ export default function NoCacheTest() {
                   backgroundColor: "white",
                 }}
               >
-                <Bar
+                {/* <Bar
                   data={writeLogs.chart as ChartData<"bar", number[], string>}
                   options={{
                     plugins: {
@@ -1398,6 +709,49 @@ export default function NoCacheTest() {
                       }
                     }
                   }}
+                /> */}
+                <Bar
+                  data={{
+                    ...noCacheLogs.chart.cache_status,
+                    datasets: [
+                      {
+                        ...noCacheLogs.chart.cache_status.datasets[0],
+                        minBarLength: 10,
+                      }
+                    ]
+                  }}
+                  options={{
+                    responsive: true,
+                    indexAxis: "y",
+                    scales: {
+                      y: {
+                        beginAtZero: true,
+                        ticks: {
+                          color: grey[700],
+                          minRotation: 10,
+                          font: {
+                            size: 11
+                          }
+                        }
+                      }
+                    },
+                    plugins: {
+                      legend: { display: false, },
+                      title: {
+                        display: true, text: "Cache Hit & Cache Miss (200 Requests)", padding: {
+                          top: 10,
+                          bottom: 20
+                        }
+                      },
+                      tooltip: {
+                        callbacks: {
+                          label: (tooltipItems: TooltipItem<"bar">) => {
+                            return `${tooltipItems.formattedValue} requests`
+                          }
+                        }
+                      }
+                    },
+                  }}
                 />
               </Box>
             </Grid>
@@ -1412,7 +766,7 @@ export default function NoCacheTest() {
                   backgroundColor: "white",
                 }}
               >
-                <Bar
+                {/* <Bar
                   data={readLogs.chart as ChartData<"bar", number[], string>}
                   options={{
                     plugins: {
@@ -1436,6 +790,113 @@ export default function NoCacheTest() {
                       }
                     }
                   }}
+                /> */}
+                <Box component={"div"}
+                  sx={{
+                    marginY: "0.6em",
+                    paddingX: "0.5em",
+                    display: "flex",
+                    justifyContent: "space-between",
+                  }}
+                >
+                  <Typography component={"p"} variant="caption"
+                    sx={{
+                      fontWeight: 550,
+                      color: grey[700]
+                    }}
+                  >
+                    Response Time & Resourse Utilization (%)
+                  </Typography>
+                  <Box component={"div"}
+                    sx={{
+                      display: "flex",
+                    }}
+                  >
+                    <Tooltip title="Previous Logs" placement="bottom-end">
+                      <IconButton size="small"
+                        disabled={chunkNumber === 1}
+                        onClick={() => {
+                          setChunkNumber(prev => prev - 1);
+                        }}
+                      >
+                        <KeyboardArrowLeftRounded fontSize="small" />
+                      </IconButton>
+                    </Tooltip>
+                    <Tooltip title="Next Logs" placement="bottom-end">
+                      <IconButton size="small"
+                        disabled={chunkNumber === (Math.ceil(noCacheLogs.chart.resource_utils.datasets[0]?.data.length / 10)) || noCacheLogs.logs.length == 0}
+                        onClick={() => {
+                          setChunkNumber(prev => prev + 1);
+                        }}
+                      >
+                        <KeyboardArrowRightRounded fontSize="small" />
+                      </IconButton>
+                    </Tooltip>
+                  </Box>
+                </Box>
+                <Line
+                  data={{
+                    ...noCacheLogs.chart.resource_utils,
+                    labels: chunkedLabels,
+                    datasets: [
+                      {
+                        ...noCacheLogs.chart.resource_utils.datasets[0],
+                        data: chunkedRespTime,
+                        backgroundColor: green[200],
+                        borderColor: green[400]
+                      },
+                      {
+                        ...noCacheLogs.chart.resource_utils.datasets[1],
+                        data: chunkedResUtil,
+                        backgroundColor: amber[200],
+                        borderColor: amber[400],
+                      },
+                    ]
+                  }}
+                  options={{
+                    scales: {
+                      x: {
+                        ticks: {
+                          font: {
+                            size: 11
+                          }
+                        }
+                      },
+                      y: {
+                        type: "linear",
+                        display: true,
+                        position: "left",
+                        title: {
+                          display: true,
+                          text: "Response Time (ms)"
+                        }
+                      },
+                      y1: {
+                        type: "linear",
+                        display: true,
+                        position: "right",
+                        title: {
+                          display: true,
+                          text: "Resource Utilization (%)"
+                        },
+                      },
+                    },
+                    plugins: {
+                      tooltip: {
+                        callbacks: {
+                          label: (tooltipItems: TooltipItem<"line">) => {
+                            let unit: string
+                            if (tooltipItems.dataset.label === "Response Time") {
+                              unit = "ms"
+                            } else {
+                              unit = "%"
+                            }
+                            return `${tooltipItems.dataset.label}: ${tooltipItems.raw + unit}`
+                          }
+                        }
+                      }
+                    }
+                  }}
                 />
               </Box>
             </Grid>
@@ -1446,45 +907,45 @@ export default function NoCacheTest() {
               marginBottom: "1em",
             }}
           >
-            <Typography component={"p"} variant="subtitle1"
+            <Typography component={"p"} variant="subtitle1" fontWeight={550}
               sx={{
-                fontWeight: 550,
-                color: grey[700],
+                marginBottom: "0.5em",
+                color: grey[800]
               }}
             >
-              Write Test
+              Deskripsi Pengujian
             </Typography>
             <Typography component={"p"} variant="body1"
               sx={{
                 color: grey[700],
               }}
             >
-              This test will execute 250 requests to the no-cache service. Below are the details of the request phases:
+              Tes ini akan menjalankan 100 permintaan ke layanan cache-aside. Berikut rincian fase permintaan:
             </Typography>
             <ol style={{ color: grey[700], lineHeight: "1.5em", marginLeft: "1em", marginTop: "0.5em" }}>
               <li>
                 <Typography component={"p"} variant="body1">
-                  Execute 50 requests to write new job vacancy data, writing 500 records per request (total: 25,000 records).
+                  Mengeksekusi 20 permintaan untuk menulis data lowongan kerja baru, menulis 500 record per permintaan (total: 10.000 record).
                 </Typography>
               </li>
               <li>
                 <Typography component={"p"} variant="body1">
-                  Execute 50 requests to read the job vacancy data written in the first phase, reading 500 records per request.
+                  Mengeksekusi 20 permintaan untuk membaca data lowongan kerja yang ditulis pada fase pertama, membaca 500 record per permintaan.
                 </Typography>
               </li>
               <li>
                 <Typography component={"p"} variant="body1">
-                  Execute 50 requests to update the job vacancy data written in the first phase, updating 500 records per request.
+                  Mengeksekusi 20 permintaan untuk memperbarui data lowongan kerja yang ditulis pada fase pertama, memperbarui 500 record per permintaan.
                 </Typography>
               </li>
               <li>
                 <Typography component={"p"} variant="body1">
-                  Execute 50 requests to read the job vacancy data that was updated in the third phase, reading 500 records per request.
+                  Mengeksekusi 20 permintaan untuk membaca data lowongan kerja yang diperbarui pada fase ketiga, membaca 500 record per permintaan.
                 </Typography>
               </li>
               <li>
                 <Typography component={"p"} variant="body1">
-                  Execute 50 requests with a combination of reading and writing job vacancy data at a 50:50 ratio. Writing 500 records per request (total: 12,500 records) and reading 500 records per request.
+                  Mengeksekusi 20 permintaan dengan kombinasi membaca dan menulis data lowongan kerja dengan rasio 50:50. Menulis 500 record per permintaan (total: 5.000 record) dan membaca 500 record per permintaan.
                 </Typography>
               </li>
             </ol>
@@ -1494,7 +955,7 @@ export default function NoCacheTest() {
                 color: grey[700]
               }}
             >
-              Click
+              Klik
               <Typography component={"span"} variant="inherit"
                 sx={{
                   color: blue[500],
@@ -1503,12 +964,20 @@ export default function NoCacheTest() {
                 }}
                 onClick={() => setOpenDialog(prev => ({ ...prev, ["sample-request"]: true }))}
               >
-                {" "}Request Sample JSON Data
+                {" "}Contoh Data JSON
               </Typography>
-              . to preview the data used in each request.
+              . untuk melihat pratinjau data yang digunakan dalam setiap permintaan.
+            </Typography>
+            <Typography component={"p"} variant="subtitle1" fontWeight={550}
+              sx={{
+                marginTop: "1em",
+                color: grey[800]
+              }}
+            >
+              Monitoring <span style={{ fontStyle: "italic" }}>Logs</span> Pengujian
             </Typography>
             <Box component={"div"}
-              ref={writeLogsRef}
+              ref={logsRef}
               sx={{
                 maxHeight: "20em",
                 overflowY: "scroll",
@@ -1533,11 +1002,11 @@ export default function NoCacheTest() {
               {vacanciesRaw.length !== 0 && (
                 <JsonView value={vacanciesRaw} style={nordTheme} collapsed />
               )}
-              {displayLogs["write-test"] && (
+              {displayLogs && (
                 <Typography component={"p"} variant="caption" fontFamily={"monospace"} sx={{ whiteSpace: "pre-line" }}>
-                  {logTest["write-test"] + " " + dots + "\n"}
+                  {logs + " " + dots + "\n"}
                   -----------------------------------------------------------------
-                  {`\n Testing progress -> ⏳Pending: ${requestStats["write-test"].awaiting} | ✅Success: ${requestStats["write-test"].success} | ❌Failed: ${requestStats["write-test"].fail}`}
+                  {`\n Progres Pengujian -> ⏳Menunggu: ${requestStats.awaiting} | ✅Berhasil: ${requestStats.success} | ❌Gagal: ${requestStats.fail}`}
                 </Typography>
               )}
             </Box>
@@ -1547,18 +1016,18 @@ export default function NoCacheTest() {
               }}
             >
               <Button
-                startIcon={loading["write-test"] ? <CircularProgress size={20} /> :
-                  writeLogs.logs.length == 250 ? <DoneRounded fontSize="small" /> :
+                startIcon={loading["test"] ? <CircularProgress size={20} /> :
+                  noCacheLogs.logs.length == 100 ? <DoneRounded fontSize="small" /> :
                     <PlayCircleRounded fontSize="small" />
                 }
                 variant="contained"
-                disabled={loading["write-test"] || writeLogs.logs.length == 250}
+                disabled={loading["test"] || noCacheLogs.logs.length == 100}
                 onClick={() => {
                   setVacanciesRaw([]);
                   setOpenDialog(prev => ({ ...prev, ["confirm-write-test"]: true }))
                 }}
               >
-                {writeLogs.logs.length == 250 ? "Test Completed" : "Run Write Test"}
+                {noCacheLogs.logs.length == 100 ? "Selesai" : "Jalankan Pengujian"}
               </Button>
             </Box>
             <Box component={"div"}>
@@ -1568,41 +1037,50 @@ export default function NoCacheTest() {
                   paddingY: "0.5em",
                   color: "#06816d",
                   fontWeight: 550,
-                  textAlign: "center",
-                  borderBottom: "1px solid " + grey[300]
+                  textAlign: "start",
+                  // borderBottom: "1px solid " + grey[300]
                 }}
               >
-                Write Test Results
+                Hasil Pengujian Tanpa Cache
               </Typography>
               <TableContainer>
-                <Table size="small">
+                <Table size="small"
+                  sx={{
+                    borderCollapse: "unset",
+                    border: "1px solid " + grey[400],
+                    borderRadius: "0.3em",
+                    ".MuiTableCell-root": {
+                      border: "none",
+                    },
+                  }}
+                >
                   <TableHead>
                     <TableRow>
-                      <TableCell sx={{ width: "10%" }}>
-                        <Typography component={"p"} variant="body2" sx={{ color: grey[600], fontWeight: 550 }}>No. Request</Typography>
+                      <TableCell sx={{ width: "10%", borderBottom: "1px solid " + grey[400] + "!important" }}>
+                        <Typography component={"p"} variant="body2" sx={{ paddingY: "0.3em", color: grey[600], fontWeight: 550 }}>No. Request</Typography>
                       </TableCell>
-                      <TableCell sx={{ width: "10%" }}>
+                      <TableCell sx={{ width: "10%", borderBottom: "1px solid " + grey[400] + "!important" }}>
                         <Typography component={"p"} variant="body2" sx={{ color: grey[600], fontWeight: 550 }}>Cache Hit</Typography>
                       </TableCell>
-                      <TableCell sx={{ width: "10%" }}>
+                      <TableCell sx={{ width: "10%", borderBottom: "1px solid " + grey[400] + "!important" }}>
                         <Typography component={"p"} variant="body2" sx={{ color: grey[600], fontWeight: 550 }}>Cache Miss</Typography>
                       </TableCell>
-                      <TableCell sx={{ width: "16.5%" }}>
+                      <TableCell sx={{ width: "16.5%", borderBottom: "1px solid " + grey[400] + "!important" }}>
                         <Typography component={"p"} variant="body2" sx={{ color: grey[600], fontWeight: 550 }}>Response Time (ms)</Typography>
                       </TableCell>
-                      <TableCell sx={{ width: "16.5%" }}>
+                      <TableCell sx={{ width: "16.5%", borderBottom: "1px solid " + grey[400] + "!important" }}>
                         <Typography component={"p"} variant="body2" sx={{ color: grey[600], fontWeight: 550 }}>Memory Usage (MB)</Typography>
                       </TableCell>
-                      <TableCell sx={{ width: "16.5%" }}>
+                      <TableCell sx={{ width: "16.5%", borderBottom: "1px solid " + grey[400] + "!important" }}>
                         <Typography component={"p"} variant="body2" sx={{ color: grey[600], fontWeight: 550 }}>CPU Usage (%)</Typography>
                       </TableCell>
-                      <TableCell sx={{ width: "20%" }}>
+                      <TableCell sx={{ width: "20%", borderBottom: "1px solid " + grey[400] + "!important" }}>
                         <Typography component={"p"} variant="body2" sx={{ color: grey[600], fontWeight: 550 }}>Resource Utilization (%)</Typography>
                       </TableCell>
                     </TableRow>
                   </TableHead>
                   <TableBody>
-                    {writeLogs.logs.length < 5 && (
+                    {noCacheLogs.logs.length < 5 && (
                       <TableRow>
                         <TableCell colSpan={12}
                           sx={{
@@ -1618,16 +1096,16 @@ export default function NoCacheTest() {
                               backgroundColor: amber[50]
                             }}
                           >
-                            Request logs for the write test are empty. Please run the test first.
+                            Log permintaan untuk pengujian masih kosong. Silakan jalankan pengujian terlebih dahulu.
                           </Typography>
                         </TableCell>
                       </TableRow>
                     )}
-                    {paginatedWriteLogs.map((log_, index) => (
+                    {paginatedNoCacheLogs.map((log_, index) => (
                       <TableRow hover key={index}>
                         <TableCell>
                           <Typography component={"p"} variant="body2" sx={{ color: grey[600] }}>
-                            Request:{(pageWriteLogs * 15) - 15 + (index + 1)}
+                            Request:{(pageTableLogs * 15) - 15 + (index + 1)}
                           </Typography>
                         </TableCell>
                         <TableCell>
@@ -1666,10 +1144,10 @@ export default function NoCacheTest() {
                 </Table>
                 <Pagination
                   size="small"
-                  count={Math.ceil(writeLogs.logs.length / 15)}
-                  page={pageWriteLogs}
+                  count={Math.ceil(noCacheLogs.logs.length / 15)}
+                  page={pageTableLogs}
                   onChange={(_: ChangeEvent<unknown>, page: number) => {
-                    setPageWriteLogs(page);
+                    setPageTableLogs(page);
                   }}
                   sx={{
                     marginY: "0.5em",
@@ -1680,7 +1158,7 @@ export default function NoCacheTest() {
             </Box>
           </Box>
           {/* READ TEST */}
-          <Box component={"div"} className="write-test">
+          {/* <Box component={"div"} className="write-test">
             <Typography component={"p"} variant="subtitle1"
               sx={{
                 fontWeight: 550,
@@ -1741,11 +1219,11 @@ export default function NoCacheTest() {
                 },
               }}
             >
-              {displayLogs["read-test"] && (
+              {displayLogs && (
                 <Typography component={"p"} variant="caption" fontFamily={"monospace"} sx={{ whiteSpace: "pre-line" }}>
-                  {logTest["read-test"] + " " + dots + "\n"}
+                  {logs + " " + dots + "\n"}
                   -----------------------------------------------------------------
-                  {`\n Testing progress -> ⏳Pending: ${requestStats["read-test"].awaiting} | ✅Success: ${requestStats["read-test"].success} | ❌Failed: ${requestStats["read-test"].fail}`}
+                  {`\n Testing progress -> ⏳Pending: ${requestStats.awaiting} | ✅Success: ${requestStats.success} | ❌Failed: ${requestStats.fail}`}
                 </Typography>
               )}
             </Box>
@@ -1884,7 +1362,7 @@ export default function NoCacheTest() {
                 />
               </TableContainer>
             </Box>
-          </Box>
+          </Box> */}
         </Box>
       </Container>
       {/* DIALOG CONFIRM REQUEST SAMPLE */}
@@ -1905,7 +1383,7 @@ export default function NoCacheTest() {
             color: grey[700]
           }}
         >
-          Confirm Sample Request
+          Konfirmasi Data Sampel
         </Typography>
         <Typography component={"p"} variant="body2"
           sx={{
@@ -1913,9 +1391,9 @@ export default function NoCacheTest() {
             whiteSpace: "pre-line"
           }}
         >
-          Are you sure you want to request a sample of 500 generated vacancies? {"\n"}
+          Apakah Anda yakin ingin meminta contoh sebanyak 500 data lowongan kerja yang dibuat secara otomatis? {"\n"}
         </Typography>
-        <Box component={"div"}
+        {/* <Box component={"div"}
           sx={{
             marginTop: "0.5em",
             padding: "0.5em",
@@ -1927,7 +1405,7 @@ export default function NoCacheTest() {
           <Typography component={"p"} variant="caption">
             Displaying 500 data entries may cause the interface to freeze or slow down.
           </Typography>
-        </Box>
+        </Box> */}
         <Box component={"div"}
           sx={{
             marginTop: "1.5em",
@@ -1944,7 +1422,7 @@ export default function NoCacheTest() {
               setOpenDialog(prev => ({ ...prev, ["sample-request"]: false }))
             }}
           >
-            Cancel
+            Batal
           </Button>
           <Button
             variant="contained"
@@ -1955,7 +1433,7 @@ export default function NoCacheTest() {
               GetSampleJSON();
             }}
           >
-            Continue
+            Lanjutkan
           </Button>
         </Box>
       </Dialog>
@@ -1977,7 +1455,7 @@ export default function NoCacheTest() {
             color: grey[700]
           }}
         >
-          Confirm Write Test Execution
+          Konfirmasi Pengujian
         </Typography>
         <Typography component={"p"} variant="body2"
           sx={{
@@ -1985,9 +1463,9 @@ export default function NoCacheTest() {
             whiteSpace: "pre-line"
           }}
         >
-          This test will execute 250 requests to the no-cache service, performing multiple read and write operations on job vacancy data. The process involves writing, reading, updating, and a combination of both. Given the large data volume, the test may take some time to complete.
+          Pengujian ini akan menjalankan 100 permintaan ke layanan tanpa cache, yang mencakup berbagai operasi baca dan tulis pada data lowongan pekerjaan.
 
-          Do you want to proceed?
+          Apakah Anda ingin melanjutkan?
         </Typography>
         <Box component={"div"}
           sx={{
@@ -2005,7 +1483,7 @@ export default function NoCacheTest() {
               setOpenDialog(prev => ({ ...prev, ["confirm-write-test"]: false }))
             }}
           >
-            Cancel
+            Batal
           </Button>
           <Button
             variant="contained"
@@ -2013,17 +1491,16 @@ export default function NoCacheTest() {
             disabled={loading["sample-request"]}
             startIcon={loading["sample-request"] && <CircularProgress size={20} />}
             onClick={() => {
-              // RunWriteTest();
-              RunWriteTestScenario();
+              RunTestScenario();
               setOpenDialog(prev => ({ ...prev, ["confirm-write-test"]: false }));
             }}
           >
-            Continue
+            Lanjutkan
           </Button>
         </Box>
       </Dialog>
       {/* DIALOG CONFIRM READ REQUEST SAMPLE */}
-      <Dialog
+      {/* <Dialog
         open={Boolean(openDialog["confirm-read-test"])}
         maxWidth={"xs"}
         PaperProps={{
@@ -2077,14 +1554,14 @@ export default function NoCacheTest() {
             startIcon={loading["sample-request"] && <CircularProgress size={20} />}
             onClick={() => {
               // RunReadTest();
-              RunReadTestScenario();
+              RunTestScenario();
               setOpenDialog(prev => ({ ...prev, ["confirm-read-test"]: false }));
             }}
           >
             Continue
           </Button>
         </Box>
-      </Dialog>
+      </Dialog> */}
     </PerformanceTestLayout>
   )
 }

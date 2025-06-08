@@ -30,7 +30,7 @@ export default function EducationForm({
           color: grey[700]
         }}
       >
-        Your Education Data
+        Data Pendidikan
       </Typography>
       <Grid container className="education-form" columnSpacing={2}
         rowSpacing={2}
@@ -39,8 +39,8 @@ export default function EducationForm({
           <TextField
             type="text"
             name="university"
-            label="University"
-            placeholder="University name (no abbreviations)"
+            label="Nama Perguruan Tinggi"
+            placeholder="Nama perguruan tinggi (bukan singkatan)"
             size="small"
             autoComplete="off"
             fullWidth
@@ -54,7 +54,7 @@ export default function EducationForm({
           <TextField
             type="text"
             name="address"
-            label="University Address"
+            label="Alamat Perguruan Tinggi"
             placeholder="e.g., Jakarta, DKI Jakarta"
             size="small"
             autoComplete="off"
@@ -69,8 +69,8 @@ export default function EducationForm({
           <TextField
             type="text"
             name="major"
-            label="Major"
-            placeholder="Your field of study or major"
+            label="Jurusan"
+            placeholder="e.g Teknik Rekayasa Manufaktur"
             size="small"
             autoComplete="off"
             fullWidth
@@ -91,12 +91,12 @@ export default function EducationForm({
                 }
               }}
             >
-              Degree
+              Jenjang Pendidikan
             </InputLabel>
             <Select
               labelId="education_degree"
               name="degree"
-              label="Degree"
+              label="Jenjang Pendidikan"
               size="small"
               value={formValue.degree}
               onChange={SelectOnChange(setFormValue, "", { coerceToNumber: false })}
@@ -138,8 +138,8 @@ export default function EducationForm({
               onChange={SelectOnChange(setFormValue, "", { coerceToNumber: false, coerceToBoolean: true })}
               error={Boolean(errMsg["is_graduated"])}
             >
-              <MenuItem value={"true"}>Graduated</MenuItem>
-              <MenuItem value={"false"}>Incomplete</MenuItem>
+              <MenuItem value={"true"}>Telah Lulus</MenuItem>
+              <MenuItem value={"false"}>Belum Selesai</MenuItem>
             </Select>
             {errMsg["is_graduated"] && (
               <FormHelperText sx={{ color: red[500] }}>{errMsg["is_graduated"]}</FormHelperText>
@@ -150,7 +150,7 @@ export default function EducationForm({
           <TextField
             type="number"
             name="gpa"
-            label="GPA"
+            label="IPK"
             placeholder="e.g., 3.5/4.0 or 4.2/5.0"
             size="small"
             autoComplete="off"
@@ -189,8 +189,9 @@ export default function EducationForm({
           >
             <MobileDatePicker
               name="start_at"
-              format="DD/MM/YYYY"
-              label="Start at"
+              views={["year"]}
+              format="YYYY"
+              label="Tahun Masuk"
               slotProps={{
                 textField: {
                   size: "small",
@@ -228,8 +229,10 @@ export default function EducationForm({
             </Box>
             <MobileDatePicker
               name="end_at"
-              format="DD/MM/YYYY"
-              label="End at"
+              // openTo="year"
+              views={["year"]}
+              format="YYYY"
+              label="Tahun Selesai"
               slotProps={{
                 textField: {
                   size: "small",

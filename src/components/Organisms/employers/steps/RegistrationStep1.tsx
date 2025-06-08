@@ -51,7 +51,7 @@ export default function RegistrationStep1({
 
     const token = GetSession("auth");
     const [success, fail] = await RequestAPI.FormDataRequest<EmployerProfileFormType>(formValue).Send<any>(
-      "/api/v1/employers/",
+      "/employers/",
       {
         method: "POST",
         headers: {
@@ -170,7 +170,7 @@ export default function RegistrationStep1({
                       }}
                       onChange={FileOnChange(setFilePreview, setFormValue, setErrMsgFile)}
                     />
-                    Profile Image
+                    Profil Perusahaan
                   </Button>
                   <Typography
                     variant="subtitle2"
@@ -220,7 +220,7 @@ export default function RegistrationStep1({
                       }}
                       onChange={FileOnChange(setFilePreview, setFormValue, setErrMsgFile)}
                     />
-                    Background Image
+                    Latar Belakang
                   </Button>
                   <Typography
                     variant="subtitle2"
@@ -251,8 +251,8 @@ export default function RegistrationStep1({
             <TextField
               type="text"
               name="name"
-              label="Company Name"
-              placeholder="Your company name"
+              label="Nama Perusahaan"
+              placeholder="Nama perusahaan anda"
               size="small"
               fullWidth
               autoComplete="off"
@@ -270,8 +270,8 @@ export default function RegistrationStep1({
             <TextField
               type="text"
               name="legal_name"
-              label="Company Legal Name"
-              placeholder="Your company legal name"
+              label="Nama Legal Perusahaan"
+              placeholder="e.g PT. Sidokaredev Cloud"
               size="small"
               fullWidth
               autoComplete="off"
@@ -289,8 +289,8 @@ export default function RegistrationStep1({
             <TextField
               type="text"
               name="location"
-              label="Company location"
-              placeholder="Enter company head office location"
+              label="Lokasi Perusahaan"
+              placeholder="Masukkan alamat kantor pusat"
               size="small"
               fullWidth
               autoComplete="off"
@@ -308,8 +308,8 @@ export default function RegistrationStep1({
             <TextField
               type="text"
               name="founder"
-              label="Founder"
-              placeholder="Enter founder's name"
+              label="Pendiri"
+              placeholder="Masukkan nama pendiri"
               size="small"
               fullWidth
               autoComplete="off"
@@ -368,12 +368,12 @@ export default function RegistrationStep1({
                   }
                 }}
               >
-                Number of Employees
+                Jumlah Pegawai
               </InputLabel>
               <Select
                 labelId="number_of_employees_label"
                 name="total_of_employee"
-                label="Number of Employees"
+                label="Jumlah Pegawai"
                 size="small"
                 value={formValue.total_of_employee}
                 onChange={SelectOnChange(setFormValue, undefined, { coerceToNumber: false })}
@@ -406,7 +406,7 @@ export default function RegistrationStep1({
               type="text"
               name="website"
               label="Official Website"
-              placeholder="Enter official website URL"
+              placeholder="Masukkan situs resmi perusahaan"
               size="small"
               fullWidth
               autoComplete="off"
@@ -424,8 +424,8 @@ export default function RegistrationStep1({
             <TextField
               type="text"
               name="description"
-              label="Company Description"
-              placeholder="Describe about company"
+              label="Tentang Perusahaan"
+              placeholder="Deskripsi tentang perusahaan"
               size="small"
               autoComplete="off"
               rows={5}
@@ -454,7 +454,7 @@ export default function RegistrationStep1({
               minWidth: "10em"
             }}
           >
-            Next
+            Selanjutnya
           </Button>
         </Box>
       </form>

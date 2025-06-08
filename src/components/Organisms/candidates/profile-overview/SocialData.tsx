@@ -48,7 +48,7 @@ export default function CandidateSocialData({
     const token = GetSession("auth")
     let requestMethod = onEdit ? "PATCH" : "POST";
     let requestBody = onEdit ? formValue[0] : formValue
-    const [success, fail] = await RequestAPI.JSONRequest(requestBody).Send<string>("/api/v1/candidates/socials/", {
+    const [success, fail] = await RequestAPI.JSONRequest(requestBody).Send<string>("/candidates/socials/", {
       method: requestMethod,
       headers: {
         "Authorization": "Bearer " + token
@@ -80,7 +80,7 @@ export default function CandidateSocialData({
     }));
     const token = GetSession("auth");
     const [success, fail] = await RequestAPI.Send<string>(
-      "/api/v1/candidates/socials/" + socialId,
+      "/candidates/socials/" + socialId,
       {
         method: "DELETE",
         headers: {
@@ -111,7 +111,7 @@ export default function CandidateSocialData({
   useEffect(() => {
     const token = GetSession("auth");
     (async () => {
-      const [data, fail] = await RequestAPI.Send<SocialDataType[]>("/api/v1/candidates/socials/", {
+      const [data, fail] = await RequestAPI.Send<SocialDataType[]>("/candidates/socials/", {
         method: "GET",
         headers: {
           "Authorization": "Bearer " + token
@@ -147,7 +147,7 @@ export default function CandidateSocialData({
             textAlign: "center",
           }}
         >
-          Social
+          Sosial Media
         </Typography>
         <Box component={"div"}
           sx={{
@@ -173,7 +173,7 @@ export default function CandidateSocialData({
                 setOnEdit(false)
               }}
             >
-              Cancel
+              Batal
             </Button>
           ) : (
             <IconButton size="small"
@@ -213,7 +213,7 @@ export default function CandidateSocialData({
             }}
           >
             <Box component={"img"}
-              src={`${HOST.main}${item.icon_image_path}`}
+              src={`${HOST.main}${item.icon_image_path.replace("/api/v1", "")}`}
               width={25}
               height={25}
               sx={{
@@ -286,9 +286,9 @@ export default function CandidateSocialData({
       >
         <Box component={"div"}>
           <Typography component={"p"} variant="body1" sx={{ color: grey[600] }}>
-            Are you sure want to
-            <SimpleEmphasis text={" delete "} textColor="red" />
-            your Social
+            Apakah anda yakin ingin
+            <SimpleEmphasis text={" menghapus "} textColor="red" />
+            data sosial media
             <SimpleEmphasis text={" " + selectedSocial?.name} /> ?
           </Typography>
         </Box>
@@ -311,7 +311,7 @@ export default function CandidateSocialData({
               onCloseDialog("delete-social")
             }}
           >
-            No
+            Batalkan
           </Button>
           <Button
             variant="outlined"
@@ -327,7 +327,7 @@ export default function CandidateSocialData({
           >
             {loading["delete-social"] ? (
               <CircularProgress size={20} />
-            ) : "Yes"}
+            ) : "Lanjutkan"}
           </Button>
         </Box>
       </Dialog>

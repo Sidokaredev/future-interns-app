@@ -73,9 +73,9 @@ export default function CacheAsideTestPage() {
   /* constants */
   const token = GetSession("auth");
   const paginatedCacheAsideLogs = cacheAsideLogs.logs.slice((pageTableLogs * 15) - 15, pageTableLogs * 15);
-  const chunkedLabels = cacheAsideLogs.chart.resource_utils.labels?.slice((chunkNumber * 15) - 15, chunkNumber * 15);
-  const chunkedRespTime = cacheAsideLogs.chart.resource_utils.datasets[0].data.slice((chunkNumber * 15) - 15, chunkNumber * 15);
-  const chunkedResUtil = cacheAsideLogs.chart.resource_utils.datasets[1].data.slice((chunkNumber * 15) - 15, chunkNumber * 15);
+  const chunkedLabels = cacheAsideLogs.chart.resource_utils.labels?.slice((chunkNumber * 10) - 10, chunkNumber * 10);
+  const chunkedRespTime = cacheAsideLogs.chart.resource_utils.datasets[0].data.slice((chunkNumber * 10) - 10, chunkNumber * 10);
+  const chunkedResUtil = cacheAsideLogs.chart.resource_utils.datasets[1].data.slice((chunkNumber * 10) - 10, chunkNumber * 10);
 
   /**
    * 1. Generate 120 random sampling query
@@ -89,8 +89,8 @@ export default function CacheAsideTestPage() {
   const RunCacheAsideScenario = async () => {
     setLoading(true);
     setDisplayLogs(true);
-    setLogs(prev => prev + "\n" + `[${dayjs().format("DD/MM/YYYY HH.mm.ss")}]:\tBegin read testing` +
-      "\n" + `[${dayjs().format("DD/MM/YYYY HH.mm.ss")}]:\tGenerating sampling queries`); // Logs
+    setLogs(prev => prev + "\n" + `[${dayjs().format("DD/MM/YYYY HH.mm.ss")}]:\tBegin Cache-Aside testing` +
+      "\n" + `[${dayjs().format("DD/MM/YYYY HH.mm.ss")}]:\tGenerating sampling search queries`); // Logs
 
     const TOTAL_REQUEST = 100;
     setRequestStats(prev => ({ ...prev, awaiting: TOTAL_REQUEST }));
@@ -105,7 +105,7 @@ export default function CacheAsideTestPage() {
     });
 
     const [dataSampling, failSampling] = await RequestAPI.Send<SamplingQuery[]>(
-      "/api/v1/administrators/test/generates/sampling?count=30",
+      "/administrators/test/generates/sampling?count=30",
       { method: "GET", headers: basicHeaders }
     );
     if (failSampling) {
@@ -113,7 +113,7 @@ export default function CacheAsideTestPage() {
       return setAlert({ show: true, message: `generate sampling: ${failSampling.message}` })
     };
     if (dataSampling) {
-      setLogs(prev => prev + "\n" + `${dayjs().format("DD/MM/YYYY HH.mm.ss")}: \tSampling queries is ready!` +
+      setLogs(prev => prev + "\n" + `${dayjs().format("DD/MM/YYYY HH.mm.ss")}: \tSampling search queries is ready!` +
         "\n" + `${dayjs().format("DD/MM/YYYY HH.mm.ss")}: \tWriting new data`);
       /**
        * Writing new data
@@ -126,7 +126,7 @@ export default function CacheAsideTestPage() {
           offset: idx + 1,
           total_raw_vacancies: 500
         }).Send<RawVacancies[]>(
-          "/api/v1/administrators/test/generates/vacancies",
+          "/administrators/test/generates/vacancies",
           { method: "POST", headers: basicHeaders }
         );
         if (failRaw) {
@@ -137,7 +137,7 @@ export default function CacheAsideTestPage() {
         if (dataRaw) {
           const reqBody = JSON.stringify(dataRaw);
           const request = new Request(
-            HOST.cache_aside + "/api/v1/cache-aside/vacancies",
+            HOST.cache_aside + "/vacancies",
             { method: "POST", headers: logHeaders, body: reqBody },
           );
           try {
@@ -197,7 +197,7 @@ export default function CacheAsideTestPage() {
        */
       for (let idx = 0; idx < firstSampling.length; idx++) {
         const request = new Request(
-          `${HOST.cache_aside}/api/v1/cache-aside/vacancies?lineIndustry=${firstSampling[idx].line_industry}&employeeType=${firstSampling[idx].employee_type}&workArrangement=${firstSampling[idx].work_arrangement}`,
+          `${HOST.cache_aside}/vacancies?lineIndustry=${firstSampling[idx].line_industry}&employeeType=${firstSampling[idx].employee_type}&workArrangement=${firstSampling[idx].work_arrangement}`,
           { method: "GET", headers: logHeaders },
         );
 
@@ -279,7 +279,7 @@ export default function CacheAsideTestPage() {
         });
 
         const request = new Request(
-          HOST.cache_aside + "/api/v1/cache-aside/vacancies",
+          HOST.cache_aside + "/vacancies",
           { method: "PATCH", headers: logHeaders, body: JSON.stringify(reqBody) }
         );
 
@@ -336,7 +336,7 @@ export default function CacheAsideTestPage() {
        */
       for (let idx = 0; idx < firstSampling.length; idx++) {
         const request = new Request(
-          `${HOST.cache_aside}/api/v1/cache-aside/vacancies?lineIndustry=${firstSampling[idx].line_industry}&employeeType=${firstSampling[idx].employee_type}&workArrangement=${firstSampling[idx].work_arrangement}`,
+          `${HOST.cache_aside}/vacancies?lineIndustry=${firstSampling[idx].line_industry}&employeeType=${firstSampling[idx].employee_type}&workArrangement=${firstSampling[idx].work_arrangement}`,
           { method: "GET", headers: logHeaders },
         );
 
@@ -398,7 +398,7 @@ export default function CacheAsideTestPage() {
           offset: idx + 1,
           total_raw_vacancies: 500
         }).Send<RawVacancies[]>(
-          "/api/v1/administrators/test/generates/vacancies",
+          "/administrators/test/generates/vacancies",
           { method: "POST", headers: basicHeaders }
         );
         if (fail) {
@@ -415,7 +415,7 @@ export default function CacheAsideTestPage() {
         if (rawVacancies) {
           const reqBody = JSON.stringify(rawVacancies);
           const request = new Request(
-            HOST.cache_aside + "/api/v1/cache-aside/vacancies",
+            HOST.cache_aside + "/vacancies",
             { method: "POST", headers: logHeaders, body: reqBody },
           );
           try {
@@ -429,7 +429,7 @@ export default function CacheAsideTestPage() {
               setLogs(prev => prev + "\n" + `[${dayjs().format("DD/MM/YYYY HH.mm.ss")}]:\tcombination: write request #${idx} send successfully ✅`);
 
               const requestRead = new Request(
-                `${HOST.cache_aside}/api/v1/cache-aside/vacancies?lineIndustry=${combinationSampling[idx].line_industry}&employeeType=${combinationSampling[idx].employee_type}&workArrangement=${combinationSampling[idx].work_arrangement}`,
+                `${HOST.cache_aside}/vacancies?lineIndustry=${combinationSampling[idx].line_industry}&employeeType=${combinationSampling[idx].employee_type}&workArrangement=${combinationSampling[idx].work_arrangement}`,
                 { method: "GET", headers: logHeaders },
               );
               try {
@@ -503,9 +503,9 @@ export default function CacheAsideTestPage() {
           }
         }
       }
-      setLogs(prev => prev + "\n" + `${dayjs().format("DD/MM/YYYY HH.mm.ss")}: \tCache-Aside test completed` + "\n" + `${dayjs().format("DD/MM/YYYY HH.mm.ss")}: \tClearing testing data`);
+      setLogs(prev => prev + "\n" + `${dayjs().format("DD/MM/YYYY HH.mm.ss")}: \tCache-Aside test completed` + "\n" + `${dayjs().format("DD/MM/YYYY HH.mm.ss")}: \tClearing all testing data`);
       const [successClearing, failClearing] = await RequestAPI.Send<number>(
-        "/api/v1/administrators/test/generates/vacancies?count=" + (dataSampling.length * 500),
+        "/administrators/test/generates/vacancies?count=" + (dataSampling.length * 500),
         { method: "DELETE", headers: basicHeaders }
       );
       if (failClearing) {
@@ -552,7 +552,7 @@ export default function CacheAsideTestPage() {
         };
         logs: LogType[];
       }>(
-        "/api/v1/administrators/test/" + sessionID + "/logs?pattern=cache-aside",
+        "/administrators/test/" + sessionID + "/logs?pattern=cache-aside",
         {
           method: "GET",
           headers: {

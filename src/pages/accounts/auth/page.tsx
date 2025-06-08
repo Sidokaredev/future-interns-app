@@ -16,7 +16,7 @@ import React, { useState } from "react";
 import FutureInternLogo from "/Future Interns Logo.svg";
 import AuthLayout from "../../../components/Templates/AuthLayout";
 import SimpleEmphasis from "../../../components/Molecules/Texts/SimpleEmphasis";
-import HelpIcon from "@mui/icons-material/Help";
+// import HelpIcon from "@mui/icons-material/Help";
 import { Authentication, AuthJSON } from "../types";
 import { DEAFULT_AUTHENTICATION } from "../constants";
 import { InputOnChange, SetSession } from "../../global-helpers";
@@ -49,7 +49,7 @@ export default function Auth() {
     }
 
     const [data, fail] = await RequestAPI.JSONRequest(formValue)
-      .Send<AuthJSON>("/api/v1/accounts/auth",
+      .Send<AuthJSON>("/accounts/auth",
         {
           method: 'POST',
           headers: {
@@ -133,15 +133,16 @@ export default function Auth() {
                   marginTop: "0.5em",
                 }}
               >
-                Sign In to your account
+                Masuk ke akun Anda
               </Typography>
               <Typography variant="caption">
-                Prepare <SimpleEmphasis text={"yourself"} /> for your{" "}
-                <SimpleEmphasis text={"dream"} /> career
+                Siapkan <SimpleEmphasis text={"diri anda"} /> untuk karir{" "}
+                <SimpleEmphasis text={"impian"} />
               </Typography>
             </Box>
             <Box component={"div"} className="button-menu">
-              <Button
+              {/* DISABLED */}
+              {/* <Button
                 variant="text"
                 startIcon={<HelpIcon />}
                 size="small"
@@ -150,7 +151,7 @@ export default function Auth() {
                 }
               >
                 Account Recovery
-              </Button>
+              </Button> */}
               <Menu
                 open={openMenu}
                 anchorEl={anchorEl}
@@ -193,8 +194,8 @@ export default function Auth() {
                 variant="outlined"
                 type="email"
                 name="email"
-                label="Email Address"
-                placeholder="Your email address"
+                label="Alamat Email"
+                placeholder="e.g user@sidokaredev.space"
                 autoComplete="off"
                 fullWidth
                 sx={{
@@ -209,8 +210,8 @@ export default function Auth() {
                 variant="outlined"
                 type={showPassword ? "text" : "password"}
                 name="password"
-                label="Password"
-                placeholder="Your valid password"
+                label="Kata Sandi"
+                placeholder="Masukkan kata sandi anda"
                 autoComplete="off"
                 fullWidth
                 value={formValue.password}
@@ -220,7 +221,7 @@ export default function Auth() {
               />
               <FormControlLabel
                 control={<Checkbox size="small" />}
-                label="Show password"
+                label="tampilkan kata sandi"
                 slotProps={{
                   typography: {
                     variant: "caption",
@@ -246,10 +247,10 @@ export default function Auth() {
                   fullWidth
                   onClick={() => navigate("/accounts/create")}
                 >
-                  Create Instead
+                  Daftar Akun
                 </Button>
                 <Button type="submit" variant="contained" disabled={loading} fullWidth>
-                  Submit
+                  Masuk
                 </Button>
               </Box>
             </form>

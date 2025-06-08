@@ -6,6 +6,7 @@ import { ChangeEvent, useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { GetSession, onCloseSnackbar } from "../../global-helpers";
 import RequestAPI from "../../../services/api/request";
+import { useDebounce } from "use-debounce";
 
 type CacheSessionType = {
   id: number;
@@ -28,7 +29,9 @@ export default function PerformanceTestPage() {
   const location = useLocation();
   /* state */
   const [cacheSessions, setCacheSessions] = useState<CacheSessionType[]>([]);
+  const [cacheSessionsCount, setCacheSessionsCount] = useState<number>(0);
   const [query, setQuery] = useState<string>("");
+  const [debouncedQuery] = useDebounce(query, 1000);
   const [pageTable, setPageTable] = useState<number>(1);
   const [openDialog, setOpenDialog] = useState<Record<string, boolean>>({});
   const [testForm, setTestForm] = useState<string>("");
@@ -38,10 +41,10 @@ export default function PerformanceTestPage() {
 
   /* constants */
   const token = GetSession("auth");
-  const filteredCacheSessions = cacheSessions.filter(val => val.label.toLowerCase().includes(query.toLowerCase()));
-  const paginatedCacheSessions = filteredCacheSessions.slice((pageTable * 10) - 10, pageTable * 10);
+  // const filteredCacheSessions = cacheSessions.filter(val => val.label.toLowerCase().includes(query.toLowerCase()));
+  // const paginatedCacheSessions = filteredCacheSessions.slice((pageTable * 10) - 10, pageTable * 10);
 
-  const totalPageTable = Math.ceil(filteredCacheSessions.length / 10);
+  const totalPageTable = Math.ceil(cacheSessionsCount / 10);
 
   /* onCreate */
   const CreateNewTest = async () => {
@@ -49,7 +52,7 @@ export default function PerformanceTestPage() {
 
     const token = GetSession("auth");
     const [success, fail] = await RequestAPI.JSONRequest({ label: testForm }).Send<{ id: string; message: string; }>(
-      "/api/v1/administrators/test/",
+      "/administrators/test/",
       {
         method: "POST",
         headers: {
@@ -72,8 +75,8 @@ export default function PerformanceTestPage() {
 
   useEffect(() => {
     (async () => {
-      const [data, fail] = await RequestAPI.Send<CacheSessionType[]>(
-        "/api/v1/administrators/dashboard/performances",
+      const [data, fail] = await RequestAPI.Send<{ arr: CacheSessionType[]; count: number; }>(
+        "/administrators/dashboard/performances?page=" + pageTable + "&label=" + debouncedQuery,
         {
           method: "GET",
           headers: {
@@ -86,11 +89,12 @@ export default function PerformanceTestPage() {
         return setAlert({ show: true, message: fail.message });
       };
       if (data) {
-        return setCacheSessions(data);
+        setCacheSessionsCount(data.count);
+        return setCacheSessions(data.arr);
       };
       setAlert({ show: true, message: "cache sessions: \tboth 'fail' and 'data' were empty!" })
     })();
-  }, []); // refresh["cache-sessions"]
+  }, [pageTable, debouncedQuery]); // refresh["cache-sessions"]
 
   return (
     <AdministratorLayout>
@@ -176,7 +180,16 @@ export default function PerformanceTestPage() {
           </Box>
         </Box>
         <TableContainer>
-          <Table size="small">
+          <Table size="small"
+            sx={{
+              borderCollapse: "unset",
+              border: "1px solid #e6f2f0",
+              borderRadius: "0.3em",
+              ".MuiTableCell-root": {
+                border: "none",
+              },
+            }}
+          >
             <TableHead>
               <TableRow sx={{ backgroundColor: "#e6f2f0" }}>
                 <TableCell sx={{ width: "5%" }}>
@@ -206,67 +219,70 @@ export default function PerformanceTestPage() {
               </TableRow>
             </TableHead>
             <TableBody>
-              {paginatedCacheSessions.map((log_, index) => (
-                <TableRow hover key={index}>
-                  <TableCell>
-                    <Typography component={"p"} variant="body2" sx={{ color: grey[600] }}>
-                      {index + 1}
-                    </Typography>
-                  </TableCell>
-                  <TableCell>
-                    <Typography component={"p"} variant="body2" sx={{ color: grey[600] }}>
-                      {log_.label}
-                    </Typography>
-                  </TableCell>
-                  <TableCell>
-                    <Typography component={"p"} variant="body2" sx={{ color: grey[600] }}>
-                      {`${log_.total_of_cache_hit}/${log_.number_of_cache_hit}`}
-                    </Typography>
-                  </TableCell>
-                  <TableCell>
-                    <Typography component={"p"} variant="body2" sx={{ color: grey[600] }}>
-                      {`${log_.total_of_cache_miss}/${log_.number_of_cache_miss}`}
-                    </Typography>
-                  </TableCell>
-                  <TableCell>
-                    <Typography component={"p"} variant="body2" sx={{ color: grey[600] }}>
-                      {`${log_.avg_response_time}ms`}
-                    </Typography>
-                  </TableCell>
-                  <TableCell>
-                    <Typography component={"p"} variant="body2" sx={{ color: grey[600] }}>
-                      {`${log_.avg_memory_usage}%`}
-                    </Typography>
-                  </TableCell>
-                  <TableCell>
-                    <Typography component={"p"} variant="body2" sx={{ color: grey[600] }}>
-                      {`${log_.avg_cpu_usage}%`}
-                    </Typography>
-                  </TableCell>
-                  <TableCell>
-                    <Box component={"div"}
-                      sx={{
-                        display: "flex",
-                        justifyContent: "space-between",
-                        alignItems: "center",
-                      }}
-                    >
+              {cacheSessions.map((log_, index) => {
+                const numberOfRow: number = (pageTable * 10) - 10 + (index + 1);
+                return (
+                  <TableRow hover key={index}>
+                    <TableCell>
                       <Typography component={"p"} variant="body2" sx={{ color: grey[600] }}>
-                        {`${log_.avg_resource_utilization}%`}
+                        {numberOfRow}
                       </Typography>
-                      <Tooltip title="view detail" placement="top">
-                        <IconButton size="small"
-                          onClick={() => {
-                            navigate(`${location.pathname}/${log_.id}`);
-                          }}
-                        >
-                          <LaunchRounded fontSize="small" sx={{ color: lightBlue[700] }} />
-                        </IconButton>
-                      </Tooltip>
-                    </Box>
-                  </TableCell>
-                </TableRow>
-              ))}
+                    </TableCell>
+                    <TableCell>
+                      <Typography component={"p"} variant="body2" sx={{ color: grey[600] }}>
+                        {log_.label}
+                      </Typography>
+                    </TableCell>
+                    <TableCell>
+                      <Typography component={"p"} variant="body2" sx={{ color: grey[600] }}>
+                        {`${log_.total_of_cache_hit}/${log_.number_of_cache_hit}`}
+                      </Typography>
+                    </TableCell>
+                    <TableCell>
+                      <Typography component={"p"} variant="body2" sx={{ color: grey[600] }}>
+                        {`${log_.total_of_cache_miss}/${log_.number_of_cache_miss}`}
+                      </Typography>
+                    </TableCell>
+                    <TableCell>
+                      <Typography component={"p"} variant="body2" sx={{ color: grey[600] }}>
+                        {`${log_.avg_response_time}ms`}
+                      </Typography>
+                    </TableCell>
+                    <TableCell>
+                      <Typography component={"p"} variant="body2" sx={{ color: grey[600] }}>
+                        {`${log_.avg_memory_usage}%`}
+                      </Typography>
+                    </TableCell>
+                    <TableCell>
+                      <Typography component={"p"} variant="body2" sx={{ color: grey[600] }}>
+                        {`${log_.avg_cpu_usage}%`}
+                      </Typography>
+                    </TableCell>
+                    <TableCell>
+                      <Box component={"div"}
+                        sx={{
+                          display: "flex",
+                          justifyContent: "space-between",
+                          alignItems: "center",
+                        }}
+                      >
+                        <Typography component={"p"} variant="body2" sx={{ color: grey[600] }}>
+                          {`${log_.avg_resource_utilization}%`}
+                        </Typography>
+                        <Tooltip title="view detail" placement="top">
+                          <IconButton size="small"
+                            onClick={() => {
+                              navigate(`${location.pathname}/${log_.id}`);
+                            }}
+                          >
+                            <LaunchRounded fontSize="small" sx={{ color: lightBlue[700] }} />
+                          </IconButton>
+                        </Tooltip>
+                      </Box>
+                    </TableCell>
+                  </TableRow>
+                )
+              })}
             </TableBody>
           </Table>
           <Pagination
@@ -308,7 +324,7 @@ export default function PerformanceTestPage() {
               color: "#06816d"
             }}
           >
-            Create New Test
+            Buat Pengujian Baru
           </Typography>
         </Box>
         <Box component={"div"}
@@ -316,12 +332,12 @@ export default function PerformanceTestPage() {
             marginBottom: '1.5em',
           }}
         >
-          <Typography component={"p"} variant="body2" sx={{ color: grey[600] }}>
-            Before starting a test, you must first create a test session by specifying a test label to identify the series of test stages. Please complete the fields below.
+          <Typography component={"p"} variant="body2" sx={{ marginBottom: "0.5em", color: grey[600] }}>
+            Sebelum memulai pengujian, Anda harus terlebih dahulu membuat sesi pengujian dengan menentukan label pengujian untuk mengidentifikasi data log pengujian.
           </Typography>
           <TextField
             type="text"
-            variant="standard"
+            // variant="standard"
             name="label"
             label="Label Name"
             size="small"
@@ -363,7 +379,7 @@ export default function PerformanceTestPage() {
             }}
             onClick={() => setOpenDialog(prev => ({ ...prev, ["new-test"]: false }))}
           >
-            Cancel
+            Batal
           </Button>
           <Button
             variant="contained"
@@ -377,7 +393,7 @@ export default function PerformanceTestPage() {
               CreateNewTest();
             }}
           >
-            Create
+            Buat
           </Button>
         </Box>
       </Dialog>

@@ -50,9 +50,9 @@ export default function VacancyItemList({
 
     let daysAgo: string
     if (daysDiff <= 0) {
-      daysAgo = "today"
+      daysAgo = "hari ini"
     } else {
-      daysAgo = `${daysDiff} days ago`
+      daysAgo = `${daysDiff} hari yang lalu`
     }
     return daysAgo;
   };
@@ -67,7 +67,7 @@ export default function VacancyItemList({
 
     const token = GetSession("auth");
     const [success, fail] = await RequestAPI.FormDataRequest({ vacancy_id: vacancy.id }).Send<string>(
-      "/api/v1/candidates/pipelines/",
+      "/candidates/pipelines/",
       {
         method: "POST",
         headers: {
@@ -105,7 +105,7 @@ export default function VacancyItemList({
         }}
       >
         <Box borderRadius={"0.3em"}>
-          <Avatar alt="Company Logo" src={HOST.main + vacancy.employer.profile_image_path} />
+          <Avatar alt="Company Logo" src={HOST.main + vacancy.employer.profile_image_path.replace("/api/v1", "")} />
         </Box>
         <Box component={"div"} sx={{ flexGrow: 1, paddingX: "0.5em" }}>
           <Box
@@ -229,14 +229,14 @@ export default function VacancyItemList({
               return setOpenDialogConfirmation(true);
             }}
           >
-            {setApplied.has(vacancy.id) ? "Applied" : "Apply"}
+            {setApplied.has(vacancy.id) ? "Lamaran telah dikirim" : "Kirim Lamaran"}
           </Button>
           <Button variant="outlined" color="primary" size="small"
             onClick={() => {
               navigate("/vacancy/" + vacancy.id)
             }}
           >
-            View
+            Lihat
           </Button>
         </Box>
       </Box>
@@ -263,10 +263,10 @@ export default function VacancyItemList({
               marginBottom: "0.5em",
             }}
           >
-            Are you sure you want to <SimpleEmphasis text={" apply"} /> ?
+            Apakah anda yakin ingin <SimpleEmphasis text={" mengirim lamaran "} /> untuk posisi ini ?
           </Typography>
           <Typography component={"p"} variant="body1">
-            Please ensure your profile is complete. If you want to update or completing your profile,
+            Harap pastikan profil Anda sudah lengkap. Jika Anda ingin memperbarui atau melengkapi profil Anda,
             <Typography component={"a"} variant="body1"
               sx={{
                 color: blue[500],
@@ -275,7 +275,7 @@ export default function VacancyItemList({
               }}
               onClick={() => navigate("/candidates/profile-overview")}
             >
-              {" click here"}
+              {" klik disini"}
             </Typography>
           </Typography>
         </Box>
@@ -291,7 +291,7 @@ export default function VacancyItemList({
             color="error"
             onClick={() => setOpenDialogConfirmation(false)}
           >
-            Cancel
+            Batalkan
           </Button>
           <Button
             type="button"
@@ -303,7 +303,7 @@ export default function VacancyItemList({
               onApply();
             }}
           >
-            Apply Now
+            Kirim lamaran sekarang
           </Button>
         </Box>
       </Dialog>

@@ -1,8 +1,8 @@
-import { Box, Breadcrumbs, Button, CircularProgress, Dialog, FormControl, FormHelperText, Grid, IconButton, InputLabel, Link, MenuItem, Select, Snackbar, TextField, Typography } from "@mui/material";
+import { Box, Button, CircularProgress, Dialog, FormControl, FormHelperText, Grid, IconButton, InputLabel, MenuItem, Select, Snackbar, TextField, Typography } from "@mui/material";
 import DashboardLayout from "../../../../components/Templates/DashboardLayout";
-import BreadcrumbsCreator from "../../helpers";
-import { Link as RouterLink, useLocation, useNavigate, useParams, } from "react-router-dom";
-import { ArrowBackRounded, HomeRounded } from "@mui/icons-material";
+// import BreadcrumbsCreator from "../../helpers";
+import { useLocation, useNavigate } from "react-router-dom";
+import { ArrowBackRounded } from "@mui/icons-material";
 import { grey, red } from "@mui/material/colors";
 import { DEFAULT_VACANCY_FORM, EMPLOYEE_TYPE, LINE_INDUSTRY, MIN_EXPERIENCE, WORK_ARRANGEMENT } from "../../constants";
 import { ChangeEvent, useState } from "react";
@@ -15,7 +15,7 @@ export default function VacanciesCreate() {
   /* react-router */
   const navigate = useNavigate();
   const location = useLocation();
-  const urlParams = useParams();
+  // const urlParams = useParams();
   /* state */
   const [formValue, setFormValue] = useState<VacancyFormType>(DEFAULT_VACANCY_FORM);
   const [errMsg, setErrMsg] = useState<{ [key: string]: string[] }>({});
@@ -46,7 +46,7 @@ export default function VacanciesCreate() {
 
     const token = GetSession("auth");
     const [success, fail] = await RequestAPI.FormDataRequest<VacancyFormType>(formValue).Send<string>(
-      "/api/v1/employers/vacancies/",
+      "/employers/vacancies/",
       {
         method: "POST",
         headers: {
@@ -77,7 +77,7 @@ export default function VacanciesCreate() {
         onClose={onCloseSnackbar(setAlert)}
       />
       {/* Breadcrumbs */}
-      <Breadcrumbs aria-label="breadcrumb" sx={{ marginBottom: "1em" }}>
+      {/* <Breadcrumbs aria-label="breadcrumb" sx={{ marginBottom: "1em" }}>
         {BreadcrumbsCreator(
           urlParams as Record<string, string>,
           location.pathname
@@ -120,7 +120,7 @@ export default function VacanciesCreate() {
             )}
           </Link>
         ))}
-      </Breadcrumbs>
+      </Breadcrumbs> */}
       {/* Vacancy Form */}
       <Box component={"div"}>
         <Box component={"div"}
@@ -145,7 +145,7 @@ export default function VacanciesCreate() {
               color: grey[700],
             }}
           >
-            New Vacancy
+            Buat Data Lowongan Pekerjaan
           </Typography>
         </Box>
         <Grid container
@@ -156,8 +156,8 @@ export default function VacanciesCreate() {
             <TextField
               type="text"
               name="position"
-              label="Job Title/Position"
-              placeholder="e.g., Software Engineer"
+              label="Posisi Pekerjaan"
+              placeholder="e.g. Software Engineer"
               size="small"
               autoComplete="off"
               fullWidth
@@ -178,12 +178,12 @@ export default function VacanciesCreate() {
                   }
                 }}
               >
-                Line Industry
+                Sektor Industri
               </InputLabel>
               <Select
                 labelId="line_indsutry_label"
                 name="line_industry"
-                label="Line Industry"
+                label="Sektor Industri"
                 size="small"
                 value={formValue.line_industry}
                 onChange={SelectOnChange(setFormValue, undefined, { coerceToNumber: false })}
@@ -218,12 +218,12 @@ export default function VacanciesCreate() {
                   }
                 }}
               >
-                Employee Type
+                Status Kepegawaian
               </InputLabel>
               <Select
                 labelId="employee_type_label"
                 name="employee_type"
-                label="Employee Type"
+                label="Status Kepegawaian"
                 size="small"
                 value={formValue.employee_type}
                 onChange={SelectOnChange(setFormValue, undefined, { coerceToNumber: false })}
@@ -258,12 +258,12 @@ export default function VacanciesCreate() {
                   }
                 }}
               >
-                Work Arrangement
+                Pengaturan Kerja
               </InputLabel>
               <Select
                 labelId="work_arrangement_label"
                 name="work_arrangement"
-                label="Work Arrangement"
+                label="Pengaturan Kerja"
                 size="small"
                 value={formValue.work_arrangement}
                 onChange={SelectOnChange(setFormValue, undefined, { coerceToNumber: false })}
@@ -298,12 +298,12 @@ export default function VacanciesCreate() {
                   }
                 }}
               >
-                Minimum Experience
+                Pengalaman Kerja Minimum
               </InputLabel>
               <Select
                 labelId="min_experience_label"
                 name="min_experience"
-                label="Minimum Experience"
+                label="Pengalaman Kerja Minimum"
                 size="small"
                 value={formValue.min_experience}
                 onChange={SelectOnChange(setFormValue, undefined, { coerceToNumber: false })}
@@ -331,8 +331,7 @@ export default function VacanciesCreate() {
             <TextField
               type="text"
               name="salary"
-              label="Salary"
-              placeholder="Enter number of salary"
+              label="Gaji"
               size="small"
               autoComplete="off"
               fullWidth
@@ -377,8 +376,8 @@ export default function VacanciesCreate() {
             <TextField
               type="text"
               name="description"
-              label="Job Description"
-              placeholder="Describe about that job"
+              label="Deskripsi Pekerjaan"
+              placeholder="Deskripsikan uraian pekerjaan pada posisi tersebut"
               size="small"
               autoComplete="off"
               rows={4}
@@ -394,8 +393,8 @@ export default function VacanciesCreate() {
             <TextField
               type="text"
               name="responsibility"
-              label="Job Responsibility"
-              placeholder="List key tasks and responsibilities for this position"
+              label="Tanggung Jawab Pekerjaan"
+              placeholder="Buat daftar tugas dan tanggung jawab pada posisi tersebut"
               size="small"
               autoComplete="off"
               rows={6}
@@ -411,8 +410,8 @@ export default function VacanciesCreate() {
             <TextField
               type="text"
               name="qualification"
-              label="Job Qualification"
-              placeholder="List the qualifications required for this job"
+              label="Kualifikasi Pekerjaan"
+              placeholder="Buat daftar kualifikasi yang dibutuhkan untuk posisi tersebut"
               size="small"
               autoComplete="off"
               rows={6}
@@ -465,10 +464,10 @@ export default function VacanciesCreate() {
               color: "#06816d"
             }}
           >
-            Note
+            Catatan
           </Typography>
           <Typography component={"div"} variant="subtitle2">
-            Please note that this job vacancy will only remain active for <SimpleEmphasis text={" 7 days"} />. After this period, the vacancy will be automatically <SimpleEmphasis text={" deactivated"} textColor={red[500]} />.
+            Harap diperhatikan bahwa lowongan pekerjaan ini hanya akan aktif selama <SimpleEmphasis text={" 7 hari"} />. Setelah periode tersebut, lowongan akan otomatis <SimpleEmphasis text={" dinonaktifkan"} textColor={red[500]} />.
           </Typography>
         </Box>
         <Box component={"div"}
@@ -487,7 +486,7 @@ export default function VacanciesCreate() {
               onCloseDialog();
             }}
           >
-            DISAGREE
+            Batalkan
           </Button>
           <Button
             variant="contained"
@@ -499,7 +498,7 @@ export default function VacanciesCreate() {
               onSubmit();
             }}
           >
-            AGREE
+            Setuju dan lanjutkan
           </Button>
         </Box>
       </Dialog>

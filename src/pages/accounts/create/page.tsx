@@ -52,7 +52,7 @@ export default function SignUp() {
       password: formValue.password
     })
       .Send<any>(
-        "/api/v1/accounts/create",
+        "/accounts/create",
         {
           method: "POST",
           headers: {
@@ -94,11 +94,11 @@ export default function SignUp() {
               marginTop: "0.5em",
             }}
           >
-            Create Account
+            Daftarkan Akun
           </Typography>
           <Typography variant="caption">
-            Use <SimpleEmphasis text={"one"} /> account for{" "}
-            <SimpleEmphasis text={"everything"} />
+            Akses <SimpleEmphasis text={"semua"} /> layanan dengan{" "}
+            <SimpleEmphasis text={"satu"} /> akun
           </Typography>
         </Grid>
         {/* CREATE RIGHT CONTENT */}
@@ -115,8 +115,8 @@ export default function SignUp() {
                 <TextField
                   variant="outlined"
                   name="fullname"
-                  label="Full Name"
-                  placeholder="Your full name"
+                  label="Nama Lengkap"
+                  placeholder="Masukkan nama lengkap anda"
                   fullWidth
                   autoComplete="off"
                   sx={{
@@ -130,8 +130,8 @@ export default function SignUp() {
                 <TextField
                   variant="outlined"
                   name="email"
-                  label="Email Address"
-                  placeholder="Your email address"
+                  label="Alamat Email"
+                  placeholder="Masukkan alamat email anda"
                   fullWidth
                   autoComplete="off"
                   sx={{
@@ -159,14 +159,14 @@ export default function SignUp() {
                     onClick={() => navigate("/accounts/auth")}
                     sx={{ color: grey[600] }}
                   >
-                    Back
+                    Kembali
                   </Button>
                   <Button
                     variant="contained"
                     fullWidth
                     onClick={() => setStep(2)}
                   >
-                    Next
+                    Selanjutnya
                   </Button>
                 </Box>
               </Box>
@@ -181,8 +181,8 @@ export default function SignUp() {
                   type={showPassword ? "text" : "password"}
                   variant="outlined"
                   name="password"
-                  label="Password"
-                  placeholder="Input a strong password"
+                  label="Kata Sandi"
+                  placeholder="Buat kata sandi anda"
                   fullWidth
                   InputProps={{
                     endAdornment: (
@@ -207,8 +207,8 @@ export default function SignUp() {
                   type={"password"}
                   variant="outlined"
                   name="confirmPassword"
-                  label="Confirm Password"
-                  placeholder="Confirm your password"
+                  label="Konfirmasi Kata Sandi"
+                  placeholder="Tulis ulang kata sandi anda"
                   fullWidth
                   sx={{
                     marginBottom: "1em",
@@ -233,10 +233,10 @@ export default function SignUp() {
                     fullWidth
                     onClick={() => setStep(1)}
                   >
-                    Back
+                    Kembali
                   </Button>
                   <Button type="submit" variant="contained" disabled={loading} fullWidth>
-                    Submit
+                    Buat Akun
                   </Button>
                 </Box>
               </Box>

@@ -12,7 +12,6 @@ import {
 import DashboardLayout from "../../../../../components/Templates/DashboardLayout";
 import { grey } from "@mui/material/colors";
 import {
-  HomeRounded,
   SearchRounded,
 } from "@mui/icons-material";
 import { ChangeEvent, useEffect, useState } from "react";
@@ -67,7 +66,7 @@ export default function EmployerVacanciesPipeline() {
         vacancy: VacancyType,
         applied: boolean
       }>(
-        "/api/v1/vacancies/" + params["id"],
+        "/vacancies/" + params["id"],
         {
           method: "GET",
           headers: {
@@ -111,17 +110,22 @@ export default function EmployerVacanciesPipeline() {
               alignItems: "center",
               color:
                 data.pathname === location.pathname ? "#51a799" : undefined,
+              cursor: data.pathname === location.pathname ? "context-menu" : undefined,
+              ":hover": {
+                textDecoration: data.pathname === location.pathname ? "none" : "underline"
+              }
             }}
           >
             {data.label === "Vacancies" ? (
-              <HomeRounded
+              <Typography
+                variant="subtitle2"
                 sx={{
-                  mr: 0.5,
-                  color:
-                    data.pathname === location.pathname ? "#51a799" : undefined,
+                  fontWeight:
+                    data.pathname === location.pathname ? undefined : 550,
                 }}
-                fontSize="inherit"
-              />
+              >
+                {"Kelola Lowongan Pekerjaan"}
+              </Typography>
             ) : (
               <Typography
                 variant="subtitle2"
@@ -130,7 +134,7 @@ export default function EmployerVacanciesPipeline() {
                     data.pathname === location.pathname ? 550 : undefined,
                 }}
               >
-                {data.label}
+                {"Tahapan Seleksi"}
               </Typography>
             )}
           </Link>
@@ -163,7 +167,7 @@ export default function EmployerVacanciesPipeline() {
           <TextField
             type="text"
             name="search" // search for candidate
-            placeholder="Search by name..."
+            placeholder="Cari berdasarkan nama"
             autoComplete="off"
             size="small"
             InputProps={{
@@ -320,32 +324,6 @@ export default function EmployerVacanciesPipeline() {
               Offerings
             </Typography>
           </Box>
-          {/* Letter of Acceptance */}
-          {/* <Box
-            component={"div"}
-            sx={{
-              display: "flex",
-              justifyContent: "center",
-              alignItems: "center",
-              columnGap: "0.3em",
-              padding: "0.5em",
-              borderRadius: "0.3em",
-            }}
-            id="LoA"
-            onClick={() => setTabOn("LoA")}
-          >
-            <Typography
-              component={"p"}
-              variant="body2"
-              sx={{
-                fontWeight: 550,
-                fontSize: { xs: "small", sm: "" },
-                color: grey[600],
-              }}
-            >
-              LoA
-            </Typography>
-          </Box> */}
         </Stack>
         {/* Screening */}
         <ScreeningStage

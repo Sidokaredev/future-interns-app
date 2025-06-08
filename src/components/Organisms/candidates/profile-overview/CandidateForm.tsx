@@ -35,7 +35,7 @@ export default function CandidateForm({
             component={"img"}
             src={
               filePreview["background_profile_img"] ? filePreview["background_profile_img"].src :
-                (typeof formValue.background_profile_img === "string") ? `${HOST.main}${formValue.background_profile_img}?t=${new Date(Date.now()).getTime()}` :
+                (typeof formValue.background_profile_img === "string") ? `${HOST.main}${formValue.background_profile_img.replace("/api/v1", "")}` :
                   "https://placehold.co/1152x240"
             }
             sx={{
@@ -65,7 +65,7 @@ export default function CandidateForm({
               alt="candidate-profile"
               src={
                 filePreview["profile_img"] ? filePreview["profile_img"].src :
-                  (typeof formValue.profile_img === "string") ? `${HOST.main}${formValue.profile_img}?t=${new Date(Date.now()).getTime()}` :
+                  (typeof formValue.profile_img === "string") ? `${HOST.main}${formValue.profile_img.replace("/api/v1", "")}` :
                     "https://placehold.co/50x50"
               }
               sx={{
@@ -113,6 +113,7 @@ export default function CandidateForm({
                     color={errMsgFile["profile_img"] ? "error" : "primary"}
                     sx={{
                       minWidth: { xs: "100%", sm: "13em" },
+                      fontSize: "small"
                     }}
                   >
                     <InputBase
@@ -131,17 +132,18 @@ export default function CandidateForm({
                       }}
                       onChange={FileOnChange(setFilePreview, setFormValue, setErrMsgFile)}
                     />
-                    Profile Image
+                    Foto Profil
                   </Button>
                   <Typography
                     variant="subtitle2"
                     sx={{
                       fontStyle: "italic",
                       color: errMsgFile["profile_img"] ? red[500] : grey[700],
+                      fontSize: "x-small"
                     }}
                   >
                     {errMsgFile["profile_img"] ? errMsgFile["profile_img"] :
-                      filePreview["profile_img"] ? filePreview["profile_img"].filename : "no image selected"}
+                      filePreview["profile_img"] ? filePreview["profile_img"].filename : "tidak ada gambar terpilih"}
                   </Typography>
                 </Box>
                 <Box component={"div"}
@@ -163,6 +165,7 @@ export default function CandidateForm({
                     color={errMsgFile["background_profile_img"] ? "error" : "primary"}
                     sx={{
                       minWidth: { xs: "100%", sm: "13em" },
+                      fontSize: "small"
                     }}
                   >
                     <InputBase
@@ -181,17 +184,18 @@ export default function CandidateForm({
                       }}
                       onChange={FileOnChange(setFilePreview, setFormValue, setErrMsgFile)}
                     />
-                    Background Image
+                    Latar Belakang
                   </Button>
                   <Typography
                     variant="subtitle2"
                     sx={{
                       fontStyle: "italic",
                       color: errMsgFile["background_profile_img"] ? red[500] : grey[700],
+                      fontSize: "x-small"
                     }}
                   >
                     {errMsgFile["background_profile_img"] ? errMsgFile["background_profile_img"] :
-                      filePreview["background_profile_img"] ? filePreview["background_profile_img"].filename : "no image selected"}
+                      filePreview["background_profile_img"] ? filePreview["background_profile_img"].filename : "tidak ada gambar terpilih"}
                   </Typography>
                 </Box>
               </Box>
@@ -204,7 +208,7 @@ export default function CandidateForm({
         >
           <Grid item xs={12} md={4}
             sx={{
-              marginBottom: "1em"
+              marginBottom: "1.5em"
             }}
           >
             <Button
@@ -218,7 +222,7 @@ export default function CandidateForm({
               sx={{
                 flexGrow: 1,
                 minWidth: "13em",
-                paddingY: "0.53em"
+                // paddingY: "0.53em"
               }}
             >
               <InputBase
@@ -261,8 +265,8 @@ export default function CandidateForm({
             <TextField
               type="text"
               name="expertise"
-              label="Expertise"
-              placeholder="Your specialized skill"
+              label="Keahlian"
+              placeholder="Masukkan keahlian yang anda kuasai"
               size="small"
               fullWidth
               autoComplete="off"
@@ -275,7 +279,7 @@ export default function CandidateForm({
           <Grid item xs={12} md={4}>
             <MobileDatePicker
               name="date_of_birth"
-              label="Date of Birth"
+              label="Tanggal Lahir"
               format="DD/MM/YYYY"
               disableFuture
               slotProps={{
@@ -297,8 +301,8 @@ export default function CandidateForm({
             <TextField
               type="text"
               name="about_me"
-              label="About me"
-              placeholder="Describe your profile in short"
+              label="Tentang Saya"
+              placeholder="Deskripsikan diri anda secara singkat"
               size="small"
               fullWidth
               multiline

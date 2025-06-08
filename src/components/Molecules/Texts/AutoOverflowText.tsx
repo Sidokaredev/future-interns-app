@@ -48,10 +48,10 @@ export default function AutoOverflowText({
         {text}
       </Typography>
       {isOverflowing && (
-        <Typography component={"p"} variant="caption" sx={{ color: grey[600], fontStyle: "italic", cursor: "pointer", "&:hover": { color: blue[500] } }} onClick={() => {
+        <Typography component={"p"} variant="caption" sx={{ fontStyle: "italic", cursor: "pointer", color: blue[500] }} onClick={() => {
           setIsExpanded(prev => !prev);
         }}>
-          {isExpanded ? "See less" : "See more"}
+          {isExpanded ? "Tampilkan lebih sedikit" : "Tampilkan lebih banyak"}
         </Typography>
       )}
     </Box>

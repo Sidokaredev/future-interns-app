@@ -41,7 +41,7 @@ export default function EmployerForm({
       < Box component={"div"} >
         <Box
           component={"img"}
-          src={filePreview["background_profile_image"] ? filePreview["background_profile_image"].src : HOST.main + formValue.background_profile_image_path}
+          src={filePreview["background_profile_image"] ? filePreview["background_profile_image"].src : HOST.main + formValue.background_profile_image_path?.replace("/api/v1", "")}
           sx={{
             width: "100%",
             height: { xs: "10em", md: "15em" },
@@ -67,7 +67,7 @@ export default function EmployerForm({
         >
           <Avatar
             alt="candidate-profile"
-            src={filePreview["profile_image"] ? filePreview["profile_image"].src : HOST.main + formValue.profile_image_path}
+            src={filePreview["profile_image"] ? filePreview["profile_image"].src : HOST.main + formValue.profile_image_path?.replace("/api/v1", "")}
             sx={{
               width: "6em",
               height: "6em",
@@ -131,7 +131,7 @@ export default function EmployerForm({
                     }}
                     onChange={FileOnChange(setFilePreview, setFormValue, setErrMsgFile)}
                   />
-                  Profile Image
+                  Foto Profil
                 </Button>
                 <Typography
                   variant="subtitle2"
@@ -141,7 +141,7 @@ export default function EmployerForm({
                   }}
                 >
                   {errMsgFile["profile_image"] ? errMsgFile["profile_image"] :
-                    filePreview["profile_image"] ? filePreview["profile_image"].filename : "no image selected"}
+                    filePreview["profile_image"] ? filePreview["profile_image"].filename : "tidak ada gambar yang terpilih"}
                 </Typography>
               </Box>
               <Box component={"div"}
@@ -181,7 +181,7 @@ export default function EmployerForm({
                     }}
                     onChange={FileOnChange(setFilePreview, setFormValue, setErrMsgFile)}
                   />
-                  Background Image
+                  Latar Belakang Profil
                 </Button>
                 <Typography
                   variant="subtitle2"
@@ -191,7 +191,7 @@ export default function EmployerForm({
                   }}
                 >
                   {errMsgFile["background_profile_image"] ? errMsgFile["background_profile_image"] :
-                    filePreview["background_profile_image"] ? filePreview["background_profile_image"].filename : "no image selected"}
+                    filePreview["background_profile_image"] ? filePreview["background_profile_image"].filename : "tidak ada gambar yang terpilih"}
                 </Typography>
               </Box>
             </Box>
@@ -212,8 +212,8 @@ export default function EmployerForm({
           <TextField
             type="text"
             name="name"
-            label="Company Name"
-            placeholder="Your company name"
+            label="Nama Perusahaan"
+            placeholder="Nama perusahaan anda"
             size="small"
             fullWidth
             autoComplete="off"
@@ -231,8 +231,8 @@ export default function EmployerForm({
           <TextField
             type="text"
             name="legal_name"
-            label="Company Legal Name"
-            placeholder="Your company legal name"
+            label="Nama Legal Perusahaan"
+            placeholder="e.g PT. Sidokaredev Cloud"
             size="small"
             fullWidth
             autoComplete="off"
@@ -250,15 +250,15 @@ export default function EmployerForm({
           <TextField
             type="text"
             name="location"
-            label="Company location"
-            placeholder="Enter company head office location"
+            label="Lokasi Perusahaan"
+            placeholder="Masukkan alamat kantor pusat"
             size="small"
             fullWidth
             autoComplete="off"
             value={formValue.location}
             onChange={InputOnChangeV2(setFormValue)}
             error={errMsg["location"] ? true : false}
-            helperText={errMsg["location"] ?? "Enter the location with the city name followed by the province (e.g., Malang, East Java)."}
+            helperText={errMsg["location"] ?? "Tulis lokasi dalam format: Kota, Provinsi (misalnya: Malang, Jawa Timur)"}
           />
         </Grid>
         <Grid item xs={4}
@@ -269,8 +269,8 @@ export default function EmployerForm({
           <TextField
             type="text"
             name="founder"
-            label="Founder"
-            placeholder="Enter founder's name"
+            label="Pendiri"
+            placeholder="Masukkan nama pendiri"
             size="small"
             fullWidth
             autoComplete="off"
@@ -289,7 +289,7 @@ export default function EmployerForm({
             openTo="year"
             views={["year"]}
             name="founded"
-            label="Founded at"
+            label="Tahun Didirikan"
             format="YYYY"
             disableFuture
             slotProps={{
@@ -329,12 +329,12 @@ export default function EmployerForm({
                 }
               }}
             >
-              Number of Employees
+              Jumlah Pegawai
             </InputLabel>
             <Select
               labelId="number_of_employees_label"
               name="total_of_employee"
-              label="Number of Employees"
+              label="Jumlah Pegawai"
               size="small"
               value={formValue.total_of_employee}
               onChange={SelectOnChange(setFormValue, undefined, { coerceToNumber: false })}
@@ -367,7 +367,7 @@ export default function EmployerForm({
             type="text"
             name="website"
             label="Official Website"
-            placeholder="Enter official website URL"
+            placeholder="Masukkan situs resmi perusahaan"
             size="small"
             fullWidth
             autoComplete="off"
@@ -385,8 +385,8 @@ export default function EmployerForm({
           <TextField
             type="text"
             name="description"
-            label="Company Description"
-            placeholder="Describe about company"
+            label="Tentang Perusahaan"
+            placeholder="Deskripsi tentang perusahaan"
             size="small"
             autoComplete="off"
             rows={5}

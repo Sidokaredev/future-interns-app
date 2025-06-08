@@ -69,7 +69,7 @@ export default function OfficeImagesData({
     const pathSplitted = imagePath.split('/');
 
     const token = GetSession("auth");
-    const endpoint = `/api/v1/employers/office-images/${pathSplitted[pathSplitted.length - 1]}`;
+    const endpoint = `/employers/office-images/${pathSplitted[pathSplitted.length - 1]}`;
     const [success, fail] = await RequestAPI.Send<string>(
       endpoint,
       {
@@ -96,7 +96,7 @@ export default function OfficeImagesData({
     const token = GetSession("auth");
     (async () => {
       const [data, fail] = await RequestAPI.Send<OfficeImageType[]>(
-        "/api/v1/employers/office-images/",
+        "/employers/office-images/",
         {
           method: "GET",
           headers: {
@@ -130,7 +130,7 @@ export default function OfficeImagesData({
             color: grey[800]
           }}
         >
-          Office Images
+          Galeri Kantor
         </Typography>
         <Box component={"div"}>
           {!onEdit && (
@@ -161,7 +161,7 @@ export default function OfficeImagesData({
               size="small"
               onClick={() => setOnEdit(false)}
             >
-              cancel
+              Batal
             </Button>
           )}
         </Box>
@@ -185,7 +185,7 @@ export default function OfficeImagesData({
                   width={"100%"}
                   height={{ xs: "10em", sm: "15em", lg: "20em" }}
                   alt={image.name}
-                  src={`${HOST.main}${image.image_path}`}
+                  src={`${HOST.main}${image.image_path.replace("/api/v1", "")}`}
                   sx={{
                     objectFit: "cover",
                     borderRadius: "0.2em",
@@ -259,9 +259,9 @@ export default function OfficeImagesData({
       >
         <Box component={"div"}>
           <Typography component={"p"} variant="body1" sx={{ color: grey[600] }}>
-            Are you sure want to
-            <SimpleEmphasis text={" delete "} textColor="red" />
-            your Office Image {imageToDelete?.name} ?
+            Apakah anda yakin ingin
+            <SimpleEmphasis text={" menghapus "} textColor="red" />
+            foto galeri kantor {imageToDelete?.name} ?
           </Typography>
         </Box>
         <Box component={"div"} sx={{
@@ -282,7 +282,7 @@ export default function OfficeImagesData({
               onCloseDialog("delete-office-images")
             }}
           >
-            No
+            Tidak
           </Button>
           <Button
             variant="outlined"
@@ -298,7 +298,7 @@ export default function OfficeImagesData({
           >
             {loading ? (
               <CircularProgress size={20} />
-            ) : "Yes"}
+            ) : "Iya"}
           </Button>
         </Box>
       </Dialog>

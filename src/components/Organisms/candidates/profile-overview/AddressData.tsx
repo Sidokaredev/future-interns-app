@@ -8,6 +8,7 @@ import { GetSession } from "../../../../pages/global-helpers";
 import RequestAPI from "../../../../services/api/request";
 import AddressForm from "./AddressForm";
 import { DEFAULT_ADDRESS_FORM } from "../../../../pages/candidates/constants";
+import { HOST } from "../../../../pages/administrators/performance/[id]/constants";
 
 type CandidateProfileUserDataType = CandidateProfileDataType & {
   user: UserDataType
@@ -50,7 +51,7 @@ export default function AddressData({
           sx={{ marginRight: "0.5em", color: grey[400] }}
         />
       ),
-      label: "Date of Birth",
+      label: "Tanggal Lahir",
       value: dayjs(profileData?.date_of_birth).format("MMMM, DD dddd YYYY"),
     },
     {
@@ -60,8 +61,8 @@ export default function AddressData({
           sx={{ marginRight: "0.5em", color: grey[400] }}
         />
       ),
-      label: "Address",
-      value: `${addressData?.street}, ${addressData?.neighborhood}, ${addressData?.rural_area}, ${addressData?.sub_district}`,
+      label: "Alamat",
+      value: `${addressData?.street}, ${addressData?.neighborhood !== "" ? addressData?.neighborhood + "," : ""} ${addressData?.rural_area !== "" ? addressData?.rural_area + "," : ""} ${addressData?.sub_district}`,
     },
     {
       icon: (
@@ -70,7 +71,7 @@ export default function AddressData({
           sx={{ marginRight: "0.5em", color: grey[400] }}
         />
       ),
-      label: "City",
+      label: "Kabupaten / Kota",
       value: addressData?.city,
     },
     {
@@ -80,7 +81,7 @@ export default function AddressData({
           sx={{ marginRight: "0.5em", color: grey[400] }}
         />
       ),
-      label: "Country",
+      label: "Negara",
       value: addressData?.country,
     },
     {
@@ -90,7 +91,7 @@ export default function AddressData({
           sx={{ marginRight: "0.5em", color: grey[400] }}
         />
       ),
-      label: "Postal Code",
+      label: "Kode Pos",
       value: addressData?.postal_code,
     },
   ];
@@ -115,7 +116,7 @@ export default function AddressData({
 
     const token = GetSession("auth")
     const [success, fail] = await RequestAPI.JSONRequest(formValue)
-      .Send<string>("/api/v1/candidates/addresses/", {
+      .Send<string>("/candidates/addresses/", {
         method: "PATCH",
         headers: {
           "Authorization": "Bearer " + token
@@ -142,7 +143,7 @@ export default function AddressData({
   useEffect(() => {
     const token = GetSession("auth");
     (async () => {
-      const [data, fail] = await RequestAPI.Send<AddressDataType>("/api/v1/candidates/addresses/", {
+      const [data, fail] = await RequestAPI.Send<AddressDataType>("/candidates/addresses/", {
         method: "GET",
         headers: {
           "Authorization": "Bearer " + token
@@ -162,7 +163,7 @@ export default function AddressData({
   useEffect(() => {
     const token = GetSession("auth");
     (async () => {
-      const [data, fail] = await RequestAPI.Send<CandidateProfileUserDataType>("/api/v1/candidates/?includes=user", {
+      const [data, fail] = await RequestAPI.Send<CandidateProfileUserDataType>("/candidates/?includes=user", {
         method: "GET",
         headers: {
           "Authorization": "Bearer " + token
@@ -203,7 +204,7 @@ export default function AddressData({
             marginBottom: "0.5em",
           }}
         >
-          Personal Detail
+          Detail Personal
         </Typography>
         <IconButton size="small"
           onClick={() => {
@@ -263,12 +264,12 @@ export default function AddressData({
         <Button
           component={"a"}
           target="_blank"
-          href={`http://localhost:3000${profileData?.cv_document_path}`}
+          href={`${HOST.main}${profileData?.cv_document_path?.replace("/api/v1", "")}`}
           variant="text"
           endIcon={<LaunchRounded />}
           fullWidth
         >
-          View
+          Lihat
         </Button>
         <Box
           sx={{
@@ -277,14 +278,14 @@ export default function AddressData({
         >
           <Button
             component={"a"}
-            href={`http://localhost:3000${profileData?.cv_document_path}/download`}
+            href={`${HOST.main}${profileData?.cv_document_path?.replace("/api/v1", "")}/download`}
             variant="contained"
             endIcon={<FileDownloadRounded />}
             color="primary"
             size="small"
             fullWidth
           >
-            Download CV
+            Unduh Curriculum Vitae
           </Button>
         </Box>
       </Box>

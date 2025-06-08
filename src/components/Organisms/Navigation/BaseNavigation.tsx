@@ -2,7 +2,6 @@ import React, { useEffect, useState } from "react";
 import {
   Box,
   Button,
-  Collapse,
   Container,
   Divider,
   IconButton,
@@ -21,18 +20,12 @@ import {
 import { Link as ReactRouterLink, useLocation, useNavigate } from "react-router-dom";
 import {
   ArrowDropDown,
-  ContactsRounded,
-  ExpandLess,
-  ExpandMore,
-  HelpRounded,
   Home,
   LoginRounded,
   Logout,
-  MenuBookRounded,
   MenuRounded,
   Person,
   PersonAddAlt1Rounded,
-  SupportAgentRounded,
   WorkRounded,
 } from "@mui/icons-material";
 import { grey } from "@mui/material/colors";
@@ -80,7 +73,7 @@ export default function BaseNavigation() {
     profileMenuAnchor: Boolean(anchorEl.profileMenuAnchor),
     mediumMenuNavigation: Boolean(anchorEl.mediumMenuNavigation),
   };
-  const [mediumListOpen, setMediumListOpen] = useState<boolean>(false);
+  // const [mediumListOpen, setMediumListOpen] = useState<boolean>(false);
   const [sxProps, setSxProps] = useState<onScrollSxProps>({
     navigation: {},
     font: {},
@@ -88,9 +81,9 @@ export default function BaseNavigation() {
   });
   /* event handler */
   const trigger = useScrollTrigger({ disableHysteresis: true, threshold: 65 });
-  const supportMenuMouseOver = (e: React.MouseEvent<HTMLElement>) => {
-    setAnchorEl((prev) => ({ ...prev, supportMenuAnchor: e.currentTarget }));
-  };
+  // const supportMenuMouseOver = (e: React.MouseEvent<HTMLElement>) => {
+  //   setAnchorEl((prev) => ({ ...prev, supportMenuAnchor: e.currentTarget }));
+  // };
   const profileMenuOnClick = (e: React.MouseEvent<HTMLButtonElement>) => {
     setAnchorEl((prev) => ({ ...prev, profileMenuAnchor: e.currentTarget }));
   };
@@ -137,7 +130,7 @@ export default function BaseNavigation() {
     if (isAuthenticated) {
       (async () => {
         const [data, fail] = await RequestAPI.Send<AccountInformation>(
-          "/api/v1/accounts/user-information",
+          "/accounts/user-information",
           {
             method: "GET",
             headers: {
@@ -228,8 +221,8 @@ export default function BaseNavigation() {
             to={"/"}
             sx={{ textDecoration: "none", ...sxProps.font }}
           >
-            <Typography variant="h6" fontWeight={"bolder"}>
-              Future Interns
+            <Typography variant="subtitle1" fontWeight={"bolder"}>
+              Applicant Tracking System
             </Typography>
           </Link>
         </Stack>
@@ -346,10 +339,10 @@ export default function BaseNavigation() {
                   <WorkRounded fontSize="small" sx={{ color: "#045a55" }} />
                 </ListItemIcon>
                 <ListItemText>
-                  <Typography variant="subtitle2">Vacancy</Typography>
+                  <Typography variant="subtitle2">Lowongan Kerja</Typography>
                 </ListItemText>
               </MenuItem>
-              <MenuItem
+              {/* <MenuItem
                 onClick={() => setMediumListOpen((prev) => !prev)}
                 sx={currentPathDeterminer("support")}
               >
@@ -367,8 +360,8 @@ export default function BaseNavigation() {
                 ) : (
                   <ExpandMore fontSize="small" />
                 )}
-              </MenuItem>
-              <Collapse in={mediumListOpen} sx={{ paddingLeft: "1em" }}>
+              </MenuItem> */}
+              {/* <Collapse in={mediumListOpen} sx={{ paddingLeft: "1em" }}>
                 <MenuItem component={ReactRouterLink} to="/">
                   <ListItemIcon>
                     <MenuBookRounded
@@ -399,7 +392,7 @@ export default function BaseNavigation() {
                     <Typography variant="subtitle2">Contact</Typography>
                   </ListItemText>
                 </MenuItem>
-              </Collapse>
+              </Collapse> */}
               {isAuthenticated && (
                 <MenuItem onClick={() => {
                   DeleteSession("auth");
@@ -440,10 +433,10 @@ export default function BaseNavigation() {
                     fontWeight={"bold"}
                     letterSpacing={"0.04rem"}
                   >
-                    Vacancy
+                    Lowongan Kerja
                   </Typography>
                 </Button>
-                <Button onMouseOver={supportMenuMouseOver} sx={sxProps.font}>
+                {/* <Button onMouseOver={supportMenuMouseOver} sx={sxProps.font}>
                   <Typography
                     variant="body1"
                     fontWeight={"bold"}
@@ -451,7 +444,7 @@ export default function BaseNavigation() {
                   >
                     Support
                   </Typography>
-                </Button>
+                </Button> */}
               </Stack>
               <Menu
                 disableScrollLock

@@ -108,15 +108,15 @@ export default function InterviewStage({
   /* constants */
   const columns = [
     { prop: "row_number", label: "#" },
-    { prop: "fullname", label: "Name" },
-    { prop: "schedule", label: "Schedule" },
-    { prop: "result", label: "Result" },
-    { prop: "option", label: "Option" },
+    { prop: "fullname", label: "Nama Lengkap" },
+    { prop: "schedule", label: "Jadwal" },
+    { prop: "result", label: "Hasil" },
+    { prop: "option", label: "Opsi" },
   ];
   const responsiveColumns = smallMedia ? [
-    { prop: "fullname", label: "Name" },
-    { prop: "schedule", label: "Schedule" },
-    { prop: "option", label: "Option" },
+    { prop: "fullname", label: "Nama Lengkap" },
+    { prop: "schedule", label: "Jadwal" },
+    { prop: "option", label: "Opsi" },
   ] : columns;
   const interviewResults = [
     "Hire", "Reject", "Next Interview", "Pending"
@@ -147,7 +147,7 @@ export default function InterviewStage({
       pipeline_id: selectedLatestInterviewApplicant?.id as string,
       stage: "Offering",
     }).Send<string>(
-      "/api/v1/employers/pipelines/",
+      "/employers/pipelines/",
       {
         method: "PATCH",
         headers: {
@@ -184,7 +184,7 @@ export default function InterviewStage({
 
     const token = GetSession("auth");
     const [success, fail] = await RequestAPI.FormDataRequest(interviewForm).Send<string>(
-      "/api/v1/employers/interviews/",
+      "/employers/interviews/",
       {
         method: "POST",
         headers: {
@@ -215,7 +215,7 @@ export default function InterviewStage({
 
     const token = GetSession("auth");
     const [success, fail] = await RequestAPI.FormDataRequest(interviewForm).Send<string>(
-      "/api/v1/employers/interviews/" + interviewForm.id,
+      "/employers/interviews/" + interviewForm.id,
       {
         method: "PATCH",
         headers: {
@@ -249,7 +249,7 @@ export default function InterviewStage({
       status: resultInterview === "Pending" ? "Scheduled" : "Conducted",
       result: resultInterview
     }).Send<string>(
-      "/api/v1/employers/interviews/" + selectedInterviewID,
+      "/employers/interviews/" + selectedInterviewID,
       {
         method: "PATCH",
         headers: {
@@ -287,7 +287,7 @@ export default function InterviewStage({
     // applicants -> unscheduled interview
     (async () => {
       const [data, fail] = await RequestAPI.Send<ApplicantUnscheduled[]>(
-        "/api/v1/employers/pipelines/" + vacancyID + "/interview?unscheduled",
+        "/employers/pipelines/" + vacancyID + "/interview?unscheduled",
         {
           method: "GET",
           headers: {
@@ -305,7 +305,7 @@ export default function InterviewStage({
     // applicants -> interviews TOP 1 newest
     (async () => {
       const [data, fail] = await RequestAPI.Send<LatestInterviewApplicant[]>(
-        "/api/v1/employers/pipelines/" + vacancyID + "/interview",
+        "/employers/pipelines/" + vacancyID + "/interview",
         {
           method: "GET",
           headers: {
@@ -333,7 +333,7 @@ export default function InterviewStage({
     const token = GetSession("auth");
     (async () => {
       const [data, fail] = await RequestAPI.Send<ScheduledInterview[]>(
-        "/api/v1/employers/interviews/histories/" + selectedLatestInterviewApplicant?.id as string + "/" + vacancyID,
+        "/employers/interviews/histories/" + selectedLatestInterviewApplicant?.id as string + "/" + vacancyID,
         {
           method: "GET",
           headers: {
@@ -374,8 +374,9 @@ export default function InterviewStage({
               <Typography component={"p"} variant="subtitle2"
                 sx={{ color: amber[700] }}
               >
-                There are <SimpleEmphasis text={unscheduledApplicants.length} textColor={amber[700]} sx={{ fontWeight: 550 }} /> applicants waiting for interviews schedule. Please review and take action promptly, {" "}
+                Saat ini terdapat <SimpleEmphasis text={unscheduledApplicants.length} textColor={amber[700]} sx={{ fontWeight: 550 }} /> pelamar yang menunggu interview. Mohon segera ditinjau dan ditindaklanjuti, {" "}
                 <Typography component={"span"}
+                  fontSize={"small"}
                   sx={{
                     color: blue[700],
                     fontStyle: "italic",
@@ -386,7 +387,7 @@ export default function InterviewStage({
                     setOpenDialog(prev => ({ ...prev, ["unscheduled"]: true }));
                   }}
                 >
-                  view here
+                  lihat disini
                 </Typography>
               </Typography>
             </Box>
@@ -407,7 +408,7 @@ export default function InterviewStage({
               <Typography component={"p"} variant="caption"
                 sx={{ color: amber[700] }}
               >
-                There are no applicants currently in the interview stage
+                Saat ini belum ada pelamar yang berada di tahap interview.
               </Typography>
             </Box>
           )}
@@ -535,7 +536,7 @@ export default function InterviewStage({
                                 width: "40%",
                               }}
                             >
-                              {Object.keys(applicant.interview).length > 0 ? (
+                              {applicant.interview.status !== "Conducted" ? (
                                 <>
                                   <Typography component={"p"} variant="caption">
                                     <SimpleEmphasis text={applicant.interview.location} textColor={grey[700]} />
@@ -565,7 +566,7 @@ export default function InterviewStage({
                                         },
                                       }}
                                     >
-                                      Interview link here
+                                      Tautan interview disini
                                     </Typography>
                                   </Link>
                                   <Divider
@@ -596,7 +597,7 @@ export default function InterviewStage({
                                     color: grey[600]
                                   }}
                                 >
-                                  There are no upcoming interviews scheduled at the moment. Please check the <SimpleEmphasis text={"scheduled interviews"} /> for more details
+                                  Tidak ada wawancara yang dijadwalkan saat ini. Mohon cek <SimpleEmphasis text={" jadwal interviews "} /> untuk detail lebih lanjut.
                                 </Typography>
                               )}
                             </TableCell>
@@ -713,7 +714,7 @@ export default function InterviewStage({
             <ArrowForwardRounded fontSize="small" />
           </ListItemIcon>
           <ListItemText
-            primary={"Assign to Offering"}
+            primary={"Proses ke tahap Offering"}
             sx={{
               ".MuiListItemText-primary": {
                 fontSize: "small",
@@ -728,7 +729,7 @@ export default function InterviewStage({
             <CalendarMonthRounded fontSize="small" />
           </ListItemIcon>
           <ListItemText
-            primary={"Scheduled Interviews"}
+            primary={"Jadwal Interview"}
             sx={{
               ".MuiListItemText-primary": {
                 fontSize: "small",
@@ -764,7 +765,7 @@ export default function InterviewStage({
               color: "#06816d",
             }}
           >
-            Waiting for Interview Schedule
+            Menunggu untuk Jadwal Interview
           </Typography>
           <IconButton size="small"
             onClick={() => setOpenDialog(prev => ({ ...prev, ["unscheduled"]: false }))}
@@ -778,18 +779,18 @@ export default function InterviewStage({
               <Typography component={"div"} variant="subtitle2"
                 sx={{ marginBottom: "0.7em", fontWeight: 550, color: grey[600] }}
               >
-                Interview Form
+                Data Interview
               </Typography>
               <Box component={"div"}>
                 <form onSubmit={createInterview}>
                   <Grid container
                     columnSpacing={1.5}
-                    rowSpacing={1.5}
+                    rowSpacing={2}
                   >
                     <Grid item xs={12} md={5}>
                       <DateTimePicker
                         name="date"
-                        label="Date Schedule"
+                        label="Dijadwalkan pada"
                         disablePast
                         slotProps={{
                           textField: {
@@ -810,8 +811,8 @@ export default function InterviewStage({
                       <TextField
                         type="text"
                         name="location"
-                        label="Location"
-                        placeholder="Specify the location for the interview"
+                        label="Lokasi Interview"
+                        placeholder="Tentukan lokasi untuk interview"
                         autoComplete="off"
                         size="small"
                         fullWidth
@@ -825,8 +826,8 @@ export default function InterviewStage({
                       <TextField
                         type="text"
                         name="location_url"
-                        label="Meeting Location URL"
-                        placeholder="Enter a Google Maps link or video conferencing URL"
+                        label="Tautan Lokasi Interview"
+                        placeholder="Masukkan tautan Google Maps atau URL konferensi video online"
                         autoComplete="off"
                         size="small"
                         fullWidth
@@ -857,7 +858,7 @@ export default function InterviewStage({
                         setIsAssignInterview(false);
                       }}
                     >
-                      CANCEL
+                      Batalkan
                     </Button>
                     <Button
                       type="submit"
@@ -869,7 +870,7 @@ export default function InterviewStage({
                         minWidth: "8em",
                       }}
                     >
-                      SUBMIT
+                      Submit
                     </Button>
                   </Box>
                 </form>
@@ -885,12 +886,12 @@ export default function InterviewStage({
               color: grey[600]
             }}
           >
-            Unscheduled Applicants
+            Pelamar yang belum dijadwalkan
           </Typography>
           <TextField
             type="text"
             name="search" // search for applicant
-            placeholder="Search assignee by name or email..."
+            placeholder="Cari pelamar berdasarkan nama atau email"
             autoComplete="off"
             size="small"
             fullWidth
@@ -933,7 +934,7 @@ export default function InterviewStage({
               >
                 <Avatar
                   alt="candidate-profile-image"
-                  src={HOST.main + applicant.candidate.profile_image_path}
+                  src={HOST.main + applicant.candidate.profile_image_path.replace("/api/v1", "")}
                   sx={{ width: 40, height: 40 }}
                 />
                 <Box component={"div"}
@@ -958,7 +959,7 @@ export default function InterviewStage({
                       {applicant.candidate.user.email}
                     </Typography>
                   </Box>
-                  <Tooltip title={"Assign interview"} placement="left">
+                  <Tooltip title={"Jadwalkan Interview"} placement="left">
                     <IconButton size="small"
                       onClick={() => {
                         setInterviewForm({
@@ -969,7 +970,7 @@ export default function InterviewStage({
                         setIsAssignInterview(true);
                       }}
                     >
-                      <CalendarMonthRounded fontSize="small" sx={{ color: blue[500] }} />
+                      <CalendarMonthRounded fontSize="small" sx={{ color: blue[300] }} />
                     </IconButton>
                   </Tooltip>
                 </Box>
@@ -1016,7 +1017,7 @@ export default function InterviewStage({
               color: grey[700]
             }}
           >
-            <SimpleEmphasis text={selectedLatestInterviewApplicant?.candidate.user.fullname.split(" ")[0] + "'s"} /> Scheduled Interviews
+            Interview yang dijadwalkan untuk <SimpleEmphasis text={selectedLatestInterviewApplicant?.candidate.user.fullname.split(" ")[0]} />
           </Typography>
           <IconButton onClick={() => setOpenDialog(prev => ({ ...prev, ["scheduled"]: false }))}>
             <CloseRounded fontSize="small" sx={{ color: grey[700] }} />
@@ -1029,7 +1030,7 @@ export default function InterviewStage({
             }}
           >
             <Typography component={"p"} variant="subtitle2">
-              To schedule a new interview,
+              Untuk menambahkan jadwal interview,
               <span onClick={() => {
                 setInterviewForm(prev => ({
                   ...prev,
@@ -1044,7 +1045,7 @@ export default function InterviewStage({
                   color: blue[500]
                 }}
               >
-                {" "}click here
+                {" "}klik disini
               </span>
             </Typography>
           </Box>
@@ -1056,20 +1057,20 @@ export default function InterviewStage({
             }}
           >
             <Typography component={"div"} variant="subtitle2"
-              sx={{ marginBottom: "0.7em", fontWeight: 550, color: grey[600] }}
+              sx={{ marginBottom: "1em", fontWeight: 550, color: grey[600] }}
             >
-              Interview Form
+              Data Interview
             </Typography>
             <Box component={"div"}>
               <form onSubmit={Boolean(interviewForm.id) ? updateInterview : createInterview}>
                 <Grid container
                   columnSpacing={1.5}
-                  rowSpacing={1.5}
+                  rowSpacing={2}
                 >
                   <Grid item xs={12} md={5}>
                     <DateTimePicker
                       name="date"
-                      label="Date Schedule"
+                      label="Dijadwalkan pada"
                       disablePast
                       slotProps={{
                         textField: {
@@ -1090,8 +1091,8 @@ export default function InterviewStage({
                     <TextField
                       type="text"
                       name="location"
-                      label="Location"
-                      placeholder="Specify the location for the interview"
+                      label="Lokasi Interview"
+                      placeholder="Tentukan lokasi untuk interview"
                       autoComplete="off"
                       size="small"
                       fullWidth
@@ -1105,8 +1106,8 @@ export default function InterviewStage({
                     <TextField
                       type="text"
                       name="location_url"
-                      label="Meeting Location URL"
-                      placeholder="Enter a Google Maps link or video conferencing URL"
+                      label="Tautan Lokasi Interview"
+                      placeholder="Masukkan tautan Google Maps atau URL konferensi video online"
                       autoComplete="off"
                       size="small"
                       fullWidth
@@ -1137,7 +1138,7 @@ export default function InterviewStage({
                       setIsAssignInterview(false);
                     }}
                   >
-                    CANCEL
+                    Batalkan
                   </Button>
                   <Button
                     type="submit"
@@ -1149,7 +1150,7 @@ export default function InterviewStage({
                       minWidth: "8em",
                     }}
                   >
-                    SUBMIT
+                    Submit
                   </Button>
                 </Box>
               </form>
@@ -1189,17 +1190,17 @@ export default function InterviewStage({
                     // textColor={grey[600]}
                     />
                   </Typography>
-                  <Tooltip title={"Submit Result"}>
+                  <Tooltip title={"Submit hasil interview"}>
                     <IconButton size="small"
                       onClick={() => {
                         setSelectedInterviewID(interview.id);
                         setOpenDialog(prev => ({ ...prev, ["result-interview"]: true }));
                       }}
                     >
-                      <FactCheckRounded fontSize="small" sx={{ color: blue[700] }} />
+                      <FactCheckRounded fontSize="small" sx={{ color: blue[300] }} />
                     </IconButton>
                   </Tooltip>
-                  <Tooltip title={"Edit"}>
+                  <Tooltip title={"Ubah"}>
                     <IconButton size="small"
                       onClick={() => {
                         setInterviewForm({
@@ -1239,7 +1240,7 @@ export default function InterviewStage({
                       },
                     }}
                   >
-                    Interview link here
+                    Tautan interview disini
                   </Typography>
                 </Link>
                 <Divider
@@ -1273,7 +1274,7 @@ export default function InterviewStage({
                   }}
                 >
                   <Typography variant="caption">
-                    Result :
+                    Hasil Interview :
                   </Typography>
                   <Typography component={"p"} variant="subtitle2"
                     sx={{
@@ -1308,13 +1309,13 @@ export default function InterviewStage({
             color: grey[700]
           }}
         >
-          Post Interview Result
+          Masukkan Hasil Interview
         </Typography>
         <FormControl size="small">
-          <InputLabel id="interview-result">Interview Result</InputLabel>
+          <InputLabel id="interview-result">Hasil Interview</InputLabel>
           <Select
             labelId="interview-result"
-            label="Interview Result"
+            label="Hasil Interview"
             name="result"
             value={resultInterview}
             onChange={(event: SelectChangeEvent<string>) => {
@@ -1347,7 +1348,7 @@ export default function InterviewStage({
               setOpenDialog(prev => ({ ...prev, ["result-interview"]: false }));
             }}
           >
-            CANCEL
+            Batalkan
           </Button>
           <Button
             variant="contained"
@@ -1361,7 +1362,7 @@ export default function InterviewStage({
               updateResultInterview();
             }}
           >
-            SUBMIT
+            Submit
           </Button>
         </Box>
       </Dialog>
@@ -1381,7 +1382,7 @@ export default function InterviewStage({
             fontWeight: 550, color: grey[700]
           }}
         >
-          Confirm Assignment to Offering
+          Konfirmasi
         </Typography>
         <Typography component={"p"} variant="subtitle2"
           sx={{
@@ -1389,7 +1390,7 @@ export default function InterviewStage({
             color: grey[600]
           }}
         >
-          Are you sure you want to assign <SimpleEmphasis text={selectedLatestInterviewApplicant?.candidate.user.fullname as string} /> to the offering stage? This action indicates the applicant is being offered a position.
+          Apakah Anda yakin ingin memproses <SimpleEmphasis text={selectedLatestInterviewApplicant?.candidate.user.fullname as string} /> ke tahap offering? Tindakan ini menunjukkan bahwa pelamar sedang ditawarkan posisi ini.
         </Typography>
         <Box component={"div"}
           sx={{
@@ -1410,7 +1411,7 @@ export default function InterviewStage({
               setOpenDialog(prev => ({ ...prev, ["assign-offering-confirmation"]: false }));
             }}
           >
-            CANCEL
+            Batalkan
           </Button>
           <Button
             variant="contained"
@@ -1424,7 +1425,7 @@ export default function InterviewStage({
               assignToOffering();
             }}
           >
-            CONTINUE
+            Lanjutkan
           </Button>
         </Box>
       </Dialog>

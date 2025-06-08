@@ -36,7 +36,7 @@ export default function ExperienceForm({
           color: grey[700],
         }}
       >
-        Your Experience Data
+        Data Pengalaman Kerja / Proyek
       </Typography>
       <form onSubmit={onSubmit}>
         <Grid container
@@ -47,8 +47,8 @@ export default function ExperienceForm({
             <TextField
               type="text"
               name="company_name"
-              label="Company Name"
-              placeholder="Enter the company name"
+              label="Nama Perusahaan / Instansi"
+              placeholder="Tulis nama perusahaan, lembaga, atau organisasi"
               size="small"
               autoComplete="off"
               fullWidth
@@ -62,8 +62,8 @@ export default function ExperienceForm({
             <TextField
               type="text"
               name="position"
-              label="Position"
-              placeholder="Enter your job title or position"
+              label="Posisi Pekerjaan"
+              placeholder="e.g Marketing Strategy"
               size="small"
               autoComplete="off"
               fullWidth
@@ -77,8 +77,8 @@ export default function ExperienceForm({
             <TextField
               type="text"
               name="location_address"
-              label="Location"
-              placeholder="Enter the location (e.g., City, Province)"
+              label="Lokasi Perusahaan / Instansi"
+              placeholder="Tuliskan dengan format: kota, privinsi (e.g., Surabaya, Jawa Timur)"
               size="small"
               autoComplete="off"
               fullWidth
@@ -99,12 +99,12 @@ export default function ExperienceForm({
                   }
                 }}
               >
-                Job Type
+                Kepegawaian
               </InputLabel>
               <Select
                 labelId="job_type"
                 name="type"
-                label="Job Type"
+                label="Kepegawaian"
                 size="small"
                 value={formValue.type}
                 onChange={SelectOnChange(setFormValue, undefined, {
@@ -138,12 +138,12 @@ export default function ExperienceForm({
                   }
                 }}
               >
-                Is Current ?
+                Masih Bekerja ?
               </InputLabel>
               <Select
                 labelId="is_current"
                 name="is_current"
-                label="Is Current ?"
+                label="Masih Bekerja ?"
                 size="small"
                 value={String(formValue.is_current)}
                 onChange={(event: SelectChangeEvent) => {
@@ -168,8 +168,8 @@ export default function ExperienceForm({
                 }}
                 error={Boolean(errMsg["is_current"])}
               >
-                <MenuItem value={"true"}>Yes</MenuItem>
-                <MenuItem value={"false"}>No</MenuItem>
+                <MenuItem value={"true"}>Ya</MenuItem>
+                <MenuItem value={"false"}>Tidak</MenuItem>
               </Select>
               {errMsg["is_current"] && (
                 <FormHelperText sx={{ color: red[500] }}>{errMsg["is_current"]}</FormHelperText>
@@ -184,8 +184,9 @@ export default function ExperienceForm({
             >
               <MobileDatePicker
                 name="start_at"
-                format="DD/MM/YYYY"
-                label="Start at"
+                views={["month", "year"]}
+                format="MM/YYYY"
+                label="Masuk pada"
                 slotProps={{
                   textField: {
                     size: "small",
@@ -216,8 +217,9 @@ export default function ExperienceForm({
               </Box>
               <MobileDatePicker
                 name="end_at"
-                format="DD/MM/YYYY"
-                label="End at"
+                views={["month", "year"]}
+                format="MM/YYYY"
+                label="Selesai pada"
                 slotProps={{
                   textField: {
                     size: "small",
@@ -275,7 +277,7 @@ export default function ExperienceForm({
                     {filePreview["attachment_document"].filename}
                   </Typography>
                 ) :
-                "Attachment Experience File"
+                "Lampiran Pengalaman"
               }
             </Button>
             {errMsgFile["attachment_document"] ? (
@@ -288,7 +290,7 @@ export default function ExperienceForm({
                   rel="noopener noreferrer"
                   sx={{ color: "#06816d", textDecoration: "none" }}
                 >
-                  view your uploaded attachment document
+                  Lihat lampiran yang telah Anda unggah
                 </FormHelperText>
               ) : formValue["attachment_document_path"] ? (
                 <FormHelperText component={"a"}
@@ -296,7 +298,7 @@ export default function ExperienceForm({
                   href={`${HOST.main}${formValue["attachment_document_path"]}`}
                   sx={{ color: lightBlue[500], textDecoration: "none" }}
                 >
-                  view your current attachment document
+                  Lihat lampiran Anda saat ini
                 </FormHelperText>
               ) : ""}
           </Grid>
@@ -304,8 +306,8 @@ export default function ExperienceForm({
             <TextField
               type="text"
               name="description"
-              label="Job Description"
-              placeholder="Describe your job responsibility in short"
+              label="Deskripsi Pekerjaan"
+              placeholder="Deskripsikan pekerjaan anda pada posisi tersebut (tugas dan tanggung jawab)"
               size="small"
               fullWidth
               multiline

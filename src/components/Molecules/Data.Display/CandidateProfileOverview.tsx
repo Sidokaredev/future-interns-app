@@ -6,6 +6,9 @@ import SimpleEmphasis from "../Texts/SimpleEmphasis";
 import { useState } from "react";
 import { CakeRounded, DialpadRounded, FileDownloadRounded, HomeWorkRounded, LanguageRounded, LaunchRounded, LocationCityRounded, MailOutlineRounded } from "@mui/icons-material";
 import { HOST } from "../../../pages/administrators/performance/[id]/constants";
+import "dayjs/locale/id";
+
+dayjs.locale("id")
 
 export default function CandidateProfileOverview({
   candidate
@@ -34,7 +37,7 @@ export default function CandidateProfileOverview({
           sx={{ marginRight: "0.5em", color: grey[400] }}
         />
       ),
-      label: "Date of Birth",
+      label: "Tanggal Lahir",
       value: dayjs(candidate?.date_of_birth).format("MMMM, DD dddd YYYY"),
     },
     {
@@ -44,8 +47,8 @@ export default function CandidateProfileOverview({
           sx={{ marginRight: "0.5em", color: grey[400] }}
         />
       ),
-      label: "Address",
-      value: `${candidate?.address?.street}, ${candidate?.address?.neighborhood}, ${candidate?.address?.rural_area}, ${candidate?.address?.sub_district}`,
+      label: "Alamat",
+      value: `${candidate?.address?.street}, ${candidate?.address?.neighborhood == "" ? "" : (candidate?.address?.neighborhood + ",")} ${candidate?.address?.rural_area == "" ? "" : (candidate?.address?.rural_area + ",")} ${candidate?.address?.sub_district}`,
     },
     {
       icon: (
@@ -54,7 +57,7 @@ export default function CandidateProfileOverview({
           sx={{ marginRight: "0.5em", color: grey[400] }}
         />
       ),
-      label: "City",
+      label: "Kota / Kabupaten",
       value: candidate?.address?.city,
     },
     {
@@ -64,7 +67,7 @@ export default function CandidateProfileOverview({
           sx={{ marginRight: "0.5em", color: grey[400] }}
         />
       ),
-      label: "Country",
+      label: "Negara",
       value: candidate?.address?.country,
     },
     {
@@ -74,7 +77,7 @@ export default function CandidateProfileOverview({
           sx={{ marginRight: "0.5em", color: grey[400] }}
         />
       ),
-      label: "Postal Code",
+      label: "Kode Pos",
       value: candidate?.address?.postal_code,
     },
   ];
@@ -95,7 +98,7 @@ export default function CandidateProfileOverview({
             <Box component={"div"} sx={{ marginY: "0.5em" }}>
               <Box
                 component={"img"}
-                src={`${HOST.main}${candidate?.background_profile_image_path}?t=${new Date(Date.now()).getTime()}`}
+                src={`${HOST.main}${candidate?.background_profile_image_path?.replace("/api/v1", "")}`}
                 sx={{
                   width: "100%",
                   height: { xs: "10em", md: "15em" },
@@ -115,7 +118,7 @@ export default function CandidateProfileOverview({
               >
                 <Avatar
                   alt="candidate-profile"
-                  src={`${HOST.main}${candidate?.profile_image_path}?t=${new Date(Date.now()).getTime()}`}
+                  src={`${HOST.main}${candidate?.profile_image_path?.replace("/api/v1", "")}`}
                   sx={{
                     width: "6em",
                     height: "6em",
@@ -156,7 +159,7 @@ export default function CandidateProfileOverview({
                   color: grey[800],
                 }}
               >
-                About Me
+                Tentang Kandidat
               </Typography>
               <Typography variant="body1">
                 {candidate?.about_me}
@@ -188,7 +191,7 @@ export default function CandidateProfileOverview({
                   marginBottom: "0.5em",
                 }}
               >
-                Educations
+                Pendidikan
               </Typography>
             </Box>
             <Box component={"div"} className="educations-container">
@@ -286,7 +289,7 @@ export default function CandidateProfileOverview({
                 <Chip key={index}
                   avatar={
                     <Avatar
-                      src={`${HOST.main}${skill.skill_icon_image_path}`}
+                      src={`${HOST.main}${skill.skill_icon_image_path?.replace("/api/v1", "")}`}
                       slotProps={{
                         img: {
                           style: {
@@ -330,7 +333,7 @@ export default function CandidateProfileOverview({
                   marginBottom: "1em",
                 }}
               >
-                Experiences
+                Pengalaman Kerja / Proyek
               </Typography>
             </Box>
             <Box component={"div"} className="experience-item">
@@ -476,7 +479,7 @@ export default function CandidateProfileOverview({
                     marginBottom: "0.5em",
                   }}
                 >
-                  Personal Detail
+                  Detail Personal
                 </Typography>
               </Box>
               {personalDetailProps.map((data, index) => (
@@ -528,12 +531,12 @@ export default function CandidateProfileOverview({
                 <Button
                   component={"a"}
                   target="_blank"
-                  href={`${HOST.main}${candidate?.cv_document_path}`}
+                  href={`${HOST.main}${candidate?.cv_document_path?.replace("/api/v1", "")}`}
                   variant="text"
                   endIcon={<LaunchRounded />}
                   fullWidth
                 >
-                  View
+                  Lihat
                 </Button>
                 <Box
                   sx={{
@@ -549,7 +552,7 @@ export default function CandidateProfileOverview({
                     size="small"
                     fullWidth
                   >
-                    Download CV
+                    Unduh Curriculum Vitae
                   </Button>
                 </Box>
               </Box>
@@ -571,7 +574,7 @@ export default function CandidateProfileOverview({
                     textAlign: "center",
                   }}
                 >
-                  Social
+                  Sosial Media
                 </Typography>
               </Box>
               <Box
@@ -601,7 +604,7 @@ export default function CandidateProfileOverview({
                     }}
                   >
                     <Box component={"img"}
-                      src={`${HOST.main}${item.icon_image_path}`}
+                      src={`${HOST.main}${item.icon_image_path?.replace("/api/v1", "")}`}
                       width={25}
                       height={25}
                       sx={{

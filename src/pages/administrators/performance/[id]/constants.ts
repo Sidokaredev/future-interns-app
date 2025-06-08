@@ -21,14 +21,16 @@ type APIHost = {
   cache_aside: string;
 };
 
+const PRODUCTION_HOST = "https://sidokaredev.space/api/v1"
+
 export const HOST: APIHost = {
-  // main: "http://192.168.144.152:3000",
-  main: "http://103.87.67.209:3000",
+  main: PRODUCTION_HOST + "/main",
+  // main: "http://103.87.67.209:3000",
   // main: "http://localhost:3000",
-  no_cache: "http://192.168.144.152:8004",
-  write_through: "http://192.168.144.152:8002",
-  write_behind: "http://192.168.144.152:8003",
+  no_cache: PRODUCTION_HOST + "/no-cache",
+  write_through: PRODUCTION_HOST + "/write-through",
+  write_behind: PRODUCTION_HOST + "/write-behind",
   // cache_aside: "http://192.168.144.152:8000",
-  cache_aside: "http://103.87.67.209:8000",
-  read_through: "http://192.168.144.152:8001",
+  cache_aside: PRODUCTION_HOST + "/cache-aside",
+  read_through: PRODUCTION_HOST + "/read-through",
 }

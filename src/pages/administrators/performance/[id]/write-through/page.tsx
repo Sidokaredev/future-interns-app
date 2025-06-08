@@ -88,7 +88,7 @@ export default function WriteThroughTestPage() {
     setLoading(true);
     setDisplayLogs(true);
     setLogs(prev => prev + "\n" + `${dayjs().format("DD/MM/YYYY HH.mm.ss")}: \tBegin Write-Through test` +
-      "\n" + `${dayjs().format("DD/MM/YYYY HH.mm.ss")}: \tGenerating sampling queries`);
+      "\n" + `${dayjs().format("DD/MM/YYYY HH.mm.ss")}: \tGenerating sampling search queries`);
 
     const TOTAL_REQUEST = 100;
     setRequestStats(prev => ({ ...prev, awaiting: TOTAL_REQUEST }));
@@ -103,7 +103,7 @@ export default function WriteThroughTestPage() {
     });
 
     const [dataSampling, failSampling] = await RequestAPI.Send<SamplingQuery[]>(
-      "/api/v1/administrators/test/generates/sampling?count=30", // getting sampling
+      "/administrators/test/generates/sampling?count=30", // getting sampling
       { method: "GET", headers: basicHeaders }
     );
     if (failSampling) {
@@ -111,7 +111,7 @@ export default function WriteThroughTestPage() {
       return setAlert({ show: true, message: `generate sampling: ${failSampling.message}` })
     };
     if (dataSampling) {
-      setLogs(prev => prev + "\n" + `${dayjs().format("DD/MM/YYYY HH.mm.ss")}: \tSampling queries is ready!` +
+      setLogs(prev => prev + "\n" + `${dayjs().format("DD/MM/YYYY HH.mm.ss")}: \tSampling search queries is ready!` +
         "\n" + `${dayjs().format("DD/MM/YYYY HH.mm.ss")}: \tWriting new data`);
 
       const firstSampling = dataSampling.slice(0, 20);
@@ -125,7 +125,7 @@ export default function WriteThroughTestPage() {
           offset: idx + 1,
           total_raw_vacancies: 500
         }).Send<RawVacancies[]>(
-          "/api/v1/administrators/test/generates/vacancies",
+          "/administrators/test/generates/vacancies",
           { method: "POST", headers: basicHeaders }
         );
         if (failRaw) {
@@ -136,7 +136,7 @@ export default function WriteThroughTestPage() {
         if (dataRaw) {
           const reqBody = JSON.stringify(dataRaw);
           const request = new Request(
-            HOST.write_through + "/api/v1/write-through/vacancies",
+            HOST.write_through + "/vacancies",
             { method: "POST", headers: logHeaders, body: reqBody },
           );
           try {
@@ -196,7 +196,7 @@ export default function WriteThroughTestPage() {
        */
       for (let idx = 0; idx < firstSampling.length; idx++) {
         const request = new Request(
-          `${HOST.write_through}/api/v1/write-through/vacancies?lineIndustry=${firstSampling[idx].line_industry}&employeeType=${firstSampling[idx].employee_type}&workArrangement=${firstSampling[idx].work_arrangement}`,
+          `${HOST.write_through}/vacancies?lineIndustry=${firstSampling[idx].line_industry}&employeeType=${firstSampling[idx].employee_type}&workArrangement=${firstSampling[idx].work_arrangement}`,
           { method: "GET", headers: logHeaders },
         );
         try {
@@ -281,7 +281,7 @@ export default function WriteThroughTestPage() {
         });
 
         const request = new Request(
-          HOST.write_through + "/api/v1/write-through/vacancies",
+          HOST.write_through + "/vacancies",
           { method: "PATCH", headers: logHeaders, body: JSON.stringify(reqBody) }
         );
 
@@ -338,7 +338,7 @@ export default function WriteThroughTestPage() {
        */
       for (let idx = 0; idx < firstSampling.length; idx++) {
         const request = new Request(
-          `${HOST.write_through}/api/v1/write-through/vacancies?lineIndustry=${firstSampling[idx].line_industry}&employeeType=${firstSampling[idx].employee_type}&workArrangement=${firstSampling[idx].work_arrangement}`,
+          `${HOST.write_through}/vacancies?lineIndustry=${firstSampling[idx].line_industry}&employeeType=${firstSampling[idx].employee_type}&workArrangement=${firstSampling[idx].work_arrangement}`,
           { method: "GET", headers: logHeaders },
         );
         try {
@@ -403,7 +403,7 @@ export default function WriteThroughTestPage() {
           offset: idx + 1,
           total_raw_vacancies: 500
         }).Send<RawVacancies[]>(
-          "/api/v1/administrators/test/generates/vacancies",
+          "/administrators/test/generates/vacancies",
           { method: "POST", headers: basicHeaders }
         );
         if (fail) {
@@ -420,7 +420,7 @@ export default function WriteThroughTestPage() {
         if (rawVacancies) {
           const reqBody = JSON.stringify(rawVacancies);
           const request = new Request(
-            HOST.write_through + "/api/v1/write-through/vacancies",
+            HOST.write_through + "/vacancies",
             { method: "POST", headers: logHeaders, body: reqBody },
           );
           try {
@@ -434,7 +434,7 @@ export default function WriteThroughTestPage() {
               setLogs(prev => prev + "\n" + `[${dayjs().format("DD/MM/YYYY HH.mm.ss")}]:\tcombination: write request #${idx} send successfully ✅`);
 
               const requestRead = new Request(
-                `${HOST.write_through}/api/v1/write-through/vacancies?lineIndustry=${combinationSampling[idx].line_industry}&employeeType=${combinationSampling[idx].employee_type}&workArrangement=${combinationSampling[idx].work_arrangement}`,
+                `${HOST.write_through}/vacancies?lineIndustry=${combinationSampling[idx].line_industry}&employeeType=${combinationSampling[idx].employee_type}&workArrangement=${combinationSampling[idx].work_arrangement}`,
                 { method: "GET", headers: logHeaders },
               );
               try {
@@ -508,9 +508,9 @@ export default function WriteThroughTestPage() {
           }
         }
       }
-      setLogs(prev => prev + "\n" + `${dayjs().format("DD/MM/YYYY HH.mm.ss")}: \tWrite-Through test completed` + "\n" + `${dayjs().format("DD/MM/YYYY HH.mm.ss")}: \tClearing testing data`);
+      setLogs(prev => prev + "\n" + `${dayjs().format("DD/MM/YYYY HH.mm.ss")}: \tWrite-Through test completed` + "\n" + `${dayjs().format("DD/MM/YYYY HH.mm.ss")}: \tClearing all testing data`);
       const [successClearing, failClearing] = await RequestAPI.Send<number>(
-        "/api/v1/administrators/test/generates/vacancies?count=" + ((firstSampling.length + combinationSampling.length) * 500),
+        "/administrators/test/generates/vacancies?count=" + ((firstSampling.length + combinationSampling.length) * 500),
         { method: "DELETE", headers: { "Authorization": "Bearer " + token } }
       );
       if (failClearing) {
@@ -557,7 +557,7 @@ export default function WriteThroughTestPage() {
         };
         logs: LogType[];
       }>(
-        "/api/v1/administrators/test/" + sessionID + "/logs?pattern=write-through",
+        "/administrators/test/" + sessionID + "/logs?pattern=write-through",
         {
           method: "GET",
           headers: {

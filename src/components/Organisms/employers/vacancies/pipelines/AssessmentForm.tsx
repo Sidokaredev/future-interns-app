@@ -31,7 +31,7 @@ export default function AssessmentForm({
   const deleteExistingAssessmentDocument = async (assessmentID: number, documentID: number, currIndex: number) => {
     const token = GetSession("auth");
     const [success, fail] = await RequestAPI.Send<string>(
-      "/api/v1/employers/assessments/" + assessmentID + "/assessment-document/" + documentID,
+      "/employers/assessments/" + assessmentID + "/assessment-document/" + documentID,
       {
         method: "DELETE",
         headers: {
@@ -75,7 +75,7 @@ export default function AssessmentForm({
         <Typography component={"p"} variant="subtitle1"
           sx={{ color: grey[700], fontWeight: 550 }}
         >
-          Assessment Data
+          Data Assessment
         </Typography>
       </Box>
       <Box component={"div"}>
@@ -83,13 +83,13 @@ export default function AssessmentForm({
           <TextField
             type="text"
             name="name"
-            label="Assessment Name*"
-            placeholder="Enter assessment name"
+            label="Nama Assessment*"
+            placeholder="Masukkan nama assessment"
             size="small"
             autoComplete="off"
             fullWidth
             sx={{
-              marginBottom: "0.8em",
+              marginBottom: "1em",
             }}
             value={assessmentForm.name}
             onChange={InputOnChangeV2(setAssessmentForm)}
@@ -99,13 +99,13 @@ export default function AssessmentForm({
           <TextField
             type="text"
             name="assessment_link"
-            label="Assessment Link"
-            placeholder="Enter assessment link"
+            label="Tautan Assessment"
+            placeholder="e.g https://assessment.example.com/test/12345"
             size="small"
             autoComplete="off"
             fullWidth
             sx={{
-              marginBottom: "0.8em",
+              marginBottom: "1em",
             }}
             value={assessmentForm.assessment_link}
             onChange={InputOnChangeV2(setAssessmentForm)}
@@ -114,7 +114,7 @@ export default function AssessmentForm({
           />
           <Box component={"div"}
             sx={{
-              marginBottom: "0.8em",
+              marginBottom: "1em",
               display: "flex",
               columnGap: "0.8em",
             }}
@@ -122,7 +122,7 @@ export default function AssessmentForm({
             <DatePicker
               name="start_at"
               format="DD/MM/YYYY"
-              label="Start at*"
+              label="Dimulai pada*"
               slotProps={{
                 textField: {
                   size: "small",
@@ -137,7 +137,7 @@ export default function AssessmentForm({
             <DatePicker
               name="due_date"
               format="DD/MM/YYYY"
-              label="Due date*"
+              label="Batas Pengerjaan*"
               slotProps={{
                 textField: {
                   size: "small",
@@ -153,15 +153,15 @@ export default function AssessmentForm({
           <TextField
             type="text"
             name="note"
-            label="Note*"
-            placeholder="Enter any specific guidelines or additional notes for this assessment"
+            label="Catatan*"
+            placeholder="Tuliskan panduan khusus atau informasi tambahan terkait assessment ini"
             size="small"
             autoComplete="off"
             rows={5}
             multiline
             fullWidth
             sx={{
-              marginBottom: "0.8em",
+              marginBottom: "1em",
             }}
             value={assessmentForm.note}
             onChange={InputOnChangeV2(setAssessmentForm)}
@@ -180,7 +180,7 @@ export default function AssessmentForm({
             <Typography component={"p"} variant="subtitle1"
               sx={{ color: grey[700], fontWeight: 550 }}
             >
-              Assessment Documents
+              Dokumen Assessment
             </Typography>
           </Box>
           <Box component={"div"} className="assessment-documents-container"
@@ -498,7 +498,7 @@ export default function AssessmentForm({
                 setOpenDrawer(false);
               }}
             >
-              CANCEL
+              Batalkan
             </Button>
             <Button
               type="submit"
@@ -507,7 +507,7 @@ export default function AssessmentForm({
               disabled={loading["assessment"]}
               endIcon={loading["assessment"] && (<CircularProgress size={20} />)}
             >
-              SUBMIT
+              Submit
             </Button>
           </Box>
         </form>

@@ -8,17 +8,17 @@ import {
   IconButton,
 } from "@mui/material";
 import { Link as ReactRouterLink } from "react-router-dom";
-import { GitHub, Instagram, LinkedIn, MailOutline } from "@mui/icons-material";
+import { GitHub, LinkedIn, MailOutline } from "@mui/icons-material";
 
 export default function Footer() {
   /* styles */
-  const footerItemStyles = {
-    textDecoration: "none",
-    color: "#c2c2c2",
-    "&:hover": {
-      color: "#85fff7",
-    },
-  };
+  // const footerItemStyles = {
+  //   textDecoration: "none",
+  //   color: "#c2c2c2",
+  //   "&:hover": {
+  //     color: "#85fff7",
+  //   },
+  // };
   return (
     <Box
       bgcolor={"#003C43"}
@@ -52,16 +52,16 @@ export default function Footer() {
               style={{ textDecoration: "none" }}
             >
               <Typography
-                variant="subtitle1"
+                variant="subtitle2"
                 fontWeight={"bolder"}
                 color={"white"}
               >
-                Future Interns
+                e-Career Sidokaredev
               </Typography>
             </Link>
           </Stack>
           {/* Footer Items */}
-          <Stack
+          {/* <Stack
             direction={{ xs: "column", sm: "row", md: "row" }}
             justifyContent={"center"}
             spacing={{ xs: 1, sm: 2, md: 5 }}
@@ -78,7 +78,7 @@ export default function Footer() {
             <Link component={ReactRouterLink} to={"/"} sx={footerItemStyles}>
               <Typography variant="subtitle2">Contact Us</Typography>
             </Link>
-          </Stack>
+          </Stack> */}
         </Box>
         <Divider sx={{ bgcolor: "#e1fefc51", marginY: "1.5rem" }} />
         <Box
@@ -119,23 +119,23 @@ export default function Footer() {
             {/* LinkedIn */}
             <IconButton
               component={ReactRouterLink}
-              to="https://github.com"
+              to="https://www.linkedin.com/in/fatkhur-rozak-86b686237/"
               target="_blank"
             >
               <LinkedIn fontSize="small" sx={{ color: "#0e76a8" }} />
             </IconButton>
             {/* Instagram */}
-            <IconButton
+            {/* <IconButton
               component={ReactRouterLink}
               to="https://github.com"
               target="_blank"
             >
               <Instagram fontSize="small" sx={{ color: "#E4405F" }} />
-            </IconButton>
+            </IconButton> */}
             {/* Email */}
             <IconButton
               component={ReactRouterLink}
-              to="https://github.com"
+              to="mailto:fatkhurawe@gmail.com"
               target="_blank"
             >
               <MailOutline fontSize="small" sx={{ color: "#bbbbbb" }} />

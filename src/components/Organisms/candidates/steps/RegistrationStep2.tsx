@@ -146,7 +146,7 @@ export default function RegistrationStep2({
 
     const token = GetSession('auth')
     // THE REQUEST API HELPER CLASS DOESNT HAVE ABILITIES TO MAKE REQUEST CONCURRENTLY
-    const [success_education, fail_education] = await RequestAPI.JSONRequest<EducationFormType[]>(formValue.educations).Send<string>("/api/v1/candidates/educations/", {
+    const [success_education, fail_education] = await RequestAPI.JSONRequest<EducationFormType[]>(formValue.educations).Send<string>("/candidates/educations/", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -158,7 +158,7 @@ export default function RegistrationStep2({
       return setAlert({ show: true, message: fail_education.message })
     }
     const [success_skill, fail_skill] = await RequestAPI.JSONRequest<SkillFormType[]>(formValue.skills)
-      .Send<string>("/api/v1/candidates/skills/", {
+      .Send<string>("/candidates/skills/", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -180,7 +180,7 @@ export default function RegistrationStep2({
   /* fetching */
   useEffect(() => {
     (async () => {
-      const [data_skills, fail_skills] = await RequestAPI.Send<SkillDataType[]>("/api/v1/public/skills/", {
+      const [data_skills, fail_skills] = await RequestAPI.Send<SkillDataType[]>("/public/skills/", {
         method: "GET",
         headers: {
           "Content-Type": "application/json"
@@ -211,12 +211,12 @@ export default function RegistrationStep2({
             component={"p"}
             variant="subtitle1"
             sx={{
-              marginBottom: "0.5em",
+              marginBottom: "1em",
               fontWeight: 550,
               color: grey[700]
             }}
           >
-            Educations
+            Pendidikan
           </Typography>
           {formValue.educations.map((education, index) => {
             const collapsedKey = `collapsed${index}`
@@ -310,7 +310,7 @@ export default function RegistrationStep2({
                             ) : (
                               <ExpandMoreRounded fontSize="small" />
                             )}
-                            <Typography component={"p"} variant="caption">Expand Form</Typography>
+                            <Typography component={"p"} variant="caption">Tampilkan Formulir Lengkap</Typography>
                           </MenuItem>
                           <MenuItem
                             onClick={deleteEducation(index)}
@@ -322,7 +322,7 @@ export default function RegistrationStep2({
                             }}
                           >
                             <DeleteRounded fontSize="small" sx={{ color: red[500] }} />
-                            <Typography component={"p"} variant="caption" sx={{ color: red[500] }}>Delete</Typography>
+                            <Typography component={"p"} variant="caption" sx={{ color: red[500] }}>Hapus</Typography>
                           </MenuItem>
                         </MenuList>
                       </Menu>
@@ -355,8 +355,8 @@ export default function RegistrationStep2({
                       <TextField
                         type="text"
                         name="university"
-                        label="University"
-                        placeholder="University name (no abbreviations)"
+                        label="Perguruan Tinggi"
+                        placeholder="Nama perguruan tinggi (bukan singkatan)"
                         size="small"
                         autoComplete="off"
                         fullWidth
@@ -370,7 +370,7 @@ export default function RegistrationStep2({
                       <TextField
                         type="text"
                         name="address"
-                        label="University Address"
+                        label="Alamat Perguruan Tinggi"
                         placeholder="e.g., Jakarta, DKI Jakarta"
                         size="small"
                         autoComplete="off"
@@ -385,8 +385,8 @@ export default function RegistrationStep2({
                       <TextField
                         type="text"
                         name="major"
-                        label="Major"
-                        placeholder="Your field of study or major"
+                        label="Jurusan / Program Studi"
+                        placeholder="e.g Teknik Kimia"
                         size="small"
                         autoComplete="off"
                         fullWidth
@@ -407,12 +407,12 @@ export default function RegistrationStep2({
                             }
                           }}
                         >
-                          Degree
+                          Jenjang Pendidikan
                         </InputLabel>
                         <Select
                           labelId="education_degree"
                           name="degree"
-                          label="Degree"
+                          label="Jenjang Pendidikan"
                           size="small"
                           value={education.degree}
                           onChange={selectArrayOnChange(index)}
@@ -454,8 +454,8 @@ export default function RegistrationStep2({
                           onChange={selectArrayOnChange(index)}
                           error={errMsg[index] && Boolean(errMsg[index]["is_graduated"]) ? true : false}
                         >
-                          <MenuItem value={"true"}>Graduated</MenuItem>
-                          <MenuItem value={"false"}>Incomplete</MenuItem>
+                          <MenuItem value={"true"}>Telah lulus</MenuItem>
+                          <MenuItem value={"false"}>Bleum selesai</MenuItem>
                         </Select>
                         {errMsg[index] && errMsg[index]["is_graduated"] && (
                           <FormHelperText sx={{ color: red[500] }}>{errMsg[index]["is_graduated"]}</FormHelperText>
@@ -466,7 +466,7 @@ export default function RegistrationStep2({
                       <TextField
                         type="number"
                         name="gpa"
-                        label="GPA"
+                        label="Indek Prestasi Kumulatif"
                         placeholder="e.g., 3.5/4.0 or 4.2/5.0"
                         size="small"
                         autoComplete="off"
@@ -508,8 +508,9 @@ export default function RegistrationStep2({
                       >
                         <MobileDatePicker
                           name="start_at"
-                          format="DD/MM/YYYY"
-                          label="Start at"
+                          views={["year"]}
+                          format="YYYY"
+                          label="Tahun masuk"
                           slotProps={{
                             textField: {
                               size: "small",
@@ -550,8 +551,9 @@ export default function RegistrationStep2({
                         </Box>
                         <MobileDatePicker
                           name="end_at"
-                          format="DD/MM/YYYY"
-                          label="End at"
+                          views={["year"]}
+                          format="YYYY"
+                          label="Tahun selesai"
                           slotProps={{
                             textField: {
                               size: "small",
@@ -584,7 +586,7 @@ export default function RegistrationStep2({
                       size="small"
                       onClick={addMoreEducation}
                     >
-                      Add more education
+                      Tambah Pendidikan
                     </Button>
                   )}
                 </Collapse>
@@ -652,7 +654,7 @@ export default function RegistrationStep2({
                           disabled
                         >
                           <Typography component={"div"} variant="subtitle2">
-                            There is no skill as an option in master data.
+                            Tidak ada skill yang tersedia dalam data master.
                           </Typography>
                         </MenuItem>
                       )}
@@ -673,7 +675,7 @@ export default function RegistrationStep2({
                                 {skill.name}
                               </Typography>
                               <Box component={"img"}
-                                src={`${HOST.main}${skill.skill_icon_image_path}`}
+                                src={`${HOST.main}${skill.skill_icon_image_path.replace("/api/v1", "")}`}
                                 width={20}
                                 height={20}
                                 sx={{
@@ -701,7 +703,7 @@ export default function RegistrationStep2({
                         size="small"
                         onClick={deleteSkill(index)}
                       >
-                        <Tooltip title="Add more skill" placement="right">
+                        <Tooltip title="Hapus skill" placement="right">
                           <DeleteRounded />
                         </Tooltip>
                       </IconButton>
@@ -712,7 +714,7 @@ export default function RegistrationStep2({
                         size="small"
                         onClick={addMoreSkill}
                       >
-                        <Tooltip title="Add more skill" placement="right">
+                        <Tooltip title="Tambah skill" placement="right">
                           <AddRounded />
                         </Tooltip>
                       </IconButton>
@@ -741,7 +743,7 @@ export default function RegistrationStep2({
               minWidth: "10em"
             }}
           >
-            Next
+            Selanjutnya
           </Button>
         </Box>
       </form>

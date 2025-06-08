@@ -40,7 +40,7 @@ export default function ScreeningStage({
   const onView = async (candidateID: string) => {
     const token = GetSession("auth");
     const [data, fail] = await RequestAPI.Send<CandidateProfile>(
-      "/api/v1/candidates/" + candidateID + "?includes=user,address,educations,experiences,skills,socials",
+      "/candidates/" + candidateID + "?includes=user,address,educations,experiences,skills,socials",
       {
         method: "GET",
         headers: {
@@ -60,7 +60,7 @@ export default function ScreeningStage({
     setLoading(true);
     const token = GetSession("auth");
     const [success, fail] = await RequestAPI.JSONRequest({ pipeline_id: pipelineID, stage: "Assessment" }).Send<string>(
-      "/api/v1/employers/pipelines/",
+      "/employers/pipelines/",
       {
         method: "PATCH",
         headers: {
@@ -84,11 +84,11 @@ export default function ScreeningStage({
   /* constants */
   const tableColumn = [
     { prop: "row_number", label: "#" },
-    { prop: "fullname", label: "Name" },
-    { prop: "education", label: "Education" },
-    { prop: "expertise", label: "Expertise" },
-    { prop: "socials", label: "Socials" },
-    { prop: "option", label: "Option" },
+    { prop: "fullname", label: "Nama Lengkap" },
+    { prop: "education", label: "Pendidikan" },
+    { prop: "expertise", label: "Bidang Keahlian" },
+    { prop: "socials", label: "Sosial Media" },
+    { prop: "option", label: "Opsi" },
   ];
   const smallTableColumn = [
     { prop: "fullname", label: "Name" },
@@ -111,7 +111,7 @@ export default function ScreeningStage({
     const token = GetSession("auth");
     (async () => {
       const [data, fail] = await RequestAPI.Send<ApplicantScreening[]>(
-        "/api/v1/employers/pipelines/" + vacancyID + "/screening",
+        "/employers/pipelines/" + vacancyID + "/screening",
         {
           method: "GET",
           headers: {
@@ -160,7 +160,7 @@ export default function ScreeningStage({
                 <Typography component={"p"} variant="caption"
                   sx={{ color: amber[700] }}
                 >
-                  There are no applicants currently in the screening stage
+                  Saat ini tidak ada pelamar pada tahap <span style={{ fontStyle: "italic" }}>screening</span>.
                 </Typography>
               </Box>
             )}
@@ -219,7 +219,7 @@ export default function ScreeningStage({
                                 {!xsmallMedia && (
                                   <Avatar
                                     alt="candidate-profile"
-                                    src={`${HOST.main}${applicant.profile_image_path}`}
+                                    src={`${HOST.main}${applicant.profile_image_path.replace("/api/v1", "")}`}
                                     sx={{ width: 40, height: 40 }}
                                   />
                                 )}
@@ -348,7 +348,7 @@ export default function ScreeningStage({
                                       setOpenDialog(prev => ({ ...prev, ["candidate-overview"]: true }));
                                     }}
                                   >
-                                    View
+                                    Lihat
                                   </Button>
                                 )}
                                 <IconButton
@@ -446,7 +446,7 @@ export default function ScreeningStage({
             <ArrowForwardRounded fontSize="small" />
           </ListItemIcon>
           <ListItemText
-            primary={"Assign to Assessment"}
+            primary={"Proses ke Assessments"}
             sx={{
               ".MuiListItemText-primary": {
                 fontSize: "small",
@@ -467,7 +467,7 @@ export default function ScreeningStage({
               <VisibilityRounded fontSize="small" />
             </ListItemIcon>
             <ListItemText
-              primary={"View"}
+              primary={"Lihat"}
               sx={{
                 ".MuiListItemText-primary": {
                   fontSize: "small",
@@ -504,7 +504,7 @@ export default function ScreeningStage({
               color: grey[800],
             }}
           >
-            Candidate Profile Overview
+            Ringkasan Profil Kandidat
           </Typography>
           <IconButton size="small"
             onClick={() => {
@@ -541,10 +541,10 @@ export default function ScreeningStage({
               marginBottom: "0.5em",
             }}
           >
-            Note
+            Catatan
           </Typography>
           <Typography component={"p"} variant="body1">
-            Are you sure you want to move this candidate to a new pipeline <SimpleEmphasis text={"Assessment"} /> ?
+            Apakah Anda yakin ingin memindahkan kandidat ini ke tahap <SimpleEmphasis text={"Assessment"} /> ?
           </Typography>
         </Box>
         <Box component={"div"}
@@ -560,7 +560,7 @@ export default function ScreeningStage({
             size="small"
             onClick={() => setOpenDialog(prev => ({ ...prev, ["assign-confirmation"]: false }))}
           >
-            NO
+            Tidak
           </Button>
           <Button
             variant="contained"
@@ -572,7 +572,7 @@ export default function ScreeningStage({
               onAssignToAssessment(selected.pipeline_id)
             }}
           >
-            YES
+            Iya
           </Button>
         </Box>
       </Dialog>

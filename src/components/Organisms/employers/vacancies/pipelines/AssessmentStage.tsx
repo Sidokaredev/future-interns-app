@@ -11,6 +11,10 @@ import AssessmentForm from "./AssessmentForm";
 import { DEFAULT_ASSESSMENT_FORM } from "../../../../../pages/employers/constants";
 import AutoOverflowText from "../../../../Molecules/Texts/AutoOverflowText";
 import { HOST } from "../../../../../pages/administrators/performance/[id]/constants";
+import dayjs from "dayjs";
+import "dayjs/locale/id";
+
+dayjs.locale("id");
 
 export default function AssessmentStage({
   tabOn,
@@ -133,7 +137,7 @@ export default function AssessmentStage({
     });
 
     const token = GetSession("auth");
-    const endpoint = onEdit ? "/api/v1/employers/assessments/" + currentAssessment.id : "/api/v1/employers/assessments/";
+    const endpoint = onEdit ? "/employers/assessments/" + currentAssessment.id : "/employers/assessments/";
     const [success, fail] = await RequestAPI.Send<{ message: string, documents_status: Record<string, string> }>(
       endpoint,
       {
@@ -165,7 +169,7 @@ export default function AssessmentStage({
   const deleteAsessment = async () => {
     const token = GetSession("auth");
     const [success, fail] = await RequestAPI.Send<string>(
-      "/api/v1/employers/assessments/" + currentAssessment.id,
+      "/employers/assessments/" + currentAssessment.id,
       {
         method: "DELETE",
         headers: {
@@ -193,7 +197,7 @@ export default function AssessmentStage({
     const token = GetSession("auth");
 
     const [success, fail] = await RequestAPI.JSONRequest(assignees).Send<string>(
-      "/api/v1/employers/assessments/assignees/",
+      "/employers/assessments/assignees/",
       {
         method: "POST",
         headers: {
@@ -228,7 +232,7 @@ export default function AssessmentStage({
     }))
     const token = GetSession("auth");
     const [success, fail] = await RequestAPI.Send<string>(
-      "/api/v1/employers/assessments/assignees/" + selectedAssignee.assessment_id + "/" + selectedAssignee.pipeline_id,
+      "/employers/assessments/assignees/" + selectedAssignee.assessment_id + "/" + selectedAssignee.pipeline_id,
       {
         method: "DELETE",
         headers: {
@@ -263,7 +267,7 @@ export default function AssessmentStage({
       submission_status: "scored",
       submission_result: String(submissionScore)
     }).Send<string>(
-      "/api/v1/employers/assessments/assignees/",
+      "/employers/assessments/assignees/",
       {
         method: "PATCH",
         headers: {
@@ -291,7 +295,7 @@ export default function AssessmentStage({
       pipeline_id: selectedAssignee.pipeline_id,
       stage: "Interview",
     }).Send<string>(
-      "/api/v1/employers/pipelines/",
+      "/employers/pipelines/",
       {
         method: "PATCH",
         headers: {
@@ -305,6 +309,7 @@ export default function AssessmentStage({
     };
     if (success) {
       setLoading(prev => ({ ...prev, ["assign-to-interview"]: false }));
+      setDataAction(prev => !prev);
       setOpenDialog(prev => ({ ...prev, ["assign-interview"]: false, ["applicant-submissions"]: false }))
       return setAlert({ show: true, message: success });
     }
@@ -319,7 +324,7 @@ export default function AssessmentStage({
     // unassigned applicants -> GET
     (async () => {
       const [data, fail] = await RequestAPI.Send<UnassignedApplicant[]>(
-        "/api/v1/employers/pipelines/" + vacancyID + "/assessment?unassigned",
+        "/employers/pipelines/" + vacancyID + "/assessment?unassigned",
         {
           headers: {
             "Authorization": "Bearer " + token
@@ -336,7 +341,7 @@ export default function AssessmentStage({
     // available assignees -> GET
     (async () => {
       const [data, fail] = await RequestAPI.Send<AssessmentApplicant[]>(
-        "/api/v1/employers/pipelines/" + vacancyID + "/assessment",
+        "/employers/pipelines/" + vacancyID + "/assessment",
         {
           method: "GET",
           headers: {
@@ -354,7 +359,7 @@ export default function AssessmentStage({
     // assessments -> GET
     (async () => {
       const [data, fail] = await RequestAPI.Send<AssessmentType[]>(
-        "/api/v1/employers/assessments/" + vacancyID,
+        "/employers/assessments/" + vacancyID,
         {
           method: "GET",
           headers: {
@@ -393,7 +398,7 @@ export default function AssessmentStage({
                 setOpenDrawer(true);
               }}
             >
-              CREATE ASSESSMENT
+              Buat Assessment
             </Button>
           </Box>
         </Box>
@@ -413,7 +418,7 @@ export default function AssessmentStage({
             <Typography component={"p"} variant="caption"
               sx={{ color: amber[700] }}
             >
-              There are no applicants currently in the assessment stage
+              Saat ini belum ada pelamar yang berada di tahap <span style={{ fontStyle: "italic" }}>assessment</span>.
             </Typography>
           </Box>
         )}
@@ -433,8 +438,9 @@ export default function AssessmentStage({
           <Typography component={"p"} variant="subtitle2"
             sx={{ color: amber[700] }}
           >
-            There are <SimpleEmphasis text={unassignedApplicants.length} textColor={amber[700]} sx={{ fontWeight: 550 }} /> candidates waiting to be assigned an assessment. Please review and take action promptly, {" "}
+            Saat ini terdapat <SimpleEmphasis text={unassignedApplicants.length} textColor={amber[700]} sx={{ fontWeight: 550 }} /> pelamar yang menunggu penugasan assessment. Mohon segera ditinjau dan ditindaklanjuti, {" "}
             <Typography component={"span"}
+              fontSize={"small"}
               sx={{
                 color: blue[700],
                 fontStyle: "italic",
@@ -445,7 +451,7 @@ export default function AssessmentStage({
                 setOpenDialog(prev => ({ ...prev, ["unassigned"]: true }));
               }}
             >
-              view here
+              lihat disini
             </Typography>
           </Typography>
         </Box>
@@ -510,9 +516,9 @@ export default function AssessmentStage({
                           backgroundColor: amber[50],
                         }}
                       >
-                        Due date on{" "}
+                        Batas waktu pengerjaan pada{" "}
                         <SimpleEmphasis
-                          text={new Date(assessment.due_date).toDateString()}
+                          text={dayjs(assessment.due_date).format("dddd, D MMMM YYYY")}
                           textColor={amber[700]}
                           sx={{ fontStyle: "italic" }}
                         />
@@ -555,9 +561,9 @@ export default function AssessmentStage({
                         <Typography
                           component={"p"}
                           variant="caption"
-                          sx={{ fontWeight: 550, color: grey[700] }}
+                          sx={{ fontWeight: 550, color: grey[700], marginBottom: "0.5em" }}
                         >
-                          Note
+                          Catatan Pengerjaan
                         </Typography>
                         <AutoOverflowText
                           text={assessment.note}
@@ -602,9 +608,9 @@ export default function AssessmentStage({
                           <Typography
                             component={"div"}
                             variant="caption"
-                            sx={{ fontWeight: 550, color: grey[700] }}
+                            sx={{ fontWeight: 550, color: grey[700], marginBottom: "0.5em" }}
                           >
-                            Assessment Link
+                            Tautan Assessment
                           </Typography>
                           <Typography
                             component={isLinkExist ? "a" : "p"}
@@ -616,7 +622,7 @@ export default function AssessmentStage({
                               ":hover": { color: isLinkExist ? blue[500] : amber[600] },
                             }}
                           >
-                            {isLinkExist ? assessment.assessment_link : "no link attached"}
+                            {isLinkExist ? assessment.assessment_link : "Tidak ada tautan yang dilampirkan"}
                           </Typography>
                         </Box>
                       </Box>
@@ -640,9 +646,9 @@ export default function AssessmentStage({
                           <Typography
                             component={"p"}
                             variant="caption"
-                            sx={{ fontWeight: 550, color: grey[700] }}
+                            sx={{ fontWeight: 550, color: grey[700], marginBottom: "0.5em" }}
                           >
-                            Attached Files
+                            Dokumen Assessment
                           </Typography>
                           <Box
                             component={"div"}
@@ -709,14 +715,14 @@ export default function AssessmentStage({
                             variant="caption"
                             sx={{ fontWeight: 550, color: grey[700] }}
                           >
-                            Assignee
+                            Ditugaskan ke
                           </Typography>
                           <Typography
                             component={"p"}
                             variant="caption"
                             sx={{ color: grey[600] }}
                           >
-                            {assessment.assessment_assignees.length} Candidates
+                            {assessment.assessment_assignees.length} Kandidat
                           </Typography>
                           <Button
                             variant="text"
@@ -735,7 +741,7 @@ export default function AssessmentStage({
                               setOpenDialog(prev => ({ ...prev, ["assign-assessment"]: true }));
                             }}
                           >
-                            Details
+                            Lihat Detail
                           </Button>
                         </Box>
                       </Box>
@@ -766,7 +772,7 @@ export default function AssessmentStage({
                       }))
                     }}
                   >
-                    View Submissions
+                    Lihat Dokumen Pengumpulan
                   </Button>
                   <Chip
                     label={
@@ -774,7 +780,7 @@ export default function AssessmentStage({
                         variant="caption"
                         sx={{ color: blue[700], fontStyle: "italic" }}
                       >
-                        {submittedCount} submitted out of {assessment.assessment_assignees.length}
+                        {submittedCount} pengumpulan dari total {assessment.assessment_assignees.length}
                       </Typography>
                     }
                     size="small"
@@ -844,7 +850,7 @@ export default function AssessmentStage({
             <EditRounded fontSize="small" sx={{ color: "#06816d" }} />
           </ListItemIcon>
           <ListItemText
-            primary={"Edit"}
+            primary={"Ubah Data"}
             sx={{
               ".MuiListItemText-primary": {
                 fontSize: "small",
@@ -866,7 +872,7 @@ export default function AssessmentStage({
             <DeleteRounded fontSize="small" sx={{ color: "red" }} />
           </ListItemIcon>
           <ListItemText
-            primary={"Delete"}
+            primary={"Hapus Data"}
             sx={{
               ".MuiListItemText-primary": {
                 fontSize: "small",
@@ -902,7 +908,7 @@ export default function AssessmentStage({
               color: grey[700]
             }}
           >
-            Waiting for Assessment
+            Menunggu untuk Assessments
           </Typography>
           <IconButton size="small"
             onClick={() => {
@@ -934,7 +940,7 @@ export default function AssessmentStage({
               >
                 <Avatar
                   alt="candidate-profile-image"
-                  src={HOST.main + applicant.candidate.profile_image_path}
+                  src={HOST.main + applicant.candidate.profile_image_path.replace("/api/v1", "")}
                   sx={{ width: 40, height: 40 }}
                 />
                 <Box component={"div"}
@@ -1015,7 +1021,7 @@ export default function AssessmentStage({
             <Typography component={"p"} variant="subtitle2"
               sx={{ marginBottom: "0.7em", fontWeight: 550, color: grey[700] }}
             >
-              Add New Assignees
+              Tambahkan Kandidat untuk Ditugaskan
             </Typography>
             <Autocomplete
               open={autocompleteOpen}
@@ -1043,7 +1049,7 @@ export default function AssessmentStage({
                     >
                       <Avatar
                         alt="candidate-profile-image"
-                        src={HOST.main + option.candidate.profile_image_path}
+                        src={HOST.main + option.candidate.profile_image_path.replace("/api/v1", "")}
                         sx={{ width: 30, height: 30 }}
                       />
                       <Box component={"div"}
@@ -1071,9 +1077,9 @@ export default function AssessmentStage({
               }}
               renderInput={(params) => (
                 <TextField {...params}
-                  label="Applicants"
+                  label="Daftar Pelamar"
                   size="small"
-                  helperText="Select the candidate to be assigned to this assessment."
+                  helperText="Silakan pilih kandidat untuk ditugaskan ke assessment ini."
                 />
               )}
               slotProps={{
@@ -1151,7 +1157,7 @@ export default function AssessmentStage({
                 }}
               >
                 <Typography component={"p"} variant="subtitle2" sx={{ fontWeight: 550, color: grey[700] }}>
-                  Are you sure you want to add these candidates to the assessment?
+                  Apakah Anda yakin ingin menambahkan kandidat ini ke assessment?
                 </Typography>
               </Box>
             )}
@@ -1174,7 +1180,7 @@ export default function AssessmentStage({
                       minWidth: "10em",
                     }}
                   >
-                    CANCEL
+                    Batalkan
                   </Button>
                   <Button
                     variant="contained"
@@ -1189,7 +1195,7 @@ export default function AssessmentStage({
                   >
                     {loading["add-assignees"] ? (
                       <CircularProgress size={20} color="inherit" />
-                    ) : "CONTINUE"}
+                    ) : "Lannjutkan"}
                   </Button>
                 </>
               )}
@@ -1205,7 +1211,7 @@ export default function AssessmentStage({
                     setOnAddNewAssignees(true);
                   }}
                 >
-                  ADD
+                  Tambahkan
                 </Button>
               )}
             </Box>
@@ -1219,12 +1225,12 @@ export default function AssessmentStage({
             <Typography component={"p"} variant="subtitle2"
               sx={{ marginBottom: "0.5em", fontWeight: 550, color: grey[700] }}
             >
-              Currently Assigned Applicant
+              Pelamar yang Ditugaskan
             </Typography>
             <TextField
               type="text"
               name="search" // search for applicant
-              placeholder="Search assignee by name or email..."
+              placeholder="Cari berdasarkan nama atau email"
               autoComplete="off"
               size="small"
               fullWidth
@@ -1261,7 +1267,7 @@ export default function AssessmentStage({
               <Typography component={"p"} variant="caption"
                 sx={{ color: amber[700] }}
               >
-                Assigned applicant is empty
+                Belum ada pelamar yang ditugaskan
               </Typography>
             </Box>
           )}
@@ -1284,7 +1290,7 @@ export default function AssessmentStage({
               >
                 <Avatar
                   alt="candidate-profile-image"
-                  src={HOST.main + applicant.candidate.profile_image_path}
+                  src={HOST.main + applicant.candidate.profile_image_path.replace("/api/v1", "")}
                   sx={{ width: 40, height: 40 }}
                 />
                 <Box component={"div"}
@@ -1362,10 +1368,10 @@ export default function AssessmentStage({
               marginBottom: "0.5em",
             }}
           >
-            Note
+            Konfirmasi Penghapusan
           </Typography>
-          <Typography component={"p"} variant="body1">
-            Are you sure you want to remove the assignee from this assessment? All candidate-related <SimpleEmphasis text={"submissions"} /> will also be <SimpleEmphasis text={"deleted"} textColor="red" />
+          <Typography component={"p"} variant="body2">
+            Apakah Anda yakin ingin menghapus pelamar dari assessment ini? Semua <SimpleEmphasis text={"submissions"} /> terkait pelamar juga akan <SimpleEmphasis text={"dihapus"} textColor="red" />
           </Typography>
         </Box>
         <Box component={"div"}
@@ -1381,7 +1387,7 @@ export default function AssessmentStage({
             size="small"
             onClick={() => setOpenDialog(prev => ({ ...prev, ["delete-assignee"]: false }))}
           >
-            NO
+            Batalkan
           </Button>
           <Button
             variant="contained"
@@ -1393,7 +1399,7 @@ export default function AssessmentStage({
               deleteAssignee();
             }}
           >
-            YES
+            Lanjutkan
           </Button>
         </Box>
       </Dialog>
@@ -1437,7 +1443,7 @@ export default function AssessmentStage({
           <TextField
             type="text"
             name="search" // search for applicant
-            placeholder="Search assignee by name..."
+            placeholder="Cari pelamar berdasarkan nama"
             autoComplete="off"
             size="small"
             fullWidth
@@ -1465,7 +1471,7 @@ export default function AssessmentStage({
               color: grey[700]
             }}
           >
-            Assignees Submissions
+            Pengumpulan Assessment Pelamar
           </Typography>
         </Box>
         <Box component={"div"}
@@ -1490,7 +1496,7 @@ export default function AssessmentStage({
               <Typography component={"p"} variant="caption"
                 sx={{ color: amber[700] }}
               >
-                Assignees is empty
+                Tidak ada pelamar yang ditugaskan
               </Typography>
             </Box>
           )}
@@ -1517,7 +1523,7 @@ export default function AssessmentStage({
                 >
                   <Avatar
                     alt="candidate-profile-image"
-                    src={HOST.main + assignee.candidate.profile_image_path}
+                    src={HOST.main + assignee.candidate.profile_image_path.replace("/api/v1", "")}
                     sx={{ width: 40, height: 40 }}
                   />
                   <Box component={"div"}
@@ -1550,7 +1556,7 @@ export default function AssessmentStage({
                             borderRadius: "0.3em"
                           }}
                         >
-                          Scored: {assignee.submission_result}
+                          Nilai: {assignee.submission_result}
                         </Typography>
                       )}
                       {assignee.submission_result && (
@@ -1571,7 +1577,7 @@ export default function AssessmentStage({
                             }));
                           }}
                         >
-                          {assignee.pipeline.stage !== "Assessment" ? "Assigned to " + assignee.pipeline.stage : "Assign to Interview"}
+                          {assignee.pipeline.stage !== "Assessment" ? "Telah diproses ke tahap " + assignee.pipeline.stage : "Proses ke Interview"}
                         </Button>
                       )}
                     </Box>
@@ -1580,10 +1586,10 @@ export default function AssessmentStage({
                     >
                       {assignee.submission_documents.length > 0 && (
                         <Typography component={"p"} variant="caption" sx={{ color: "#06816d" }}>
-                          {assignee.submission_documents.length} file{assignee.submission_documents.length > 1 ? "s" : ""} submitted
+                          {assignee.submission_documents.length} dokumen{assignee.submission_documents.length > 1 ? "s" : ""} telah dikumpulkan
                         </Typography>
                       )}
-                      <Tooltip title="View submission" placement="top">
+                      <Tooltip title="Lihat Pengumpulan" placement="top">
                         <IconButton
                           size="small"
                           onClick={() => {
@@ -1601,7 +1607,7 @@ export default function AssessmentStage({
                         </IconButton>
 
                       </Tooltip>
-                      <Tooltip title="Score this submission" placement="top">
+                      <Tooltip title="Berikan nilai penugasan" placement="top">
                         <IconButton
                           size="small"
                           disabled={assignee.submission_documents.length === 0}
@@ -1636,7 +1642,7 @@ export default function AssessmentStage({
                     <Box component={"div"} sx={{ display: "flex", alignItems: "center", columnGap: 1, marginY: "0.5em", marginLeft: "3.5em" }}>
                       <ErrorRounded fontSize="small" sx={{ color: amber[700] }} />
                       <Typography component={"p"} variant="caption" sx={{ color: amber[700], marginTop: "0.3em" }}>
-                        Applicant have not submitted yet
+                        Pelamar belum melakukan pengumpulan penugasan
                       </Typography>
                     </Box>
                   )}
@@ -1705,10 +1711,10 @@ export default function AssessmentStage({
                           </Typography>
                         </Box>
                         <Box component={"div"} sx={{ display: "flex" }}>
-                          <Tooltip title="Download" placement="left">
+                          <Tooltip title="Unduh" placement="left">
                             <IconButton size="small"
                               component={RouterLink}
-                              to={`${HOST.main}${file.submission_document_path}/download`}
+                              to={`${HOST.main}${file.submission_document_path.replace("/api/v1", "")}/download`}
                               sx={{
                                 "&:hover": {
                                   color: "#06816d"
@@ -1718,10 +1724,10 @@ export default function AssessmentStage({
                               <DownloadRounded fontSize="small" />
                             </IconButton>
                           </Tooltip>
-                          <Tooltip title="View document" placement="right">
+                          <Tooltip title="Lihat Dokumen" placement="right">
                             <IconButton
                               component={RouterLink}
-                              to={`${HOST.main}${file.submission_document_path}${file.name.includes(".pdf") ? "" : "/download"}`}
+                              to={`${HOST.main}${file.submission_document_path.replace("/api/v1", "")}${file.name.includes(".pdf") ? "" : "/download"}`}
                               target="_blank"
                               size="small"
                               sx={{ color: blue[700] }}
@@ -1761,14 +1767,14 @@ export default function AssessmentStage({
               color: grey[700]
             }}
           >
-            Score <SimpleEmphasis text={selectedAssignee.fullname as string} />'s submission
+            Nilai pengumpulan penugasan <SimpleEmphasis text={selectedAssignee.fullname as string} />
           </Typography>
         </Box>
         <TextField
           type="text"
           name="submission_result"
-          label="Score"
-          placeholder="Enter numeric score"
+          label="Nilai"
+          placeholder="Masukkan nilai angka valid (1 - 100)"
           size="small"
           value={submissionScore}
           onChange={(event: ChangeEvent<HTMLInputElement>) => {
@@ -1799,7 +1805,7 @@ export default function AssessmentStage({
             }}
             onClick={() => setOpenDialog(prev => ({ ...prev, ["score-submission"]: false }))}
           >
-            CANCEL
+            Batalkan
           </Button>
           <Button
             variant="contained"
@@ -1813,7 +1819,7 @@ export default function AssessmentStage({
               scoreSubmission();
             }}
           >
-            SUBMIT
+            Submit
           </Button>
         </Box>
       </Dialog>
@@ -1837,11 +1843,11 @@ export default function AssessmentStage({
               color: grey[700]
             }}
           >
-            Delete Confirmation
+            Konfirmasi Penghapusan
           </Typography>
         </Box>
-        <Typography component={"p"} variant="body1" sx={{ color: grey[700] }}>
-          Deleting this assessment will also remove all <SimpleEmphasis text={"applicants"} /> and <SimpleEmphasis text={"submissions"} /> associated with it. Are you sure you want to proceed with the <SimpleEmphasis text={"deletion"} textColor="red" />?
+        <Typography component={"p"} variant="body2" sx={{ color: grey[700] }}>
+          Menghapus asesmen ini juga akan menghapus semua <SimpleEmphasis text={"pelamar"} /> dan <SimpleEmphasis text={"pengumpulan penugasan"} /> yang terkait. Apakah Anda yakin ingin melanjutkan <SimpleEmphasis text={"penghapusan"} textColor="red" />?
         </Typography>
         <Box component={"div"}
           sx={{
@@ -1860,7 +1866,7 @@ export default function AssessmentStage({
             }}
             onClick={() => setOpenDialog(prev => ({ ...prev, ["delete-assessment"]: false }))}
           >
-            CANCEL
+            Batalkan
           </Button>
           <Button
             variant="contained"
@@ -1872,7 +1878,7 @@ export default function AssessmentStage({
               deleteAsessment();
             }}
           >
-            CONTINUE
+            Lanjutkan
           </Button>
         </Box>
       </Dialog>
@@ -1896,11 +1902,11 @@ export default function AssessmentStage({
               color: grey[700]
             }}
           >
-            Assign Interview
+            Konfirmasi
           </Typography>
         </Box>
-        <Typography component={"p"} variant="body1" sx={{ color: grey[700] }}>
-          Are you sure you want to assign <SimpleEmphasis text={selectedAssignee.fullname as string} /> to the interview?
+        <Typography component={"p"} variant="body2" sx={{ color: grey[700] }}>
+          Apakah anda yakin ingin memproses <SimpleEmphasis text={selectedAssignee.fullname as string} /> ke tahap <span style={{ fontStyle: "italic" }}>interview</span>?
         </Typography>
         <Box component={"div"}
           sx={{
@@ -1919,7 +1925,7 @@ export default function AssessmentStage({
             }}
             onClick={() => setOpenDialog(prev => ({ ...prev, ["assign-interview"]: false }))}
           >
-            CANCEL
+            Batalkan
           </Button>
           <Button
             variant="contained"
@@ -1933,7 +1939,7 @@ export default function AssessmentStage({
               assignToInterview();
             }}
           >
-            CONTINUE
+            Lanjutkan
           </Button>
         </Box>
       </Dialog>

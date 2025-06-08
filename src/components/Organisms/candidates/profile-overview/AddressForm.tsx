@@ -32,7 +32,7 @@ export default function AddressForm({
           color: grey[600],
         }}
       >
-        Your Address Data
+        Data Alamat
       </Typography>
       <form onSubmit={onSubmit}>
         <Grid
@@ -47,8 +47,8 @@ export default function AddressForm({
             <TextField
               type="text"
               name="street"
-              label="Street"
-              placeholder="Your street address"
+              label="Alamat Jalan"
+              placeholder="e.g Jl. Ahmad Yani"
               size="small"
               multiline
               fullWidth
@@ -62,8 +62,8 @@ export default function AddressForm({
             <TextField
               type="text"
               name="neighborhood"
-              label="Neighborhood"
-              placeholder="e.g RT 0x/RW 0x"
+              label="Lingkungan / RT-RW"
+              placeholder="e.g RT 001/RW 003"
               size="small"
               fullWidth
               autoComplete="off"
@@ -92,7 +92,7 @@ export default function AddressForm({
             <TextField
               type="text"
               name="rural_area"
-              label="Rural Area"
+              label="Kelurahan / Desa"
               placeholder="e.g Jerukgamping"
               size="small"
               fullWidth
@@ -114,7 +114,7 @@ export default function AddressForm({
             <TextField
               type="text"
               name="sub_district"
-              label="Sub District"
+              label="Kecamatan"
               placeholder="e.g Kec. Krian"
               size="small"
               fullWidth
@@ -136,8 +136,8 @@ export default function AddressForm({
             <TextField
               type="text"
               name="city"
-              label="City"
-              placeholder="e.g Kab. Sidoarjo or Kota Surabaya"
+              label="Kabupaten / Kota"
+              placeholder="e.g Kab. Sidoarjo"
               size="small"
               fullWidth
               autoComplete="off"
@@ -164,7 +164,7 @@ export default function AddressForm({
               onOpen={AutoCompleteOnOpen("province", setOpen)}
               onClose={AutoCompleteOnClose("province", setOpen)}
               size="small"
-              renderInput={(params) => <TextField {...params} label="Province" error={Boolean(errMsg["province"]) ? true : false}
+              renderInput={(params) => <TextField {...params} label="Provinsi" error={Boolean(errMsg["province"]) ? true : false}
                 helperText={errMsg["province"] ?? ""} />}
               slotProps={{
                 paper: {
@@ -219,7 +219,7 @@ export default function AddressForm({
                   </Box>
                 );
               }}
-              renderInput={(params) => <TextField {...params} label="Country" error={Boolean(errMsg["country"])}
+              renderInput={(params) => <TextField {...params} label="Negara" error={Boolean(errMsg["country"])}
                 helperText={errMsg["country"] ?? ""} />}
               disableClearable
               fullWidth
@@ -238,8 +238,8 @@ export default function AddressForm({
             <TextField
               type="text"
               name="postal_code"
-              label="Postal Code"
-              placeholder="Your 5 number of postal code"
+              label="Kode Pos"
+              placeholder="5 Digit angka"
               size="small"
               fullWidth
               autoComplete="off"

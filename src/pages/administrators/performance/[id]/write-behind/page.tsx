@@ -83,7 +83,7 @@ export default function WriteBehindTestPage() {
     setLoading(true);
     setDisplayLogs(true);
     setLogs(prev => prev + "\n" + `${dayjs().format("DD/MM/YYYY HH.mm.ss")}: \tBegin Write-Behind test` +
-      "\n" + `${dayjs().format("DD/MM/YYYY HH.mm.ss")}: \tGenerating sampling queries`);
+      "\n" + `${dayjs().format("DD/MM/YYYY HH.mm.ss")}: \tGenerating sampling search queries`);
 
     const TOTAL_REQUEST = 100;
     setRequestStats(prev => ({ ...prev, awaiting: TOTAL_REQUEST }));
@@ -98,7 +98,7 @@ export default function WriteBehindTestPage() {
     });
 
     const [dataSampling, failSampling] = await RequestAPI.Send<SamplingQuery[]>(
-      "/api/v1/administrators/test/generates/sampling?count=30", // get sampling
+      "/administrators/test/generates/sampling?count=30", // get sampling
       { method: "GET", headers: basicHeaders }
     );
     if (failSampling) {
@@ -106,7 +106,7 @@ export default function WriteBehindTestPage() {
       return setAlert({ show: true, message: `generate sampling: ${failSampling.message}` })
     };
     if (dataSampling) {
-      setLogs(prev => prev + "\n" + `${dayjs().format("DD/MM/YYYY HH.mm.ss")}: \tSampling queries is ready!` +
+      setLogs(prev => prev + "\n" + `${dayjs().format("DD/MM/YYYY HH.mm.ss")}: \tSampling search queries is ready!` +
         "\n" + `${dayjs().format("DD/MM/YYYY HH.mm.ss")}: \tWriting new data`);
 
       const firstSampling = dataSampling.slice(0, 20);
@@ -120,7 +120,7 @@ export default function WriteBehindTestPage() {
           offset: idx + 1,
           total_raw_vacancies: 500
         }).Send<RawVacancies[]>(
-          "/api/v1/administrators/test/generates/vacancies",
+          "/administrators/test/generates/vacancies",
           { method: "POST", headers: basicHeaders }
         );
         if (failRaw) {
@@ -131,7 +131,7 @@ export default function WriteBehindTestPage() {
         if (dataRaw) {
           const reqBody = JSON.stringify(dataRaw);
           const request = new Request(
-            HOST.write_behind + "/api/v1/write-behind/vacancies",
+            HOST.write_behind + "/vacancies",
             { method: "POST", headers: logHeaders, body: reqBody },
           );
           try {
@@ -185,13 +185,52 @@ export default function WriteBehindTestPage() {
         }
       };
       setLogs(prev => prev + "\n" + `${dayjs().format("DD/MM/YYYY HH.mm.ss")}: \tWriting new data completed` +
-        "\n" + `${dayjs().format("DD/MM/YYYY HH.mm.ss")}: \tReading new written data`);
+        "\n" + `${dayjs().format("DD/MM/YYYY HH.mm.ss")}: \tCheck for data synchronization`);
       /**
-       * Reaading new written data
+       * Data Synchronization
+       */
+      const delay = (ms: number) => new Promise((resolve) => setTimeout(() => resolve(true), ms));
+      let job = 0
+      do {
+        const request = new Request(
+          HOST.write_behind + "/job-status",
+          { method: "GET", headers: basicHeaders }
+        );
+        try {
+          const response = await fetch(request);
+          if (response.status === 200) {
+            const responseJSON: { data: number; success: boolean } = await response.json();
+            if (responseJSON.data === 0) {
+              setLogs(prev => prev + "\n" + `${dayjs().format("DD/MM/YYYY HH.mm.ss")}: \tdata synchronized!`);
+              job = responseJSON.data
+
+              continue;
+            }
+
+            job = responseJSON.data
+            setLogs(prev => prev + "\n" + `${dayjs().format("DD/MM/YYYY HH.mm.ss")}: \tTrying request for 2 minutes, ${responseJSON.data} jobs are waiting!`);
+            await delay(120000);
+            continue;
+          }
+
+          console.log("response status\t:", response.status);
+          setLogs(prev => prev + "\n" + `${dayjs().format("DD/MM/YYYY HH.mm.ss")}: \tfail with ${response.status}`);
+          return setAlert({ show: true, message: `fail with ${response.status}` });
+
+        } catch (err) {
+          let error = err as Error;
+          console.log("error \t:", error.message);
+          return setAlert({ show: true, message: error.message });
+        }
+      }
+      while (job > 0);
+      setLogs(prev => prev + "\n" + `${dayjs().format("DD/MM/YYYY HH.mm.ss")}: \tReading new written data`);
+      /**
+       * Reading new written data
        */
       for (let idx = 0; idx < firstSampling.length; idx++) {
         const request = new Request(
-          `${HOST.write_behind}/api/v1/write-behind/vacancies?lineIndustry=${firstSampling[idx].line_industry}&employeeType=${firstSampling[idx].employee_type}&workArrangement=${firstSampling[idx].work_arrangement}`,
+          `${HOST.write_behind}/vacancies?lineIndustry=${firstSampling[idx].line_industry}&employeeType=${firstSampling[idx].employee_type}&workArrangement=${firstSampling[idx].work_arrangement}`,
           { method: "GET", headers: logHeaders },
         );
         try {
@@ -245,46 +284,7 @@ export default function WriteBehindTestPage() {
         }
       };
       setLogs(prev => prev + "\n" + `${dayjs().format("DD/MM/YYYY HH.mm.ss")}: \tReading new written data completed` +
-        "\n" + `${dayjs().format("DD/MM/YYYY HH.mm.ss")}: \tWaiting for Data Synchronization`);
-      /**
-       * Data Synchronization
-       */
-      const delay = (ms: number) => new Promise((resolve) => setTimeout(() => resolve(true), ms));
-      let job = 0
-      do {
-        const request = new Request(
-          HOST.write_behind + "/api/v1/write-behind/job-status",
-          { method: "GET", headers: basicHeaders }
-        );
-        try {
-          const response = await fetch(request);
-          if (response.status === 200) {
-            const responseJSON: { data: number; success: boolean } = await response.json();
-            if (responseJSON.data === 0) {
-              setLogs(prev => prev + "\n" + `${dayjs().format("DD/MM/YYYY HH.mm.ss")}: \tdata synchronized!` +
-                "\n" + `${dayjs().format("DD/MM/YYYY HH.mm.ss")}: \tUpdating new written data`);
-              job = responseJSON.data
-
-              continue;
-            }
-
-            job = responseJSON.data
-            setLogs(prev => prev + "\n" + `${dayjs().format("DD/MM/YYYY HH.mm.ss")}: \tTrying request for 2 minutes, ${responseJSON.data} jobs are waiting!`);
-            await delay(120000);
-            continue;
-          }
-
-          console.log("response status\t:", response.status);
-          setLogs(prev => prev + "\n" + `${dayjs().format("DD/MM/YYYY HH.mm.ss")}: \tfail with ${response.status}`);
-          return setAlert({ show: true, message: `fail with ${response.status}` });
-
-        } catch (err) {
-          let error = err as Error;
-          console.log("error \t:", error.message);
-          return setAlert({ show: true, message: error.message });
-        }
-      }
-      while (job > 0)
+        "\n" + `${dayjs().format("DD/MM/YYYY HH.mm.ss")}: \tUpdating new written data`);
       /**
        * Update new written data
        */
@@ -315,7 +315,7 @@ export default function WriteBehindTestPage() {
         });
 
         const request = new Request(
-          HOST.write_behind + "/api/v1/write-behind/vacancies",
+          HOST.write_behind + "/vacancies",
           { method: "PATCH", headers: logHeaders, body: JSON.stringify(reqBody) }
         );
 
@@ -366,13 +366,50 @@ export default function WriteBehindTestPage() {
         }
       }
       setLogs(prev => prev + "\n" + `${dayjs().format("DD/MM/YYYY HH.mm.ss")}: \tUpdating new written data completed` +
-        "\n" + `${dayjs().format("DD/MM/YYYY HH.mm.ss")}: \tReading updated new written data`);
+        "\n" + `${dayjs().format("DD/MM/YYYY HH.mm.ss")}: \tCheck for data synchronization`);
+      /**
+      * Check Synchronization
+      */
+      do {
+        const request = new Request(
+          HOST.write_behind + "/job-status",
+          { method: "GET", headers: basicHeaders }
+        );
+        try {
+          const response = await fetch(request);
+          if (response.status === 200) {
+            const responseJSON: { data: number; success: boolean } = await response.json();
+            if (responseJSON.data === 0) {
+              setLogs(prev => prev + "\n" + `${dayjs().format("DD/MM/YYYY HH.mm.ss")}: \tdata synchronized!`);
+              job = responseJSON.data
+
+              continue;
+            }
+
+            job = responseJSON.data
+            setLogs(prev => prev + "\n" + `${dayjs().format("DD/MM/YYYY HH.mm.ss")}: \tTrying request for 2 minutes, ${responseJSON.data} jobs are waiting!`);
+            await delay(120000);
+            continue;
+          }
+
+          console.log("response status\t:", response.status);
+          setLogs(prev => prev + "\n" + `${dayjs().format("DD/MM/YYYY HH.mm.ss")}: \tfail with ${response.status}`);
+          return setAlert({ show: true, message: `fail with ${response.status}` });
+
+        } catch (err) {
+          let error = err as Error;
+          console.log("error \t:", error.message);
+          return setAlert({ show: true, message: error.message });
+        }
+      }
+      while (job > 0);
+      setLogs(prev => prev + "\n" + `${dayjs().format("DD/MM/YYYY HH.mm.ss")}: \tReading updated written data`);
       /**
        * Reading updated new written data
        */
       for (let idx = 0; idx < firstSampling.length; idx++) {
         const request = new Request(
-          `${HOST.write_behind}/api/v1/write-behind/vacancies?lineIndustry=${firstSampling[idx].line_industry}&employeeType=${firstSampling[idx].employee_type}&workArrangement=${firstSampling[idx].work_arrangement}`,
+          `${HOST.write_behind}/vacancies?lineIndustry=${firstSampling[idx].line_industry}&employeeType=${firstSampling[idx].employee_type}&workArrangement=${firstSampling[idx].work_arrangement}`,
           { method: "GET", headers: logHeaders },
         );
         try {
@@ -437,7 +474,7 @@ export default function WriteBehindTestPage() {
           offset: idx + 1,
           total_raw_vacancies: 500
         }).Send<RawVacancies[]>(
-          "/api/v1/administrators/test/generates/vacancies",
+          "/administrators/test/generates/vacancies",
           { method: "POST", headers: basicHeaders }
         );
         if (fail) {
@@ -454,7 +491,7 @@ export default function WriteBehindTestPage() {
         if (rawVacancies) {
           const reqBody = JSON.stringify(rawVacancies);
           const request = new Request(
-            HOST.write_behind + "/api/v1/write-behind/vacancies",
+            HOST.write_behind + "/vacancies",
             { method: "POST", headers: logHeaders, body: reqBody },
           );
           try {
@@ -465,10 +502,46 @@ export default function WriteBehindTestPage() {
                 awaiting: prev.awaiting - 1,
                 success: prev.success + 1,
               }));
-              setLogs(prev => prev + "\n" + `[${dayjs().format("DD/MM/YYYY HH.mm.ss")}]:\tcombination: write request #${idx} send successfully ✅`);
+              setLogs(prev => prev + "\n" + `[${dayjs().format("DD/MM/YYYY HH.mm.ss")}]:\tcombination: write request #${idx} send successfully ✅` + "\n" + `${dayjs().format("DD/MM/YYYY HH.mm.ss")}: \tCheck for data synchronization`);
+              /**
+               * Check Synchronization
+               */
+              do {
+                const request = new Request(
+                  HOST.write_behind + "/job-status",
+                  { method: "GET", headers: basicHeaders }
+                );
+                try {
+                  const response = await fetch(request);
+                  if (response.status === 200) {
+                    const responseJSON: { data: number; success: boolean } = await response.json();
+                    if (responseJSON.data === 0) {
+                      setLogs(prev => prev + "\n" + `${dayjs().format("DD/MM/YYYY HH.mm.ss")}: \tdata synchronized!`);
+                      job = responseJSON.data
 
+                      continue;
+                    }
+
+                    job = responseJSON.data
+                    setLogs(prev => prev + "\n" + `${dayjs().format("DD/MM/YYYY HH.mm.ss")}: \tTrying request for 2 minutes, ${responseJSON.data} jobs are waiting!`);
+                    await delay(120000);
+                    continue;
+                  }
+
+                  console.log("response status\t:", response.status);
+                  setLogs(prev => prev + "\n" + `${dayjs().format("DD/MM/YYYY HH.mm.ss")}: \tfail with ${response.status}`);
+                  return setAlert({ show: true, message: `fail with ${response.status}` });
+
+                } catch (err) {
+                  let error = err as Error;
+                  console.log("error \t:", error.message);
+                  return setAlert({ show: true, message: error.message });
+                }
+              }
+              while (job > 0);
+              // Ready for read
               const requestRead = new Request(
-                `${HOST.write_behind}/api/v1/write-behind/vacancies?lineIndustry=${combinationSampling[idx].line_industry}&employeeType=${combinationSampling[idx].employee_type}&workArrangement=${combinationSampling[idx].work_arrangement}`,
+                `${HOST.write_behind}/vacancies?lineIndustry=${combinationSampling[idx].line_industry}&employeeType=${combinationSampling[idx].employee_type}&workArrangement=${combinationSampling[idx].work_arrangement}`,
                 { method: "GET", headers: logHeaders },
               );
               try {
@@ -545,11 +618,11 @@ export default function WriteBehindTestPage() {
       setLogs(prev => prev + "\n" + `${dayjs().format("DD/MM/YYYY HH.mm.ss")}: \tWrite-Behind test completed` +
         "\n" + `${dayjs().format("DD/MM/YYYY HH.mm.ss")}: \tWaiting for data synchronization`);
       /**
-       * waiting for synchronization
-       */
+      * Check Synchronization
+      */
       do {
         const request = new Request(
-          HOST.write_behind + "/api/v1/write-behind/job-status",
+          HOST.write_behind + "/job-status",
           { method: "GET", headers: basicHeaders }
         );
         try {
@@ -557,8 +630,7 @@ export default function WriteBehindTestPage() {
           if (response.status === 200) {
             const responseJSON: { data: number; success: boolean } = await response.json();
             if (responseJSON.data === 0) {
-              setLogs(prev => prev + "\n" + `${dayjs().format("DD/MM/YYYY HH.mm.ss")}: \tdata synchronized!` +
-                "\n" + `${dayjs().format("DD/MM/YYYY HH.mm.ss")}: \tClearing testing data`);
+              setLogs(prev => prev + "\n" + `${dayjs().format("DD/MM/YYYY HH.mm.ss")}: \tdata synchronized!`);
               job = responseJSON.data
 
               continue;
@@ -580,9 +652,10 @@ export default function WriteBehindTestPage() {
           return setAlert({ show: true, message: error.message });
         }
       }
-      while (job > 0)
+      while (job > 0);
+      setLogs(prev => prev + "\n" + `${dayjs().format("DD/MM/YYYY HH.mm.ss")}: \tClearing all testing data`);
       const [successClearing, failClearing] = await RequestAPI.Send<number>(
-        "/api/v1/administrators/test/generates/vacancies?count=" + ((firstSampling.length + combinationSampling.length) * 500),
+        "/administrators/test/generates/vacancies?count=" + ((firstSampling.length + combinationSampling.length) * 500),
         { method: "DELETE", headers: { "Authorization": "Bearer " + token } }
       );
       if (failClearing) {
@@ -629,7 +702,7 @@ export default function WriteBehindTestPage() {
         };
         logs: LogType[];
       }>(
-        "/api/v1/administrators/test/" + sessionID + "/logs?pattern=write-behind",
+        "/administrators/test/" + sessionID + "/logs?pattern=write-behind",
         {
           method: "GET",
           headers: {

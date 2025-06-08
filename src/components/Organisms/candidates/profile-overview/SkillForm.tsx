@@ -36,7 +36,7 @@ export default function SkillFormDraft({
   /* fetching */
   useEffect(() => {
     (async () => {
-      const [data_skillOption, fail_skillOption] = await RequestAPI.Send<SkillDataType[]>("/api/v1/public/skills/", {
+      const [data_skillOption, fail_skillOption] = await RequestAPI.Send<SkillDataType[]>("/public/skills/", {
         method: "GET",
         headers: {
           "Content-Type": "application/json"
@@ -62,7 +62,7 @@ export default function SkillFormDraft({
           color: grey[700]
         }}
       >
-        Add Skills
+        Tambah Skills Baru
       </Typography>
       <form onSubmit={onSubmit}>
         <Grid container columnSpacing={2} rowSpacing={2}>
@@ -121,7 +121,7 @@ export default function SkillFormDraft({
                               {skill.name}
                             </Typography>
                             <Box component={"img"}
-                              src={`${HOST.main}${skill.skill_icon_image_path}`}
+                              src={`${HOST.main}${skill.skill_icon_image_path.replace("/api/v1", "")}`}
                               width={20}
                               height={20}
                               sx={{
@@ -149,7 +149,7 @@ export default function SkillFormDraft({
                       size="small"
                       onClick={deleteSkill(index)}
                     >
-                      <Tooltip title="Delete skill" placement="top">
+                      <Tooltip title="Hapus" placement="top">
                         <DeleteRounded />
                       </Tooltip>
                     </IconButton>
@@ -160,7 +160,7 @@ export default function SkillFormDraft({
                       size="small"
                       onClick={addMoreSkill}
                     >
-                      <Tooltip title="Add more skill" placement="right">
+                      <Tooltip title="Tambah lagi" placement="right">
                         <AddRounded />
                       </Tooltip>
                     </IconButton>

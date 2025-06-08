@@ -5,7 +5,7 @@ export default function SimpleEmphasis({
   textColor = "#06816d",
   sx,
 }: {
-  text: string | number;
+  text: string | number | undefined;
   textColor?: string;
   sx?: React.CSSProperties;
 }) {

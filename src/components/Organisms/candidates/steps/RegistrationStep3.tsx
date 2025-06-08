@@ -69,7 +69,7 @@ export default function RegistrationStep3({
     const [success_experience, fail_experience] = await RequestAPI.FormDataRequest(formValue.experience).Send<{
       attachment_document_status: string,
       message: string
-    }>("/api/v1/candidates/experiences/", {
+    }>("/candidates/experiences/", {
       method: "POST",
       headers: {
         "Authorization": "Bearer " + token,
@@ -82,7 +82,7 @@ export default function RegistrationStep3({
     }
 
     const [success_social, fail_social] = await RequestAPI.JSONRequest(formValue.socials)
-      .Send<string>("/api/v1/candidates/socials/", {
+      .Send<string>("/candidates/socials/", {
         method: "POST",
         headers: {
           "Authorization": "Bearer " + token,
@@ -103,7 +103,7 @@ export default function RegistrationStep3({
   /* fetching */
   useEffect(() => {
     (async () => {
-      const [data_socials, fail_socials] = await RequestAPI.Send<SocialDataType[]>("/api/v1/public/socials/", {
+      const [data_socials, fail_socials] = await RequestAPI.Send<SocialDataType[]>("/public/socials/", {
         method: "GET",
         headers: {
           "Content-Type": "application/json"
@@ -129,12 +129,12 @@ export default function RegistrationStep3({
           <Typography component={"p"}
             variant="subtitle2"
             sx={{
-              marginBottom: "0.7em",
+              marginBottom: "1em",
               fontWeight: 550,
               color: grey[700],
             }}
           >
-            Experience
+            Pengalaman Kerja / Proyek
           </Typography>
           <Grid container
             columnSpacing={2}
@@ -144,8 +144,8 @@ export default function RegistrationStep3({
               <TextField
                 type="text"
                 name="company_name"
-                label="Company Name"
-                placeholder="Enter the company name"
+                label="Nama Perusahaan / Instansi"
+                placeholder="e.g Mitra Adi Perkasa"
                 size="small"
                 autoComplete="off"
                 fullWidth
@@ -159,8 +159,8 @@ export default function RegistrationStep3({
               <TextField
                 type="text"
                 name="position"
-                label="Position"
-                placeholder="Enter your job title or position"
+                label="Posisi Pekerjaan"
+                placeholder="e.g Employer Branding"
                 size="small"
                 autoComplete="off"
                 fullWidth
@@ -174,8 +174,8 @@ export default function RegistrationStep3({
               <TextField
                 type="text"
                 name="location_address"
-                label="Location"
-                placeholder="Enter the location (e.g., City, Province)"
+                label="Lokasi Perusahaan"
+                placeholder="Tulis dengan format: kota, provinsi (e.g., Surabaya, Jawa Timur)"
                 size="small"
                 autoComplete="off"
                 fullWidth
@@ -196,7 +196,7 @@ export default function RegistrationStep3({
                     }
                   }}
                 >
-                  Job Type
+                  Status Kepegawaian
                 </InputLabel>
                 <Select
                   labelId="job_type"
@@ -235,12 +235,12 @@ export default function RegistrationStep3({
                     }
                   }}
                 >
-                  Is Current ?
+                  Masih Bekerja ?
                 </InputLabel>
                 <Select
                   labelId="is_current"
                   name="is_current"
-                  label="Is Current ?"
+                  label="Masih Bekerja ?"
                   size="small"
                   value={String(formValue.experience.is_current)}
                   onChange={(event: SelectChangeEvent) => {
@@ -271,8 +271,8 @@ export default function RegistrationStep3({
                   }}
                   error={Boolean(errMsg["is_current"])}
                 >
-                  <MenuItem value={"true"}>Yes</MenuItem>
-                  <MenuItem value={"false"}>No</MenuItem>
+                  <MenuItem value={"true"}>Ya</MenuItem>
+                  <MenuItem value={"false"}>Tidak</MenuItem>
                 </Select>
                 {errMsg["is_current"] && (
                   <FormHelperText sx={{ color: red[500] }}>{errMsg["is_current"]}</FormHelperText>
@@ -287,8 +287,9 @@ export default function RegistrationStep3({
               >
                 <MobileDatePicker
                   name="start_at"
-                  format="DD/MM/YYYY"
-                  label="Start at"
+                  views={["month", "year"]}
+                  format="MM/YYYY"
+                  label="Tanggal masuk"
                   slotProps={{
                     textField: {
                       size: "small",
@@ -319,8 +320,9 @@ export default function RegistrationStep3({
                 </Box>
                 <MobileDatePicker
                   name="end_at"
-                  format="DD/MM/YYYY"
-                  label="End at"
+                  views={["month", "year"]}
+                  format="MM/YYYY"
+                  label="Selesai pada"
                   slotProps={{
                     textField: {
                       size: "small",
@@ -378,7 +380,7 @@ export default function RegistrationStep3({
                       {filePreview["attachment_document"].filename}
                     </Typography>
                   ) :
-                  "Attachment Experience File"
+                  "Dokumen Lampiran Pengalaman"
                 }
               </Button>
               {errMsgFile["attachment_document"] ? (
@@ -390,8 +392,8 @@ export default function RegistrationStep3({
               <TextField
                 type="text"
                 name="description"
-                label="Job Description"
-                placeholder="Describe your job responsibility in short"
+                label="Deskripsi Pekerjaan"
+                placeholder="Deskripsikan tugas, tanggung jawab dan pencapaian"
                 size="small"
                 fullWidth
                 multiline
@@ -418,7 +420,7 @@ export default function RegistrationStep3({
               color: grey[700],
             }}
           >
-            Socials
+            Sosial Media
           </Typography>
           <Box component={"div"} className="social-preview">
             <Grid container columnSpacing={2} rowSpacing={2}>
@@ -437,7 +439,7 @@ export default function RegistrationStep3({
                     >
                       <Box
                         component={"img"}
-                        src={`${HOST.main}${socialValue?.icon_image_path}`}
+                        src={`${HOST.main}${socialValue?.icon_image_path.replace("/api/v1", "")}`}
                         width={30}
                         height={30}
                         sx={{
@@ -509,12 +511,12 @@ export default function RegistrationStep3({
                     }
                   }}
                 >
-                  Social
+                  Platform
                 </InputLabel>
                 <Select
                   labelId="social-list"
                   name="social_id"
-                  label="Social"
+                  label="Platform"
                   size="small"
                   value={String(socialForm.social_id)}
                   onChange={SelectOnChange(setSocialForm)}
@@ -556,7 +558,7 @@ export default function RegistrationStep3({
                   type="text"
                   name="url"
                   label="Url"
-                  placeholder="Enter your social media URL"
+                  placeholder="Tulis tautan ke akun sosial media"
                   size="small"
                   autoComplete="off"
                   fullWidth
@@ -582,7 +584,7 @@ export default function RegistrationStep3({
                     }))
                   }}
                 >
-                  Add
+                  Tambah
                 </Button>
               </Box>
             </Grid>
@@ -598,14 +600,13 @@ export default function RegistrationStep3({
           <Button
             type="submit"
             variant="contained"
-            size="small"
             endIcon={loading ? (<CircularProgress color="secondary" size={15} />) : (<VerifiedUserRounded />)}
             disabled={loading}
             sx={{
               minWidth: "10em",
             }}
           >
-            Finish
+            Selesaikan Pendaftaran
           </Button>
         </Box>
       </form>

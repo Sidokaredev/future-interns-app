@@ -50,7 +50,7 @@ export default function EmployerSocialData({
     const token = GetSession("auth");
     const requestBody = onEdit ? formValue[0] : formValue;
     const [success, fail] = await RequestAPI.JSONRequest<any>(requestBody).Send<string>(
-      "/api/v1/employers/socials/",
+      "/employers/socials/",
       {
         method: onEdit ? "PATCH" : "POST",
         headers: {
@@ -77,7 +77,7 @@ export default function EmployerSocialData({
     setLoading(prev => ({ ...prev, ["delete-social"]: true }));
     const token = GetSession("auth");
     const [success, fail] = await RequestAPI.Send<string>(
-      "/api/v1/employers/socials/" + socialID,
+      "/employers/socials/" + socialID,
       {
         method: "DELETE",
         headers: {
@@ -102,7 +102,7 @@ export default function EmployerSocialData({
     const token = GetSession("auth");
     (async () => {
       const [data, fail] = await RequestAPI.Send<SocialDataType[]>(
-        "/api/v1/employers/socials/",
+        "/employers/socials/",
         {
           method: "GET",
           headers: {
@@ -141,7 +141,7 @@ export default function EmployerSocialData({
             textAlign: "center",
           }}
         >
-          Social
+          Sosial Media
         </Typography>
         <Box component={"div"}
           sx={{
@@ -167,7 +167,7 @@ export default function EmployerSocialData({
                 setOnEdit(false)
               }}
             >
-              Cancel
+              Batal
             </Button>
           ) : (
             <IconButton size="small"
@@ -208,7 +208,7 @@ export default function EmployerSocialData({
             }}
           >
             <Box component={"img"}
-              src={`${HOST.main}${item.icon_image_path}`}
+              src={`${HOST.main}${item.icon_image_path.replace("/api/v1", "")}`}
               width={25}
               height={25}
               sx={{
@@ -281,9 +281,9 @@ export default function EmployerSocialData({
       >
         <Box component={"div"}>
           <Typography component={"p"} variant="body1" sx={{ color: grey[600] }}>
-            Are you sure want to
-            <SimpleEmphasis text={" delete "} textColor="red" />
-            your Social
+            Apakah anda yakin ingin
+            <SimpleEmphasis text={" menghapus "} textColor="red" />
+            sosial media
             <SimpleEmphasis text={" " + selectedSocial?.name} /> ?
           </Typography>
         </Box>
@@ -306,7 +306,7 @@ export default function EmployerSocialData({
               onCloseDialog("delete-social")
             }}
           >
-            No
+            Tidak
           </Button>
           <Button
             variant="outlined"
@@ -322,7 +322,7 @@ export default function EmployerSocialData({
           >
             {loading["delete-social"] ? (
               <CircularProgress size={20} />
-            ) : "Yes"}
+            ) : "Iya"}
           </Button>
         </Box>
       </Dialog>

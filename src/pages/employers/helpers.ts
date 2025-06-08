@@ -39,7 +39,8 @@ export function SLAConverter(sla: number, createdDate: string): Date {
 
 export function SLADaysRemaining(sla: number): string {
   const days = Math.ceil(sla / 24);
-  return `${days} days remaining`;
+  // return `${days} days remaining`;
+  return `${days} hari tersisa`;
 }
 
 export function EmployerTypeStyler(type: string): { backgroundColor: string, color: string } {

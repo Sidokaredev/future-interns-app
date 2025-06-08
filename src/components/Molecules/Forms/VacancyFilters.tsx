@@ -20,10 +20,12 @@ import { EMPLOYEE_TYPE, LINE_INDUSTRY } from "../../../pages/employers/constants
 
 export default function VacancyFilters({
   // filters,
-  setFilters
+  setFilters,
+  setCurrentPage,
 }: {
   // filters: FiltersType;
   setFilters: React.Dispatch<React.SetStateAction<FiltersType>>;
+  setCurrentPage: React.Dispatch<React.SetStateAction<number>>;
 }) {
   /* state */
   const [filtersValue, setFiltersValue] = useState<FiltersType>({ keyword: "", line_industry: "", employee_type: "", location: "" });
@@ -47,19 +49,20 @@ export default function VacancyFilters({
     >
       <form onSubmit={(event: FormEvent<HTMLFormElement>) => {
         event.preventDefault();
+        setCurrentPage(1);
         setFilters(filtersValue);
       }}>
         <Stack spacing={1}>
           <Box component={"div"}>
             <InputLabel htmlFor="search-by-company">
               <Typography variant="subtitle1" fontWeight={"bold"}>
-                Search
+                Pencarian
               </Typography>
             </InputLabel>
             <TextField
               id="search-by-company"
               name="keyword"
-              placeholder="Enter job position or company name"
+              placeholder="Masukkan posisi pekerjaan atau nama perusahaan"
               size="small"
               autoComplete="off"
               InputProps={{
@@ -80,13 +83,13 @@ export default function VacancyFilters({
           <Box component={"div"}>
             <InputLabel htmlFor="search-by-location">
               <Typography variant="subtitle1" fontWeight={"bold"}>
-                Location
+                Lokasi
               </Typography>
             </InputLabel>
             <TextField
               id="search-by-location"
               name="location"
-              placeholder="Enter location by City or Province"
+              placeholder="Masukkan nama Kota atau Provinsi"
               size="small"
               autoComplete="off"
               InputProps={{
@@ -107,7 +110,7 @@ export default function VacancyFilters({
           <Box component={"div"}>
             <InputLabel htmlFor="search-by-category">
               <Typography variant="subtitle1" fontWeight={"bold"}>
-                Line Industry
+                Sektor Industri
               </Typography>
             </InputLabel>
             <Select
@@ -136,7 +139,7 @@ export default function VacancyFilters({
           <Box component={"div"}>
             <InputLabel>
               <Typography variant="subtitle1" fontWeight={"bold"}>
-                Employee Type
+                Status Kepegawaian
               </Typography>
             </InputLabel>
             <FormGroup
@@ -170,7 +173,7 @@ export default function VacancyFilters({
           </Box>
           <Box component={"div"} sx={{ marginTop: "1em" }}>
             <Button type="submit" variant="contained" fullWidth sx={{ marginY: "0.5em" }}>
-              Apply Filter
+              Terapkan Filter
             </Button>
             <Button variant="text" fullWidth sx={{ marginY: "0.5em" }}
               onClick={() => {
@@ -188,7 +191,7 @@ export default function VacancyFilters({
                 })
               }}
             >
-              Reset Filter
+              Atur Ulang Filter
             </Button>
           </Box>
         </Stack>

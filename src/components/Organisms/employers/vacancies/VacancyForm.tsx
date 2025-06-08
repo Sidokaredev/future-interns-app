@@ -29,8 +29,8 @@ export default function VacancyForm({
             <TextField
               type="text"
               name="position"
-              label="Job Title/Position"
-              placeholder="e.g., Software Engineer"
+              label="Posisi Pekerjaan"
+              placeholder="e.g. Software Engineer"
               size="small"
               autoComplete="off"
               fullWidth
@@ -51,12 +51,12 @@ export default function VacancyForm({
                   }
                 }}
               >
-                Line Industry
+                Sektor Industri
               </InputLabel>
               <Select
                 labelId="line_indsutry_label"
                 name="line_industry"
-                label="Line Industry"
+                label="Sektor Industri"
                 size="small"
                 value={formValue.line_industry}
                 onChange={SelectOnChange(setFormValue, undefined, { coerceToNumber: false })}
@@ -91,12 +91,12 @@ export default function VacancyForm({
                   }
                 }}
               >
-                Employee Type
+                Status Kepegawaian
               </InputLabel>
               <Select
                 labelId="employee_type_label"
                 name="employee_type"
-                label="Employee Type"
+                label="Status Kepegawaian"
                 size="small"
                 value={formValue.employee_type}
                 onChange={SelectOnChange(setFormValue, undefined, { coerceToNumber: false })}
@@ -131,12 +131,12 @@ export default function VacancyForm({
                   }
                 }}
               >
-                Work Arrangement
+                Pengaturan Kerja
               </InputLabel>
               <Select
                 labelId="work_arrangement_label"
                 name="work_arrangement"
-                label="Work Arrangement"
+                label="Pengaturan Kerja"
                 size="small"
                 value={formValue.work_arrangement}
                 onChange={SelectOnChange(setFormValue, undefined, { coerceToNumber: false })}
@@ -171,12 +171,12 @@ export default function VacancyForm({
                   }
                 }}
               >
-                Minimum Experience
+                Pengalaman Kerja Minimum
               </InputLabel>
               <Select
                 labelId="min_experience_label"
                 name="min_experience"
-                label="Minimum Experience"
+                label="Pengalaman Kerja Minimum"
                 size="small"
                 value={formValue.min_experience}
                 onChange={SelectOnChange(setFormValue, undefined, { coerceToNumber: false })}
@@ -204,8 +204,7 @@ export default function VacancyForm({
             <TextField
               type="text"
               name="salary"
-              label="Salary"
-              placeholder="Enter number of salary"
+              label="Gaji"
               size="small"
               autoComplete="off"
               fullWidth
@@ -250,8 +249,8 @@ export default function VacancyForm({
             <TextField
               type="text"
               name="description"
-              label="Job Description"
-              placeholder="Describe about that job"
+              label="Deskripsi Pekerjaan"
+              placeholder="Deskripsikan uraian pekerjaan pada posisi tersebut"
               size="small"
               autoComplete="off"
               rows={4}
@@ -267,8 +266,8 @@ export default function VacancyForm({
             <TextField
               type="text"
               name="responsibility"
-              label="Job Responsibility"
-              placeholder="List key tasks and responsibilities for this position"
+              label="Tanggung Jawab Pekerjaan"
+              placeholder="Buat daftar tugas dan tanggung jawab pada posisi tersebut"
               size="small"
               autoComplete="off"
               rows={6}
@@ -284,8 +283,8 @@ export default function VacancyForm({
             <TextField
               type="text"
               name="qualification"
-              label="Job Qualification"
-              placeholder="List the qualifications required for this job"
+              label="Kualifikasi Pekerjaan"
+              placeholder="Buat daftar kualifikasi yang dibutuhkan untuk posisi tersebut"
               size="small"
               autoComplete="off"
               rows={6}

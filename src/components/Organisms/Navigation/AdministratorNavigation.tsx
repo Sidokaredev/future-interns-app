@@ -18,7 +18,7 @@ export default function AdministratorNavigation() {
     const token = GetSession("auth");
     (async () => {
       const [data, fail] = await RequestAPI.Send<{ fullname: string; email: string; }>(
-        "/api/v1/accounts/user-account",
+        "/accounts/user-account",
         {
           method: "GET",
           headers: {

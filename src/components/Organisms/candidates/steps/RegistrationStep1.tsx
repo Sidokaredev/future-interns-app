@@ -59,7 +59,7 @@ export default function RegistrationStep1({
         candidate_id: string,
         cv_document_status: string,
         profile_img_status: string
-      }>("/api/v1/candidates/", {
+      }>("/candidates/", {
         method: "POST",
         headers: {
           "Authorization": "Bearer " + token
@@ -75,7 +75,7 @@ export default function RegistrationStep1({
         ...formValue.address,
         type: "home"
       },
-    ]).Send<string>("/api/v1/candidates/addresses/", {
+    ]).Send<string>("/candidates/addresses/", {
       method: "POST",
       headers: {
         "Authorization": "Bearer " + token
@@ -201,7 +201,7 @@ export default function RegistrationStep1({
                         }}
                         onChange={FileOnChange(setFilePreview, setFormValue, setErrMsgFile, "candidate")}
                       />
-                      Profile Image
+                      Foto Profil
                     </Button>
                     <Typography
                       variant="subtitle2"
@@ -211,7 +211,7 @@ export default function RegistrationStep1({
                       }}
                     >
                       {errMsgFile["profile_img"] ? errMsgFile["profile_img"] :
-                        filePreview["profile_img"] ? filePreview["profile_img"].filename : "no image selected"}
+                        filePreview["profile_img"] ? filePreview["profile_img"].filename : "tidak ada gambar terpilih"}
                     </Typography>
                   </Box>
                   <Box component={"div"}
@@ -251,7 +251,7 @@ export default function RegistrationStep1({
                         }}
                         onChange={FileOnChange(setFilePreview, setFormValue, setErrMsgFile, "candidate")}
                       />
-                      Background Image
+                      Latar Belakang
                     </Button>
                     <Typography
                       variant="subtitle2"
@@ -261,7 +261,7 @@ export default function RegistrationStep1({
                       }}
                     >
                       {errMsgFile["background_profile_img"] ? errMsgFile["background_profile_img"] :
-                        filePreview["background_profile_img"] ? filePreview["background_profile_img"].filename : "no image selected"}
+                        filePreview["background_profile_img"] ? filePreview["background_profile_img"].filename : "tidak ada gambar terpilih"}
                     </Typography>
                   </Box>
                 </Box>
@@ -332,8 +332,8 @@ export default function RegistrationStep1({
               <TextField
                 type="text"
                 name="expertise"
-                label="Expertise"
-                placeholder="Your specialized skill"
+                label="Keahlian"
+                placeholder="e.g Marketing Strategy"
                 size="small"
                 fullWidth
                 autoComplete="off"
@@ -346,7 +346,7 @@ export default function RegistrationStep1({
             <Grid item xs={12} md={4}>
               <DatePicker
                 name="date_of_birth"
-                label="Date of Birth"
+                label="Tanggal Lahir"
                 format="DD/MM/YYYY"
                 disableFuture
                 slotProps={{
@@ -368,8 +368,8 @@ export default function RegistrationStep1({
               <TextField
                 type="text"
                 name="about_me"
-                label="About me"
-                placeholder="Describe your profile in short"
+                label="Tentang Saya"
+                placeholder="Jelaskan pengalaman, keahlian, atau minat profesional Anda"
                 size="small"
                 fullWidth
                 multiline
@@ -392,7 +392,7 @@ export default function RegistrationStep1({
               color: grey[600],
             }}
           >
-            Address
+            Alamat
           </Typography>
           <Grid
             container
@@ -406,8 +406,8 @@ export default function RegistrationStep1({
               <TextField
                 type="text"
                 name="street"
-                label="Street"
-                placeholder="Your street address"
+                label="Alamat Jalan"
+                placeholder="e.g Jl. H. Mawardi"
                 size="small"
                 multiline
                 fullWidth
@@ -421,8 +421,8 @@ export default function RegistrationStep1({
               <TextField
                 type="text"
                 name="neighborhood"
-                label="Neighborhood"
-                placeholder="e.g RT 0x/RW 0x"
+                label="Lingkungan / RT-RW"
+                placeholder="e.g RT 03/RW 01"
                 size="small"
                 fullWidth
                 autoComplete="off"
@@ -451,7 +451,7 @@ export default function RegistrationStep1({
               <TextField
                 type="text"
                 name="rural_area"
-                label="Rural Area"
+                label="Kelurahan / Desa"
                 placeholder="e.g Jerukgamping"
                 size="small"
                 fullWidth
@@ -473,7 +473,7 @@ export default function RegistrationStep1({
               <TextField
                 type="text"
                 name="sub_district"
-                label="Sub District"
+                label="Kecamatan"
                 placeholder="e.g Kec. Krian"
                 size="small"
                 fullWidth
@@ -495,8 +495,8 @@ export default function RegistrationStep1({
               <TextField
                 type="text"
                 name="city"
-                label="City"
-                placeholder="e.g Kab. Sidoarjo or Kota Surabaya"
+                label="Kabupaten / Kota"
+                placeholder="e.g Kab. Sidoarjo"
                 size="small"
                 fullWidth
                 autoComplete="off"
@@ -523,7 +523,7 @@ export default function RegistrationStep1({
                 onOpen={AutoCompleteOnOpen("province", setOpen)}
                 onClose={AutoCompleteOnClose("province", setOpen)}
                 size="small"
-                renderInput={(params) => <TextField {...params} label="Province" error={Boolean(errMsg["province"]) ? true : false}
+                renderInput={(params) => <TextField {...params} label="Provinsi" error={Boolean(errMsg["province"]) ? true : false}
                   helperText={errMsg["province"] ?? ""} />}
                 slotProps={{
                   paper: {
@@ -578,7 +578,7 @@ export default function RegistrationStep1({
                     </Box>
                   );
                 }}
-                renderInput={(params) => <TextField {...params} label="Country" error={Boolean(errMsg["country"]) ? true : false}
+                renderInput={(params) => <TextField {...params} label="Negara" error={Boolean(errMsg["country"]) ? true : false}
                   helperText={errMsg["country"] ?? ""} />}
                 disableClearable
                 fullWidth
@@ -597,8 +597,8 @@ export default function RegistrationStep1({
               <TextField
                 type="text"
                 name="postal_code"
-                label="Postal Code"
-                placeholder="Your 5 number of postal code"
+                label="Kode Pos"
+                placeholder="5 Digit angka"
                 size="small"
                 fullWidth
                 autoComplete="off"
@@ -627,7 +627,7 @@ export default function RegistrationStep1({
               minWidth: "10em"
             }}
           >
-            Next
+            Selanjutnya
           </Button>
         </Box>
       </form>

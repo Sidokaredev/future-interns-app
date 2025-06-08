@@ -27,15 +27,15 @@ export default function CandidateDashboard() {
     3: <RegistrationStep3 setCurrentStep={setCurrentStep} setAlert={setAlert} setDataAction={setDataAction} />
   }
   const candidateStep: string[] = [
-    "Candidate Profile",
-    "Educations and Skills",
-    "Experience and Socials",
+    "Profil sebagai Kandidat",
+    "Pendidikan dan Skill",
+    "Pengalaman dan Sosial Media",
   ];
   useEffect(() => {
     const token = GetSession("auth");
     (async () => {
       setChecking(true)
-      const [data_profileCheck, fail_profileCheck] = await RequestAPI.Send<Record<string, boolean>>("/api/v1/candidates/check", {
+      const [data_profileCheck, fail_profileCheck] = await RequestAPI.Send<Record<string, boolean>>("/candidates/check", {
         method: "GET",
         headers: {
           "Authorization": "Bearer " + token
@@ -70,7 +70,7 @@ export default function CandidateDashboard() {
           fontWeight: 500,
           color: grey[600]
         }}>
-          Checking profile completion ...
+          Memeriksa kelengkapan profil ...
         </Typography>
       ) : currentStep ? (
         <Box component={"div"}>
@@ -81,11 +81,12 @@ export default function CandidateDashboard() {
             }}
           >
             <Typography variant="h6" fontWeight={550} sx={{ color: grey[800] }}>
-              Complete
-              <SimpleEmphasis text={" your profile "} />
-              as candidate
+              Lengkapi
+              <SimpleEmphasis text={" data profil "} />
+              anda sebagai kandidat
             </Typography>
           </Box>
+          {/* SMALL SCREEN */}
           {xsBreakpoint ? (
             <Box component={"div"}
               sx={{
@@ -113,7 +114,7 @@ export default function CandidateDashboard() {
                   borderRadius: "1em"
                 }}
               >
-                <Typography variant="caption" sx={{ color: "white" }}>{currentStep && currentStep + 1}</Typography>
+                <Typography variant="caption" sx={{ color: "white" }}>{currentStep && currentStep}</Typography>
               </Box>
               <Typography variant="subtitle1" sx={{ color: grey[700] }}>{currentStep && candidateStep[currentStep]}</Typography>
             </Box>

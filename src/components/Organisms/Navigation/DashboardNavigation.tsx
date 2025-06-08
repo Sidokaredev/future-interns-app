@@ -3,7 +3,6 @@ import {
   Dashboard,
   GroupWorkRounded,
   MenuRounded,
-  NotificationsNone,
 } from "@mui/icons-material";
 import {
   AppBar,
@@ -70,13 +69,13 @@ export default function DashboardNavigation({
     {
       icon: <Dashboard fontSize="small" sx={{ color: "#045a55" }} />,
       path: "/candidates/profile-overview",
-      label: <Typography variant="subtitle2">Profile Overview</Typography>,
+      label: <Typography variant="subtitle2">Ringkasan Profil Kandidat</Typography>,
       divider: "Applications",
     },
     {
       icon: <BrowseGallery fontSize="small" sx={{ color: "#045a55" }} />,
       path: "/candidates/application-status",
-      label: <Typography variant="subtitle2">Application Status</Typography>,
+      label: <Typography variant="subtitle2">Status Lamaran Pekerjaan</Typography>,
       divider: "none",
     },
     // {
@@ -90,19 +89,19 @@ export default function DashboardNavigation({
     {
       icon: <Dashboard fontSize="small" sx={{ color: "#045a55" }} />,
       path: "/employers/profile-overview",
-      label: <Typography variant="subtitle2">Profile Overview</Typography>,
+      label: <Typography variant="subtitle2">Ringkasan Profil Perusahaan</Typography>,
       divider: "Vacancies",
     },
     {
       icon: <GroupWorkRounded fontSize="small" sx={{ color: "#045a55" }} />,
       path: "/employers/vacancies",
-      label: <Typography variant="subtitle2">Manage Vacancies</Typography>,
+      label: <Typography variant="subtitle2">Kelola Lowongan Pekerjaan</Typography>,
       divider: "none",
     },
   ];
   useEffect(() => {
     (async () => {
-      const [data, fail] = await RequestAPI.Send<UserAccountType>("/api/v1/accounts/user-account", {
+      const [data, fail] = await RequestAPI.Send<UserAccountType>("/accounts/user-account", {
         method: "GET",
         headers: {
           "Content-Type": "application/json",
@@ -284,12 +283,12 @@ export default function DashboardNavigation({
               component={"span"}
               sx={{
                 marginX: "0.5em",
-                color: "#747474",
-                fontSize: "1.1em",
+                color: grey[700],
+                fontSize: "1em",
               }}
             >
-              <SimpleEmphasis text={"Future "} textColor="#06816d" />
-              Interns
+              <SimpleEmphasis text={"Applicant "} textColor="#06816d" />
+              Tracking System
             </Typography>
           </Box>
           <Box
@@ -299,7 +298,7 @@ export default function DashboardNavigation({
               alignItems: "center",
             }}
           >
-            <Tooltip
+            {/* <Tooltip
               title="Notifications"
               sx={{
                 marginX: "0.5em",
@@ -308,7 +307,7 @@ export default function DashboardNavigation({
               <IconButton>
                 <NotificationsNone />
               </IconButton>
-            </Tooltip>
+            </Tooltip> */}
             <Tooltip title={`${userAccount?.fullname} - ${userAccount?.email}`} onClick={menuTrigger}>
               <Avatar
                 sx={{
@@ -389,7 +388,7 @@ export default function DashboardNavigation({
                       navigate("/accounts/auth")
                     }}
                   >
-                    Sign out
+                    Keluar
                   </Button>
                 </Box>
               </Stack>

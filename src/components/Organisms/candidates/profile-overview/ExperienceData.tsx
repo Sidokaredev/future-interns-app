@@ -9,7 +9,10 @@ import { DEFAULT_EXPERIENCE_FORM } from "../../../../pages/candidates/constants"
 import { GetSession, onCloseSnackbar } from "../../../../pages/global-helpers"
 import RequestAPI from "../../../../services/api/request"
 import ExperienceForm from "./ExperienceForm"
-import { HOST } from "../../../../pages/administrators/performance/[id]/constants"
+import { HOST } from "../../../../pages/administrators/performance/[id]/constants";
+import "dayjs/locale/id";
+
+dayjs.locale("id");
 
 export default function ExperienceData({
   openDialog,
@@ -45,7 +48,7 @@ export default function ExperienceData({
 
     let requestMethod = onEdit ? "PATCH" : "POST";
     const token = GetSession("auth")
-    const [success, fail] = await RequestAPI.FormDataRequest(formValue).Send<{ message: string, document_status: string }>("/api/v1/candidates/experiences/", {
+    const [success, fail] = await RequestAPI.FormDataRequest(formValue).Send<{ message: string, document_status: string }>("/candidates/experiences/", {
       method: requestMethod,
       headers: {
         "Authorization": "Bearer " + token
@@ -68,7 +71,7 @@ export default function ExperienceData({
     setLoading(true);
     const token = GetSession("auth");
     const [success, fail] = await RequestAPI.Send<string>(
-      "/api/v1/candidates/experiences/" + experienceId,
+      "/candidates/experiences/" + experienceId,
       {
         method: "DELETE",
         headers: {
@@ -103,7 +106,7 @@ export default function ExperienceData({
   useEffect(() => {
     const token = GetSession("auth");
     (async () => {
-      const [data_experience, fail_experience] = await RequestAPI.Send<ExperienceDataType[]>("/api/v1/candidates/experiences/", {
+      const [data_experience, fail_experience] = await RequestAPI.Send<ExperienceDataType[]>("/candidates/experiences/", {
         method: "GET",
         headers: {
           "Authorization": "Bearer " + token
@@ -149,7 +152,7 @@ export default function ExperienceData({
             marginBottom: "1em",
           }}
         >
-          Experiences
+          Pengalaman Kerja / Proyek
         </Typography>
         <Box component={"div"}
           sx={{
@@ -168,29 +171,32 @@ export default function ExperienceData({
               <AddRounded fontSize="small" />
             </IconButton>
           )}
-          <IconButton size="small"
-            onClick={() => {
-              setOnEdit(prev => !prev)
-            }}
-          >
-            {onEdit ? (
-              <Button
-                variant="text"
-                color="error"
-                size="small"
-              >
-                Cancel
-              </Button>
-            ) : (
+          {onEdit ? (
+            <Button
+              variant="text"
+              color="error"
+              size="small"
+              onClick={() => {
+                setOnEdit(prev => !prev)
+              }}
+            >
+              Batal
+            </Button>
+          ) : (
+            <IconButton size="small"
+              onClick={() => {
+                setOnEdit(prev => !prev)
+              }}
+            >
               <EditRounded fontSize="small" />
-            )}
-          </IconButton>
+            </IconButton>
+          )}
         </Box>
       </Box>
       <Box component={"div"} className="experience-item">
         {experiencesData?.map((experience, index) => {
           const start_at = dayjs(experience.start_at).format("MMMM, YYYY")
-          const end_at = experience.is_current ? "now" : dayjs(experience.end_at).format("MMMM, YYYY")
+          const end_at = experience.is_current ? "sekarang" : dayjs(experience.end_at).format("MMMM, YYYY")
           return (
             <Box
               key={index}
@@ -211,7 +217,9 @@ export default function ExperienceData({
                 >
                   <Typography component={"p"} variant="subtitle1"
                     sx={{
-                      flexGrow: 1
+                      flexGrow: 1,
+                      fontWeight: 550,
+                      color: grey[600]
                     }}
                   >
                     {experience.position}
@@ -255,7 +263,6 @@ export default function ExperienceData({
                 <Typography component={"p"} variant="caption"
                   sx={{
                     color: grey[700],
-                    fontStyle: "italic"
                   }}
                 >
                   {start_at} - {end_at}
@@ -288,8 +295,8 @@ export default function ExperienceData({
                         }}
                       >
                         {embedFullHeight ? (
-                          "See default"
-                        ) : "See full height"}
+                          "Lihat sebagian"
+                        ) : "Lihat penuh"}
                       </Typography>
                     </Box>
                     <Box component={"div"} sx={{
@@ -297,7 +304,7 @@ export default function ExperienceData({
                       height: embedFullHeight ? "100vh" : "30vh",
                     }}>
                       <embed
-                        src={`${HOST.main}${experience.attachment_document_path}`}
+                        src={`${HOST.main}${experience.attachment_document_path.replace("/api/v1", "")}`}
                         width={"100%"}
                         height={"100%"}
                       />
@@ -357,11 +364,19 @@ export default function ExperienceData({
         }}
         fullWidth
       >
+        <Typography variant="subtitle1" fontWeight={550}
+          sx={{
+            color: grey[700],
+            marginBottom: "0.5em"
+          }}
+        >
+          Konfirmasi Penghapusan
+        </Typography>
         <Box component={"div"}>
           <Typography component={"p"} variant="body1" sx={{ color: grey[600] }}>
-            Are you sure want to
-            <SimpleEmphasis text={" delete "} textColor="red" />
-            your Education data at
+            Apakah anda yakin ingin
+            <SimpleEmphasis text={" menghapus "} textColor="red" />
+            data pengalaman kerja / proyek di
             <SimpleEmphasis text={" " + formValue.company_name} /> ?
           </Typography>
         </Box>
@@ -384,7 +399,7 @@ export default function ExperienceData({
               onCloseDialog("delete-experience")
             }}
           >
-            No
+            Tidak
           </Button>
           <Button
             variant="outlined"
@@ -401,7 +416,7 @@ export default function ExperienceData({
           >
             {loading ? (
               <CircularProgress size={20} />
-            ) : "Yes"}
+            ) : "Iya"}
           </Button>
         </Box>
       </Dialog>

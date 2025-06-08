@@ -49,7 +49,7 @@ export default function EmployerData() {
 
     const token = GetSession("auth");
     const [success, fail] = await RequestAPI.FormDataRequest<any>(formValue).Send<any>(
-      "/api/v1/employers/",
+      "/employers/",
       {
         method: "PATCH",
         headers: {
@@ -74,7 +74,7 @@ export default function EmployerData() {
     const token = GetSession("auth");
     (async () => {
       const [data, fail] = await RequestAPI.Send<EmployerType>(
-        "/api/v1/employers/",
+        "/employers/",
         {
           method: "GET",
           headers: {
@@ -111,7 +111,7 @@ export default function EmployerData() {
                 xs: "15em",
                 md: "20em",
               },
-              backgroundImage: `url('${HOST.main}${employerData.background_profile_image_path}?time=${new Date(Date.now()).getMilliseconds()}')`,
+              backgroundImage: `url('${HOST.main}${employerData.background_profile_image_path?.replace("/api/v1", "")}')`,
               backgroundSize: "cover",
               backgroundPosition: "center",
               borderRadius: "0.3em",
@@ -143,7 +143,8 @@ export default function EmployerData() {
             >
               <Avatar
                 alt="company-logo"
-                src={`${HOST.main}${employerData.profile_image_path}?time=${new Date(Date.now()).getMilliseconds()}`}
+                // src={`${HOST.main}${employerData.profile_image_path?.replace("/api/v1", "")}?time=${new Date(Date.now()).getMilliseconds()}`}
+                src={`${HOST.main}${employerData.profile_image_path?.replace("/api/v1", "")}`}
                 sx={{
                   width: {
                     xs: "3em",
@@ -241,14 +242,14 @@ export default function EmployerData() {
                         marginLeft: "0.5em",
                       }}
                     >
-                      {employerData.location}, Indonesia (INA)
+                      {employerData.location}, Indonesia
                     </Typography>
                   </Box>
                 </Box>
               </Box>
               {/* Edit Button Trigger */}
               <Box component={"div"}>
-                <Tooltip title={"Edit Profile"} placement="right-start">
+                <Tooltip title={"Ubah Profil"} placement="right-start">
                   <IconButton size="small"
                     onClick={() => {
                       setFormValue(employerData);
@@ -278,7 +279,7 @@ export default function EmployerData() {
               variant="subtitle1"
               sx={{ fontWeight: 550, color: grey[800], marginBottom: "0.5em" }}
             >
-              About Employer
+              Tentang Perusahaan
             </Typography>
             <Typography variant="body1" sx={{ color: grey[600], whiteSpace: "pre-line" }}>
               {employerData.description}
@@ -316,7 +317,7 @@ export default function EmployerData() {
               variant="subtitle1"
               sx={{ fontWeight: 550, color: grey[800] }}
             >
-              Employer Information
+              Informasi Perusahaan
             </Typography>
             <Box component={"div"} sx={{ marginTop: "0.5em" }}>
               <Stack
@@ -336,7 +337,7 @@ export default function EmployerData() {
                         sx={{ marginRight: "0.5em", color: grey[400] }}
                       />
                     ),
-                    label: "Founded",
+                    label: "Didirikan pada",
                     value: employerData.founded,
                   },
                   {
@@ -346,7 +347,7 @@ export default function EmployerData() {
                         sx={{ marginRight: "0.5em", color: grey[400] }}
                       />
                     ),
-                    label: "Founder",
+                    label: "Pendiri",
                     value: employerData.founder,
                   },
                   {
@@ -356,7 +357,7 @@ export default function EmployerData() {
                         sx={{ marginRight: "0.5em", color: grey[400] }}
                       />
                     ),
-                    label: "Headquarters",
+                    label: "Lokasi Kantor",
                     value: employerData.location,
                   },
                   {
@@ -366,7 +367,7 @@ export default function EmployerData() {
                         sx={{ marginRight: "0.5em", color: grey[400] }}
                       />
                     ),
-                    label: "Total of Employees",
+                    label: "Jumlah Pegawai",
                     value: employerData.total_of_employee,
                   },
                   {
@@ -411,6 +412,9 @@ export default function EmployerData() {
                       variant="subtitle2"
                       textAlign={"end"}
                       sx={{
+                        overflow: "hidden",
+                        textOverflow: "ellipsis",
+                        whiteSpace: "nowrap",
                         color: data.label == "Website" ? lightBlue[800] : grey[600],
                       }}
                     >

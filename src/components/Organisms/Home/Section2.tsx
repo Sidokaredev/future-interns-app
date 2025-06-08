@@ -57,7 +57,7 @@ export default function HomeSection2({
         headerInit.append("Authorization", "Bearer " + token)
       }
       const [data, fail] = await RequestAPI.Send<{ vacancies: VacancyType[], applied: string[] }>(
-        "/api/v1/vacancies/?page=" + (loadMoreCounter) + "&limit=9&" + searchQuery,
+        "/vacancies/?page=" + (loadMoreCounter) + "&limit=9&" + searchQuery,
         {
           method: "GET",
           headers: headerInit
@@ -94,7 +94,7 @@ export default function HomeSection2({
         headerInit.append("Authorization", "Bearer " + token)
       }
       const [data, fail] = await RequestAPI.Send<{ vacancies: VacancyType[], applied: string[] }>(
-        "/api/v1/vacancies/?page=" + 1 + "&limit=9&" + searchQuery,
+        "/vacancies/?page=" + 1 + "&limit=9&" + searchQuery,
         {
           method: "GET",
           headers: headerInit
@@ -136,7 +136,7 @@ export default function HomeSection2({
           fontWeight={"bold"}
           color={"#045a55"}
         >
-          Popular Vacancies
+          Lowongan Terpopuler
         </Typography>
         <Box
           display={"flex"}
@@ -152,8 +152,7 @@ export default function HomeSection2({
             maxWidth={"35rem"}
             color={"#045a5681"}
           >
-            Search all the open positions on the web. Get your own personalized
-            salary estimate. Read reviews on over 30000+ companies worldwide
+            Temukan lowongan kerja sesuai kualifikasi Anda. Dapatkan estimasi gaji dan ulasan perusahaan terpercaya di Indonesia.
           </Typography>
         </Box>
       </Stack>
@@ -178,7 +177,7 @@ export default function HomeSection2({
       >
         {endSearchResult ? (
           <Typography component={"p"} variant="subtitle1" sx={{ color: grey[700], textAlign: "center", overflowWrap: "break-word", fontSize: { xs: "small", sm: "medium" } }}>
-            You've reached the end of the search results. <SimpleEmphasis text={vacancies.length + " "} /> Job Vacancies
+            Anda telah mencapai akhir hasil pencarian.Tersedia <SimpleEmphasis text={vacancies.length + " "} /> lowongan pekerjaan
           </Typography>
         ) : loadMoreCounter < 3 ? (
           <Button variant="contained"
@@ -187,7 +186,7 @@ export default function HomeSection2({
               setDataAction(prev => !prev);
             }}
           >
-            LOAD MORE
+            Tampilkan Lebih Banyak
           </Button>
         ) : (
           <Button variant="contained"
@@ -196,7 +195,7 @@ export default function HomeSection2({
               navigate("/vacancy#job-vacancies-banner")
             }}
           >
-            GO TO JOB  VACANCIES
+            Lihat Lowongan Pekerjaan
           </Button>
         )}
       </Box>
@@ -223,10 +222,10 @@ export default function HomeSection2({
               marginBottom: "0.5em",
             }}
           >
-            Note
+            Catatan
           </Typography>
           <Typography component={"p"} variant="body1">
-            You need to log in to view available job vacancies. Would you like to <SimpleEmphasis text={" continue "} /> to the login page now?
+            Anda perlu masuk untuk melihat lowongan pekerjaan yang tersedia. Apakah Anda ingin <SimpleEmphasis text={" melanjutkan "} /> ke halaman login sekarang?
           </Typography>
         </Box>
         <Box component={"div"}
@@ -242,7 +241,7 @@ export default function HomeSection2({
             size="small"
             onClick={() => setOpenDialog(prev => ({ ...prev, ["login"]: false }))}
           >
-            CANCEL
+            Batalkan
           </Button>
           <Button
             variant="contained"
@@ -252,7 +251,7 @@ export default function HomeSection2({
               navigate("/accounts/auth")
             }}
           >
-            CONTINUE
+            Lanjutkan
           </Button>
         </Box>
       </Dialog>
