@@ -5,7 +5,7 @@ on:
 permissions:
   contents: write
 env:
-  SCRIPT: '<script type="text/javascript">(function (location) { if(location.includes("/?/")) { const removedQuery = location.replace("/?/", "/"); window.history.replaceState(null, null, removedQuery); }})(window.location.toString());</script>'
+  SCRIPT: <script type="text/javascript">(function(l){if(l.includes("/?/")){const r=l.replace("/?/","/");window.history.replaceState(null,null,r);}})(window.location.toString());</script>
 jobs:
   build-static-react-app:
     runs-on: ubuntu-22.04
@@ -29,10 +29,10 @@ jobs:
       - name: Running Vite site generator
         run: npm run build
 
-      - name: Change '/assets' path
-        run: |
-          sed -i 's/\/assets\//\/future-interns-app\/assets\//g' dist/index.html
-          sed -i 's/href="\/Future Interns Logo.svg"/href="\/future-interns-app\/Future Interns Logo.svg"/g' dist/index.html
+      #- name: Change '/assets' path
+      #  run: |
+      #    sed -i 's/\/assets\//\/future-interns-app\/assets\//g' dist/index.html
+      #    sed -i 's/href="\/Future Interns Logo.svg"/href="\/future-interns-app\/Future Interns Logo.svg"/g' dist/index.html
         
       - name: Adding custom <script/>
         run: |
