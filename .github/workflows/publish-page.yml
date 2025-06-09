@@ -21,7 +21,7 @@ jobs:
           cache: 'npm'
 
       - name: Install depedencies
-        run: npm run ci
+        run: npm ci
       
       - name: Running Vite site generator
         run: npm run build
