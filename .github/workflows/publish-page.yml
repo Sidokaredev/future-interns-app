@@ -1,0 +1,54 @@
+name: Applicant Tracking System (ATS)
+run-name: Build and Publish Static File to Github Pages
+on: 
+  push: 
+env:
+  SCRIPT: '<script type="text/javascript">(function (location) { if(location.includes("/?/")) { const removedQuery = location.replace("/?/", "/"); window.history.replaceState(null, null, removedQuery); }})(window.location.toString());</script>'
+jobs:
+  build-static-react-app:
+    runs-on: ubuntu-22.04
+    name: Build static site using Vite
+    steps:
+      - name: Checkout main repository code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+        
+      - name: Setting up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20.10.0'
+          cache: 'npm'
+
+      - name: Install depedencies
+        run: npm run ci
+      
+      - name: Running Vite site generator
+        run: npm run build
+
+      - name: Change '/assets' path
+        run: |
+          sed -i 's/\/assets\//\/future-interns-app\/assets\//g' dist/index.html
+          sed -i 's/href="\/Future Interns Logo.svg"/href="\/future-interns-app\/Future Interns Logo.svg"/g' dist/index.html
+        
+      - name: Adding custom <script/>
+        run: |
+          sed -i "/href=\"\/future-interns-app\/assets\/.*\.css\">/a\\${{ env.SCRIPT }}" dist/index.html
+
+      - name: Short SHA
+        id: shortsha
+        run: |
+          echo "short_sha=${GITHUB_SHA::12}" >> $GITHUB_OUTPUT
+
+      - name: Updating new static file
+        run: |
+          git checkout publish-page
+          git checkout main -- ./dist/
+          cp -r ./dist/* .
+          rm -rf ./dist/
+
+      - name: Commit and push updated static file
+        run: |
+          git add .
+          git commit -m 'feat: static build from ${{ steps.shortsha.outputs.short_sha }}'
+          git push origin publish-page
