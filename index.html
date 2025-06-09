@@ -7,8 +7,17 @@
     <title>Future Interns by Sidokaredev</title>
     <script type="module" crossorigin src="/assets/index-D1nhjKfe.js"></script>
     <link rel="stylesheet" crossorigin href="/assets/index-tu3dzkMF.css">
+    <script type="text/javascript">
+      (function (location) {
+        if(location.includes("/?/")) {
+          const removedQuery = location.replace("/?/", "/")
+          window.history.replaceState(null, null, removedQuery)
+        }
+      })(window.location.toString());
+    </script>
   </head>
   <body>
-    <div id="root"></div>
+    <div id="root"></div>
+
   </body>
 </html>
