@@ -42,8 +42,8 @@ jobs:
 
       - name: Updating new static file
         run: |
-          git checkout publish-page
-          git checkout main -- ./dist/
+          git fetch origin
+          git switch publish-page
           cp -r ./dist/* .
           rm -rf ./dist/
 
