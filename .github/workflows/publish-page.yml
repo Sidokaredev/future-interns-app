@@ -2,6 +2,8 @@ name: Applicant Tracking System (ATS)
 run-name: Build and Publish Static File to Github Pages
 on: 
   push: 
+permissions:
+  contents: write
 env:
   SCRIPT: '<script type="text/javascript">(function (location) { if(location.includes("/?/")) { const removedQuery = location.replace("/?/", "/"); window.history.replaceState(null, null, removedQuery); }})(window.location.toString());</script>'
 jobs:
