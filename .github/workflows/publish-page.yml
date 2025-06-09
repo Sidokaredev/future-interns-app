@@ -37,7 +37,7 @@ jobs:
       - name: Adding custom <script/>
         run: |
           sed -i "/href=\"\/future-interns-app\/assets\/.*\.css\">/a\\${{ env.SCRIPT }}" dist/index.html
-          
+
       - name: Short SHA
         id: shortsha
         run: |
@@ -49,9 +49,6 @@ jobs:
           git switch publish-page
           cp -r ./dist/* .
           rm -rf ./dist/
-
-      - name: Authentication Github
-        run: echo "${{ secrets.GITHUB_TOKEN }}" | gh auth login --with-token
 
       - name: Commit and push updated static file
         run: |
