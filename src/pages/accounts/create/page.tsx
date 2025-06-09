@@ -10,7 +10,7 @@ import {
   TextField,
   Typography,
 } from "@mui/material";
-import FutureInternLogo from "/Future Interns Logo.svg";
+// import FutureInternLogo from "/Future Interns Logo.svg";
 import SimpleEmphasis from "../../../components/Molecules/Texts/SimpleEmphasis";
 import React, { useState } from "react";
 import { ArrowBackIos, Visibility, VisibilityOff } from "@mui/icons-material";
@@ -81,7 +81,7 @@ export default function SignUp() {
           <Link component={RouterLink} to={"/"}>
             <Box
               component={"img"}
-              src={FutureInternLogo}
+              src={"/future-interns-app/Future Interns Logo.svg"}
               width={"2.5em"}
               height={"2.5em"}
             />

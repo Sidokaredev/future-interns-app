@@ -13,7 +13,7 @@ import {
 } from "@mui/material";
 import { Link as RouterLink, useLocation, useNavigate } from "react-router-dom";
 import React, { useState } from "react";
-import FutureInternLogo from "/Future Interns Logo.svg";
+// import FutureInternLogo from "/future-interns-app/Future Interns Logo.svg";
 import AuthLayout from "../../../components/Templates/AuthLayout";
 import SimpleEmphasis from "../../../components/Molecules/Texts/SimpleEmphasis";
 // import HelpIcon from "@mui/icons-material/Help";
@@ -97,7 +97,7 @@ export default function Auth() {
           <Link component={RouterLink} to={"/"}>
             <Box
               component={"img"}
-              src={FutureInternLogo}
+              src={"/future-interns-app/Future Interns Logo.svg"}
               width={"2.5em"}
               height={"2.5em"}
             />

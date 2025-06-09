@@ -211,7 +211,7 @@ export default function BaseNavigation() {
         <Stack direction={"row"} alignItems={"center"} spacing={2}>
           <Box
             component={"img"}
-            src={"/Future Interns Logo.svg"}
+            src={"/future-interns-app/Future Interns Logo.svg"}
             width={30}
             height={30}
             loading="lazy"

@@ -26,7 +26,7 @@ export default function Homepage() {
       <Box
         sx={{
           backgroundImage:
-            "url(/backgrounds/Final-AnimatedShape-1.svg) !important",
+            "url(/future-interns-app/backgrounds/Final-AnimatedShape-1.svg) !important",
           backgroundSize: "cover",
           height: "695px",
           display: "flex",

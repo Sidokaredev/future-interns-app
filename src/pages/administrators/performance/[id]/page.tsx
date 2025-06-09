@@ -947,7 +947,7 @@ export default function TestSessionPage() {
                     component={"img"}
                     width={"100%"}
                     height={"5.5em"}
-                    src={"/caches/No-Cache.drawio.png"}
+                    src={"/future-interns-app/caches/No-Cache.drawio.png"}
                     sx={{
                       objectFit: "contain"
                     }}
@@ -1019,7 +1019,7 @@ export default function TestSessionPage() {
                     component={"img"}
                     width={"100%"}
                     height={"5.5em"}
-                    src={"/caches/campus4-internship-app-Write-Through.drawio.png"}
+                    src={"/future-interns-app/caches/campus4-internship-app-Write-Through.drawio.png"}
                     sx={{
                       objectFit: "contain"
                     }}
@@ -1091,7 +1091,7 @@ export default function TestSessionPage() {
                     component={"img"}
                     width={"100%"}
                     height={"5.5em"}
-                    src={"/caches/campus4-internship-app-Write-Behind.drawio.png"}
+                    src={"/future-interns-app/caches/campus4-internship-app-Write-Behind.drawio.png"}
                     sx={{
                       objectFit: "contain"
                     }}
@@ -1163,7 +1163,7 @@ export default function TestSessionPage() {
                     component={"img"}
                     width={"100%"}
                     height={"5.5em"}
-                    src={"/caches/campus4-internship-app-Cache-Aside.drawio.png"}
+                    src={"/future-interns-app/caches/campus4-internship-app-Cache-Aside.drawio.png"}
                     sx={{
                       objectFit: "contain"
                     }}
@@ -1233,7 +1233,7 @@ export default function TestSessionPage() {
                     component={"img"}
                     width={"100%"}
                     height={"6em"}
-                    src={"/caches/campus4-internship-app-Read-Through.drawio.png"}
+                    src={"/future-interns-app/caches/campus4-internship-app-Read-Through.drawio.png"}
                     sx={{
                       objectFit: "contain"
                     }}
